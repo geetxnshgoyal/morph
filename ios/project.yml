@@ -1,0 +1,50 @@
+# Generate Morph.xcodeproj with: cd ios && xcodegen
+name: Morph
+options:
+  bundleIdPrefix: app.morph
+  deploymentTarget:
+    iOS: "17.0"
+packages:
+  Morph:
+    path: ..
+targets:
+  Morph:
+    type: application
+    platform: iOS
+    sources: [Morph]
+    dependencies:
+      - package: Morph
+        product: MorphCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.morph.Morph
+        PRODUCT_NAME: Morph
+        MARKETING_VERSION: 0.1.0
+        CURRENT_PROJECT_VERSION: 1
+        TARGETED_DEVICE_FAMILY: "1,2"
+        SWIFT_VERSION: "5.0"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        CODE_SIGN_STYLE: Automatic
+    info:
+      path: Morph/Info.plist
+      properties:
+        CFBundleDisplayName: Morph
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        UILaunchScreen:
+          UIColorName: LaunchBackground
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        UISupportedInterfaceOrientations~ipad:
+          [UIInterfaceOrientationPortrait, UIInterfaceOrientationPortraitUpsideDown,
+           UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
+        # Results live in Documents, which the Files app shows under "On My iPhone → Morph".
+        UIFileSharingEnabled: true
+        LSSupportsOpeningDocumentsInPlace: false
+        NSPhotoLibraryAddUsageDescription: Morph saves the photos and videos you convert to your library.
+        # Puts Morph in every share sheet ("Open in Morph").
+        CFBundleDocumentTypes:
+          - CFBundleTypeName: Any file
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            LSItemContentTypes: [public.item, public.content, public.data]
