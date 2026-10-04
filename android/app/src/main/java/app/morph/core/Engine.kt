@@ -1,0 +1,406 @@
+@file:OptIn(UnstableApi::class)
+
+package app.morph.core
+
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.ImageDecoder
+import android.graphics.Paint
+import android.graphics.Rect
+import android.graphics.pdf.PdfDocument
+import android.graphics.pdf.PdfRenderer
+import android.media.MediaMetadataRetriever
+import android.net.Uri
+import android.os.ParcelFileDescriptor
+import androidx.media3.common.MediaItem
+import androidx.media3.common.MimeTypes
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.effect.Presentation
+import androidx.media3.transformer.Composition
+import androidx.media3.transformer.DefaultEncoderFactory
+import androidx.media3.transformer.EditedMediaItem
+import androidx.media3.transformer.Effects
+import androidx.media3.transformer.ExportException
+import androidx.media3.transformer.ExportResult
+import androidx.media3.transformer.Transformer
+import androidx.media3.transformer.VideoEncoderSettings
+import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.text.TextRecognition
+import com.google.mlkit.vision.text.latin.TextRecognizerOptions
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
+import java.io.File
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
+import kotlin.math.max
+import kotlin.math.roundToInt
+
+// Android port of MorphCore: same actions, same naming, originals never touched.
+
+class MorphError(message: String) : Exception(message)
+
+enum class FileKind {
+    IMAGE, VIDEO, AUDIO, PDF, OTHER;
+
+    companion object {
+        fun of(file: File): FileKind = when (file.extension.lowercase()) {
+            "jpg", "jpeg", "png", "webp", "heic", "heif", "gif", "bmp", "avif" -> IMAGE
+            "mp4", "mov", "m4v", "3gp", "webm", "mkv" -> VIDEO
+            "mp3", "m4a", "aac", "wav", "ogg", "flac", "opus", "amr" -> AUDIO
+            "pdf" -> PDF
+            else -> OTHER
+        }
+    }
+}
+
+enum class Group(val label: String) { CONVERT("Convert"), TOOL("Tools"), RECIPE("Recipes") }
+
+enum class Compression(val label: String, val detail: String, val quality: Int, val videoHeight: Int, val videoBitrate: Int) {
+    LIGHT("Light", "Barely noticeable, modest savings.", 85, 1080, 5_000_000),
+    BALANCED("Balanced", "Good quality, much smaller files.", 70, 720, 2_500_000),
+    STRONG("Strong", "Smallest files, visible softening.", 50, 480, 1_200_000),
+}
+
+/** Knobs shared by every action. Results are written under [outDir], then published to Downloads/Morph. */
+class Options(val compression: Compression, val outDir: File)
+
+/** [icon] is a key the UI maps to a Material symbol, keeping the engine free of UI types. */
+class Action(
+    val id: String,
+    val title: String,
+    val icon: String,
+    val group: Group,
+    val kinds: Set<FileKind>,
+    val combinesInputs: Boolean = false,
+    val minimumInputs: Int = 1,
+    /** Hidden when every input already has this extension (no "JPG → JPG"). */
+    val targetExtension: String? = null,
+    val run: suspend (Context, List<File>, Options) -> List<File>,
+) {
+    fun accepts(files: List<File>): Boolean {
+        if (files.size < minimumInputs) return false
+        if (!files.all { FileKind.of(it) in kinds }) return false
+        val ext = targetExtension ?: return true
+        return !files.all { it.extension.lowercase().let { e -> e == ext || (ext == "jpg" && e == "jpeg") } }
+    }
+}
+
+object Library {
+    private fun one(
+        id: String, title: String, icon: String, group: Group, kinds: Set<FileKind>, target: String? = null,
+        body: suspend (Context, File, Options) -> File,
+    ) = Action(id, title, icon, group, kinds, targetExtension = target) { ctx, files, o -> files.map { body(ctx, it, o) } }
+
+    val actions: List<Action> = listOf(
+        // Images
+        one("convert.jpg", "JPG", "photo", Group.CONVERT, setOf(FileKind.IMAGE), "jpg") { _, f, o -> ImageOps.convert(f, ImageFormat.JPG, o) },
+        one("convert.png", "PNG", "photo", Group.CONVERT, setOf(FileKind.IMAGE), "png") { _, f, o -> ImageOps.convert(f, ImageFormat.PNG, o) },
+        one("convert.webp", "WEBP", "photo", Group.CONVERT, setOf(FileKind.IMAGE), "webp") { _, f, o -> ImageOps.convert(f, ImageFormat.WEBP, o) },
+        Action("convert.images-pdf", "PDF", "pdf", Group.CONVERT, setOf(FileKind.IMAGE), combinesInputs = true) { _, files, o ->
+            listOf(PdfOps.fromImages(files, o))
+        },
+        // PDF
+        Action("convert.pdf-images", "Images", "pages", Group.CONVERT, setOf(FileKind.PDF)) { _, files, o ->
+            files.flatMap { PdfOps.toImages(it, o) }
+        },
+        // Video & audio
+        one("convert.video-mp4", "MP4", "video", Group.CONVERT, setOf(FileKind.VIDEO), "mp4") { ctx, f, o ->
+            MediaOps.transform(ctx, f, Output.file(f, "mp4", null, o))
+        },
+        one("convert.audio-m4a", "M4A", "audio", Group.CONVERT, setOf(FileKind.AUDIO, FileKind.VIDEO), "m4a") { ctx, f, o ->
+            MediaOps.transform(ctx, f, Output.file(f, "m4a", null, o), removeVideo = true)
+        },
+        // Tools
+        one("tool.compress", "Compress", "compress", Group.TOOL, setOf(FileKind.IMAGE, FileKind.VIDEO)) { ctx, f, o ->
+            if (FileKind.of(f) == FileKind.VIDEO) MediaOps.compress(ctx, f, o) else ImageOps.compress(f, o)
+        },
+        one("tool.resize", "Resize", "resize", Group.TOOL, setOf(FileKind.IMAGE)) { _, f, o -> ImageOps.resize(f, 2048, o) },
+        one("tool.strip-metadata", "Remove Metadata", "strip", Group.TOOL, setOf(FileKind.IMAGE)) { _, f, o -> ImageOps.stripMetadata(f, o) },
+        one("tool.ocr", "Extract Text", "text", Group.TOOL, setOf(FileKind.IMAGE)) { _, f, o -> VisionOps.ocr(f, o) },
+        one("tool.mute", "Mute", "mute", Group.TOOL, setOf(FileKind.VIDEO)) { ctx, f, o ->
+            MediaOps.transform(ctx, f, Output.file(f, "mp4", "muted", o), removeAudio = true)
+        },
+        Action("tool.zip", "Zip", "zip", Group.TOOL, FileKind.entries.toSet(), combinesInputs = true) { _, files, o ->
+            listOf(ArchiveOps.zip(files, o))
+        },
+        // Recipes
+        one("recipe.web", "Web Image", "recipe", Group.RECIPE, setOf(FileKind.IMAGE)) { _, f, o ->
+            ImageOps.write(ImageOps.decode(f, 1600), ImageFormat.WEBP, 80, Output.file(f, "webp", "web", o))
+        },
+        one("recipe.1mb", "Under 1 MB", "recipe", Group.RECIPE, setOf(FileKind.IMAGE)) { _, f, o -> ImageOps.underSize(f, 1_000_000, o) },
+        one("recipe.safe", "Share-Safe Photo", "recipe", Group.RECIPE, setOf(FileKind.IMAGE)) { _, f, o ->
+            ImageOps.write(ImageOps.decode(f, 2048), ImageFormat.JPG, 85, Output.file(f, "jpg", "safe", o))
+        },
+    )
+
+    fun actionsFor(files: List<File>) = actions.filter { it.accepts(files) }
+}
+
+class RunResult(val outputs: List<File>, val failures: List<String>)
+
+object Runner {
+    /** Runs on a background dispatcher; [progress] reports files finished so far. */
+    suspend fun run(
+        context: Context, action: Action, inputs: List<File>, options: Options,
+        progress: (done: Int, total: Int) -> Unit,
+    ): RunResult = withContext(Dispatchers.Default) {
+        options.outDir.mkdirs()
+        val outputs = mutableListOf<File>()
+        val failures = mutableListOf<String>()
+        if (action.combinesInputs) {
+            try { outputs += action.run(context, inputs, options) } catch (e: Exception) { failures += e.readable() }
+            progress(inputs.size, inputs.size)
+        } else {
+            inputs.forEachIndexed { i, file ->
+                try { outputs += action.run(context, listOf(file), options) } catch (e: Exception) { failures += "${file.name}: ${e.readable()}" }
+                progress(i + 1, inputs.size)
+            }
+        }
+        RunResult(outputs, failures)
+    }
+
+    private fun Exception.readable() = message ?: javaClass.simpleName
+}
+
+// MARK: - Output naming
+
+object Output {
+    /** "<name> <suffix>.<ext>" in the output folder, numbered if taken. */
+    fun file(source: File, ext: String, suffix: String?, options: Options): File {
+        val base = source.nameWithoutExtension + (suffix?.let { " $it" } ?: "")
+        return unique(options.outDir, base, ext)
+    }
+
+    @Synchronized
+    fun unique(folder: File, base: String, ext: String): File {
+        folder.mkdirs()
+        fun make(name: String) = File(folder, if (ext.isEmpty()) name else "$name.$ext")
+        var candidate = make(base)
+        var i = 2
+        while (candidate.exists()) candidate = make("$base ${i++}")
+        candidate.createNewFile()
+        return candidate
+    }
+}
+
+// MARK: - Images
+
+enum class ImageFormat(val ext: String) { JPG("jpg"), PNG("png"), WEBP("webp") }
+
+object ImageOps {
+    /** Decodes with EXIF orientation applied; downscales (never upscales) to [maxPixel]. */
+    fun decode(file: File, maxPixel: Int? = null): Bitmap =
+        ImageDecoder.decodeBitmap(ImageDecoder.createSource(file)) { decoder, info, _ ->
+            decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
+            val longest = max(info.size.width, info.size.height)
+            if (maxPixel != null && longest > maxPixel) {
+                val scale = maxPixel.toDouble() / longest
+                decoder.setTargetSize(
+                    (info.size.width * scale).roundToInt().coerceAtLeast(1),
+                    (info.size.height * scale).roundToInt().coerceAtLeast(1),
+                )
+            }
+        }
+
+    fun write(bitmap: Bitmap, format: ImageFormat, quality: Int, out: File): File {
+        val image = if (format == ImageFormat.JPG && bitmap.hasAlpha()) flatten(bitmap) else bitmap
+        val compress = when (format) {
+            ImageFormat.JPG -> Bitmap.CompressFormat.JPEG
+            ImageFormat.PNG -> Bitmap.CompressFormat.PNG
+            ImageFormat.WEBP -> Bitmap.CompressFormat.WEBP_LOSSY
+        }
+        out.outputStream().use { if (!image.compress(compress, quality, it)) throw MorphError("Couldn't encode ${format.ext.uppercase()}") }
+        return out
+    }
+
+    /** JPEG has no transparency: put the image on white. */
+    private fun flatten(bitmap: Bitmap): Bitmap {
+        val flat = Bitmap.createBitmap(bitmap.width, bitmap.height, Bitmap.Config.ARGB_8888)
+        Canvas(flat).apply { drawColor(Color.WHITE); drawBitmap(bitmap, 0f, 0f, null) }
+        return flat
+    }
+
+    private fun sameFormat(file: File) = when (file.extension.lowercase()) {
+        "jpg", "jpeg", "heic", "heif", "avif" -> ImageFormat.JPG
+        "webp" -> ImageFormat.WEBP
+        else -> ImageFormat.PNG
+    }
+
+    fun convert(file: File, format: ImageFormat, o: Options) =
+        write(decode(file), format, 92, Output.file(file, format.ext, null, o))
+
+    /** Lossy re-encode; lossless sources become JPG, or WebP when they have transparency. */
+    fun compress(file: File, o: Options): File {
+        val bitmap = decode(file)
+        val format = when (file.extension.lowercase()) {
+            "jpg", "jpeg" -> ImageFormat.JPG
+            "webp" -> ImageFormat.WEBP
+            else -> if (bitmap.hasAlpha()) ImageFormat.WEBP else ImageFormat.JPG
+        }
+        return write(bitmap, format, o.compression.quality, Output.file(file, format.ext, "compressed", o))
+    }
+
+    /** Named by the size actually written: smaller images are never upscaled. */
+    fun resize(file: File, maxPixel: Int, o: Options): File {
+        val bitmap = decode(file, maxPixel)
+        val format = sameFormat(file)
+        return write(bitmap, format, 90, Output.file(file, format.ext, "${max(bitmap.width, bitmap.height)}px", o))
+    }
+
+    /** Re-encoding keeps the pixels and drops EXIF/GPS and every other metadata block. */
+    fun stripMetadata(file: File, o: Options): File {
+        val format = sameFormat(file)
+        return write(decode(file), format, 95, Output.file(file, format.ext, "clean", o))
+    }
+
+    /** Searches JPEG quality, then downscales until the file fits. */
+    fun underSize(file: File, target: Int, o: Options): File {
+        val out = Output.file(file, "jpg", "small", o)
+        var longest: Int? = null
+        repeat(10) {
+            val bitmap = decode(file, longest)
+            var lo = 5; var hi = 95; var best: ByteArray? = null
+            while (lo <= hi) {
+                val mid = (lo + hi) / 2
+                val bytes = java.io.ByteArrayOutputStream().also { flatten(bitmap).compress(Bitmap.CompressFormat.JPEG, mid, it) }.toByteArray()
+                if (bytes.size <= target) { best = bytes; lo = mid + 1 } else hi = mid - 1
+            }
+            best?.let { out.writeBytes(it); return out }
+            longest = (max(bitmap.width, bitmap.height) * 0.8).toInt()
+            if (longest!! < 64) return@repeat
+        }
+        out.delete()
+        throw MorphError("Couldn't get ${file.name} under ${target / 1_000_000} MB")
+    }
+}
+
+// MARK: - PDF
+
+object PdfOps {
+    /** One page per image, at most A4-ish size in points. */
+    fun fromImages(files: List<File>, o: Options): File {
+        val doc = PdfDocument()
+        try {
+            files.forEachIndexed { i, file ->
+                val bitmap = ImageOps.decode(file, 2400)
+                val scale = 842.0 / max(bitmap.width, bitmap.height)
+                val w = (bitmap.width * scale).roundToInt(); val h = (bitmap.height * scale).roundToInt()
+                val page = doc.startPage(PdfDocument.PageInfo.Builder(w, h, i + 1).create())
+                page.canvas.drawBitmap(bitmap, null, Rect(0, 0, w, h), Paint(Paint.FILTER_BITMAP_FLAG))
+                doc.finishPage(page)
+            }
+            val name = if (files.size == 1) files[0].nameWithoutExtension else "Images"
+            val out = Output.unique(o.outDir, name, "pdf")
+            out.outputStream().use { doc.writeTo(it) }
+            return out
+        } finally {
+            doc.close()
+        }
+    }
+
+    /** Each page as a PNG at 2× (144 dpi), in a "<name> pages" folder. */
+    fun toImages(file: File, o: Options): List<File> {
+        val folder = Output.unique(o.outDir, "${file.nameWithoutExtension} pages", "").also { it.delete(); it.mkdirs() }
+        ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY).use { fd ->
+            PdfRenderer(fd).use { pdf ->
+                return (0 until pdf.pageCount).map { i ->
+                    pdf.openPage(i).use { page ->
+                        val bitmap = Bitmap.createBitmap(page.width * 2, page.height * 2, Bitmap.Config.ARGB_8888)
+                        bitmap.eraseColor(Color.WHITE)
+                        page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+                        ImageOps.write(bitmap, ImageFormat.PNG, 100, File(folder, "page-${i + 1}.png"))
+                    }
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Video & audio
+
+object MediaOps {
+    /** Downscales only videos taller than the level's height; never upscales. */
+    suspend fun compress(context: Context, file: File, o: Options): File {
+        val height = videoHeight(file)
+        val target = o.compression.videoHeight.takeIf { height == null || height > it }
+        return transform(context, file, Output.file(file, "mp4", "compressed", o), maxHeight = target, bitrate = o.compression.videoBitrate)
+    }
+
+    private fun videoHeight(file: File): Int? = MediaMetadataRetriever().use { r ->
+        r.setDataSource(file.absolutePath)
+        val w = r.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)?.toIntOrNull()
+        val h = r.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)?.toIntOrNull()
+        val rotation = r.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION)?.toIntOrNull() ?: 0
+        if (rotation % 180 != 0) w else h
+    }
+
+    /** Media3 Transformer: H.264/AAC in an MP4 container (audio-only output is an M4A). */
+    suspend fun transform(
+        context: Context, input: File, output: File,
+        removeAudio: Boolean = false, removeVideo: Boolean = false, maxHeight: Int? = null, bitrate: Int? = null,
+    ): File = withContext(Dispatchers.Main) {
+        output.delete()
+        suspendCancellableCoroutine { cont ->
+            val builder = Transformer.Builder(context).setAudioMimeType(MimeTypes.AUDIO_AAC)
+            if (!removeVideo) builder.setVideoMimeType(MimeTypes.VIDEO_H264)
+            if (bitrate != null) {
+                builder.setEncoderFactory(
+                    DefaultEncoderFactory.Builder(context)
+                        .setRequestedVideoEncoderSettings(VideoEncoderSettings.Builder().setBitrate(bitrate).build())
+                        .build(),
+                )
+            }
+            val transformer = builder.addListener(object : Transformer.Listener {
+                override fun onCompleted(composition: Composition, exportResult: ExportResult) = cont.resume(output)
+                override fun onError(composition: Composition, exportResult: ExportResult, exportException: ExportException) {
+                    output.delete()
+                    cont.resumeWithException(MorphError(exportException.message ?: "Couldn't process ${input.name}"))
+                }
+            }).build()
+            val effects = if (maxHeight != null) Effects(emptyList(), listOf(Presentation.createForHeight(maxHeight))) else Effects.EMPTY
+            val item = EditedMediaItem.Builder(MediaItem.fromUri(Uri.fromFile(input)))
+                .setRemoveAudio(removeAudio)
+                .setRemoveVideo(removeVideo)
+                .setEffects(effects)
+                .build()
+            transformer.start(item, output.absolutePath)
+            cont.invokeOnCancellation { transformer.cancel() }
+        }
+    }
+}
+
+// MARK: - Vision & archives
+
+object VisionOps {
+    suspend fun ocr(file: File, o: Options): File {
+        val bitmap = ImageOps.decode(file, 3000)
+        val client = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+        val text = try { client.process(InputImage.fromBitmap(bitmap, 0)).await().text } finally { client.close() }
+        if (text.isBlank()) throw MorphError("No text found in ${file.name}")
+        return Output.file(file, "txt", null, o).apply { writeText(text) }
+    }
+}
+
+object ArchiveOps {
+    fun zip(files: List<File>, o: Options): File {
+        val out = Output.unique(o.outDir, if (files.size == 1) files[0].nameWithoutExtension else "Archive", "zip")
+        ZipOutputStream(out.outputStream().buffered()).use { zip ->
+            val used = mutableSetOf<String>()
+            for (file in files) {
+                var name = file.name
+                var i = 2
+                while (!used.add(name)) name = "${file.nameWithoutExtension} ${i++}.${file.extension}"
+                zip.putNextEntry(ZipEntry(name))
+                file.inputStream().use { it.copyTo(zip) }
+                zip.closeEntry()
+            }
+        }
+        return out
+    }
+}
