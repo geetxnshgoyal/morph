@@ -3,3 +3,10 @@ build/
 .swiftpm/
 *.xcodeproj/
 dist/
+
+# Android signing key: back it up; updates must be signed with the same key
+android/morph-release.jks
+android/keystore.properties
+android/local.properties
+android/.gradle/
+.DS_Store
