@@ -113,8 +113,19 @@ func render(scale: CGFloat) -> Data {
     ctx.restoreGState()
 
     // Footer instructions.
-    text("Drag Morph onto Applications to install", font: rounded(15, .semibold), color: ink, centerX: width / 2, top: 340)
-    text("FREE  ·  PRIVATE  ·  WORKS OFFLINE", font: rounded(10, .bold), color: tangerine, centerX: width / 2, top: 366, kern: 1.6)
+    text("Drag Morph onto Applications to install", font: rounded(15, .semibold), color: ink, centerX: width / 2, top: 330)
+    text("FREE  ·  PRIVATE  ·  WORKS OFFLINE", font: rounded(10, .bold), color: tangerine, centerX: width / 2, top: 354, kern: 1.6)
+
+    // Credit line: Morph is free, so word of mouth is the marketing.
+    let credit = NSMutableAttributedString()
+    let small: [NSAttributedString.Key: Any] = [.font: rounded(11, .medium), .foregroundColor: muted]
+    credit.append(NSAttributedString(string: "Made with ", attributes: small))
+    credit.append(NSAttributedString(string: "♥", attributes: [.font: rounded(11, .bold), .foregroundColor: coral]))
+    credit.append(NSAttributedString(string: " by ", attributes: small))
+    credit.append(NSAttributedString(string: "Geetansh Goyal", attributes: [.font: rounded(11, .bold), .foregroundColor: ink]))
+    credit.append(NSAttributedString(string: "  ·  Free forever, share it with a friend", attributes: small))
+    let creditSize = credit.size()
+    credit.draw(at: CGPoint(x: (width - creditSize.width) / 2, y: height - 386 - creditSize.height))
 
     return rep.representation(using: .png, properties: [:])!
 }
