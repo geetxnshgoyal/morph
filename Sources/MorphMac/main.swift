@@ -43,7 +43,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         ))
 
         // Hold the chosen key while dragging files anywhere: the wheel appears under the cursor to drop on.
-        dragShortcut.onTrigger = { [weak self] urls in self?.showWheel(for: urls, dropMode: true) }
+        dragShortcut.onTrigger = { [weak self] urls, group in self?.showWheel(for: urls, dropMode: true, group: group) }
+        dragShortcut.onSwitch = { [weak self] group in
+            if let wheel = self?.wheel, wheel.model.dropMode { wheel.model.select(group) }
+        }
         dragShortcut.onDragEnded = { [weak self] in
             if let wheel = self?.wheel, wheel.model.dropMode, case .choosing = wheel.model.phase { wheel.close() }
         }
@@ -178,11 +181,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     /// `dropMode`: summoned mid-drag, so the wheel waits for a drop instead of a click and leaves focus alone.
-    func showWheel(for urls: [URL], dropMode: Bool = false) {
+    func showWheel(for urls: [URL], dropMode: Bool = false, group: Action.Group? = nil) {
         let files = urls.map(\.standardizedFileURL)
         guard !files.isEmpty else { return }
         wheel?.close()
-        wheel = WheelPanel(files: files, dropMode: dropMode)
+        wheel = WheelPanel(files: files, dropMode: dropMode, group: group)
         wheel?.present(at: NSEvent.mouseLocation)
     }
 }
@@ -210,272 +213,6 @@ final class DropView: NSView {
         guard !urls.isEmpty else { return false }
         DispatchQueue.main.async { self.onDrop(urls) }
         return true
-    }
-}
-
-// MARK: - Wheel window
-
-@MainActor
-final class WheelPanel: NSPanel {
-    static let size: CGFloat = 420
-    private var monitor: Any?
-    let model: WheelModel
-
-    init(files: [URL], dropMode: Bool = false) {
-        model = WheelModel(files: files, dropMode: dropMode)
-        super.init(contentRect: NSRect(x: 0, y: 0, width: Self.size, height: Self.size),
-                   styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
-        isOpaque = false
-        backgroundColor = .clear
-        hasShadow = false
-        level = .floating
-        isReleasedWhenClosed = false
-        collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-
-        model.dismiss = { [weak self] in self?.close() }
-        let host = NSHostingView(rootView: WheelView(model: model))
-        host.frame = contentRect(forFrameRect: frame)
-        contentView = host
-    }
-
-    override var canBecomeKey: Bool { true }
-
-    func present(at point: NSPoint) {
-        // Keep the whole wheel on the screen the cursor is on.
-        let screen = NSScreen.screens.first { $0.frame.contains(point) } ?? NSScreen.main
-        var origin = NSPoint(x: point.x - Self.size / 2, y: point.y - Self.size / 2)
-        if let visible = screen?.visibleFrame {
-            origin.x = min(max(origin.x, visible.minX), visible.maxX - Self.size)
-            origin.y = min(max(origin.y, visible.minY), visible.maxY - Self.size)
-        }
-        setFrameOrigin(origin)
-        alphaValue = 0
-        if model.dropMode {
-            // Activating now would cancel the drag in progress.
-            orderFrontRegardless()
-        } else {
-            makeKeyAndOrderFront(nil)
-            NSApp.activate(ignoringOtherApps: true)
-        }
-        NSAnimationContext.runAnimationGroup { $0.duration = 0.12; animator().alphaValue = 1 }
-
-        monitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
-            MainActor.assumeIsolated { self?.close() }
-        }
-    }
-
-    override func cancelOperation(_ sender: Any?) { close() }
-
-    override func close() {
-        if let monitor { NSEvent.removeMonitor(monitor) }
-        monitor = nil
-        super.close()
-    }
-}
-
-// MARK: - Wheel model
-
-@MainActor
-final class WheelModel: ObservableObject {
-    enum Phase { case choosing, running(Action, done: Int, total: Int), finished(Action, RunResult) }
-
-    let files: [URL]
-    let actions: [Action]
-    let dropMode: Bool
-    @Published var group: Action.Group
-    @Published var phase: Phase = .choosing
-    @Published var hovered: String?
-    var dismiss: () -> Void = {}
-
-    init(files: [URL], dropMode: Bool = false) {
-        self.files = files
-        self.dropMode = dropMode
-        actions = Library.actions(for: files)
-        group = actions.contains { $0.group == .convert } ? .convert : .tool
-    }
-
-    var groups: [Action.Group] {
-        [.convert, .tool, .recipe].filter { g in actions.contains { $0.group == g } }
-    }
-
-    var visible: [Action] { actions.filter { $0.group == group } }
-
-    var summary: String {
-        let kinds = Set(files.map { FileKind(url: $0) })
-        let noun = kinds.count == 1 ? kinds.first!.rawValue : "file"
-        return files.count == 1 ? files[0].lastPathComponent : "\(files.count) \(noun)s"
-    }
-
-    func run(_ action: Action) {
-        phase = .running(action, done: 0, total: files.count)
-        let files = files
-        let prefs = Preferences.shared
-        Task {
-            let result = await Runner.run(action, inputs: files, options: prefs.options) { done, total in
-                Task { @MainActor in
-                    if case .running = self.phase { self.phase = .running(action, done: done, total: total) }
-                }
-            }
-            phase = .finished(action, result)
-            if result.failures.isEmpty {
-                if prefs.playSounds { NSSound(named: "Glass")?.play() }
-                if prefs.revealWhenDone, !result.outputs.isEmpty { reveal(result); return }
-                try? await Task.sleep(for: .seconds(2.5))
-                if case .finished = phase { dismiss() }
-            } else if prefs.playSounds {
-                NSSound.beep()
-            }
-        }
-    }
-
-    func reveal(_ result: RunResult) {
-        NSWorkspace.shared.activateFileViewerSelecting(result.outputs)
-        dismiss()
-    }
-}
-
-// MARK: - Wheel view
-
-struct WheelView: View {
-    @ObservedObject var model: WheelModel
-
-    private let radius: CGFloat = 150
-    private let hub: CGFloat = 150
-
-    var body: some View {
-        ZStack {
-            Circle()
-                .fill(.ultraThinMaterial)
-                .overlay(Circle().strokeBorder(Theme.tangerine.opacity(0.25), lineWidth: 1.5))
-                .shadow(color: .black.opacity(0.35), radius: 24, y: 8)
-                .frame(width: (radius + 48) * 2, height: (radius + 48) * 2)
-
-            switch model.phase {
-            case .choosing: ring
-            case .running, .finished: EmptyView()
-            }
-
-            hubView
-        }
-        .frame(width: WheelPanel.size, height: WheelPanel.size)
-        .animation(.spring(response: 0.3, dampingFraction: 0.8), value: model.group)
-    }
-
-    private var ring: some View {
-        let items = model.visible
-        return ZStack {
-            ForEach(Array(items.enumerated()), id: \.element.id) { index, action in
-                let angle = Angle.degrees(Double(index) / Double(max(items.count, 1)) * 360 - 90)
-                WheelButton(action: action, hovered: model.hovered == action.id) { model.run(action) }
-                    .onHover { setHovered(action, $0) }
-                    // Dropping the dragged files on a bubble runs it.
-                    .onDrop(of: [.fileURL], isTargeted: Binding(get: { model.hovered == action.id }, set: { setHovered(action, $0) })) { _ in
-                        model.run(action)
-                        return true
-                    }
-                    .offset(x: cos(angle.radians) * radius, y: sin(angle.radians) * radius)
-            }
-        }
-        .transition(.scale(scale: 0.8).combined(with: .opacity))
-        .id(model.group)
-    }
-
-    @ViewBuilder private var hubView: some View {
-        ZStack {
-            Circle().fill(Theme.surface.opacity(0.92)).frame(width: hub, height: hub)
-                .shadow(color: Theme.coral.opacity(0.15), radius: 12)
-            switch model.phase {
-            case .choosing:
-                VStack(spacing: 6) {
-                    Text(hoverTitle ?? (model.dropMode && !model.actions.isEmpty ? "Drop on an action" : model.summary))
-                        .font(Theme.font(14, .semibold))
-                        .lineLimit(2).multilineTextAlignment(.center)
-                        .frame(width: hub - 28)
-                    if model.actions.isEmpty {
-                        Text("Nothing fits these files").font(.caption).foregroundStyle(.secondary)
-                    } else if model.groups.count > 1 {
-                        HStack(spacing: 4) {
-                            ForEach(model.groups, id: \.self) { g in
-                                Button { model.group = g } label: {
-                                    Text(g.label).font(Theme.font(10, .semibold))
-                                        .padding(.horizontal, 8).padding(.vertical, 4)
-                                        .background(Capsule().fill(g == model.group ? AnyShapeStyle(Theme.accent) : AnyShapeStyle(Theme.tint)))
-                                        .foregroundStyle(g == model.group ? .white : .primary)
-                                }
-                                .buttonStyle(.plain)
-                                // Spring-loaded: hovering a drag over a group switches to it.
-                                .onDrop(of: [.fileURL], isTargeted: Binding(get: { false }, set: { if $0 { model.group = g } })) { _ in false }
-                            }
-                        }
-                    }
-                }
-            case let .running(action, done, total):
-                VStack(spacing: 8) {
-                    ProgressView(value: total > 0 ? Double(done) / Double(total) : 0).progressViewStyle(.circular)
-                        .tint(Theme.tangerine)
-                    Text(action.title).font(Theme.font(14, .semibold))
-                    if total > 1 { Text("\(done) of \(total)").font(.caption).foregroundStyle(.secondary) }
-                }
-            case let .finished(_, result):
-                VStack(spacing: 6) {
-                    Image(systemName: result.failures.isEmpty ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
-                        .font(.system(size: 30))
-                        .foregroundStyle(result.failures.isEmpty ? AnyShapeStyle(Theme.accent) : AnyShapeStyle(Theme.coral))
-                    Text(result.failures.isEmpty ? "Done" : "\(result.failures.count) failed")
-                        .font(Theme.font(14, .semibold))
-                    if let first = result.failures.first {
-                        Text(first).font(.caption2).foregroundStyle(.secondary).lineLimit(3)
-                            .multilineTextAlignment(.center).frame(width: hub - 30)
-                    }
-                    if !result.outputs.isEmpty {
-                        Button("Show in Finder") { model.reveal(result) }.buttonStyle(SoftButtonStyle())
-                    }
-                }
-            }
-        }
-    }
-
-    private func setHovered(_ action: Action, _ on: Bool) {
-        model.hovered = on ? action.id : (model.hovered == action.id ? nil : model.hovered)
-    }
-
-    private var hoverTitle: String? {
-        model.hovered.flatMap { id in model.actions.first { $0.id == id } }.map { action in
-            action.group == .convert ? "Convert to \(action.title)" : action.title
-        }
-    }
-}
-
-struct WheelButton: View {
-    let action: Action
-    let hovered: Bool
-    let tap: () -> Void
-
-    var body: some View {
-        Button(action: tap) {
-            VStack(spacing: 2) {
-                Image(systemName: action.symbol).font(.system(size: 15))
-                Text(action.title).font(Theme.font(9, .semibold)).lineLimit(1).minimumScaleFactor(0.7)
-            }
-            .frame(width: 58, height: 58)
-            .background(Circle().fill(hovered ? AnyShapeStyle(Theme.accent) : AnyShapeStyle(Theme.surface)))
-            .shadow(color: hovered ? Theme.coral.opacity(0.4) : .black.opacity(0.08), radius: hovered ? 10 : 4, y: 2)
-            .foregroundStyle(hovered ? .white : .primary)
-            .scaleEffect(hovered ? 1.14 : 1)
-            .animation(.spring(response: 0.25, dampingFraction: 0.65), value: hovered)
-        }
-        .buttonStyle(.plain)
-        .help(action.title)
-    }
-}
-
-extension Action.Group {
-    var label: String {
-        switch self {
-        case .convert: "Convert"
-        case .tool: "Tools"
-        case .recipe: "Recipes"
-        }
     }
 }
 
