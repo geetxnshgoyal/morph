@@ -1,13 +1,15 @@
 import AppKit
 import Carbon.HIToolbox
+import MorphCore
 
-/// The key that summons the wheel while a file is being dragged anywhere on the Mac.
+/// A key that summons a wheel while files are being dragged anywhere on the Mac.
 enum DragKey: String, CaseIterable {
-    case shift, option, control, tab, off
+    case shift, command, option, control, tab, off
 
     var label: String {
         switch self {
         case .shift: "⇧ Shift"
+        case .command: "⌘ Command"
         case .option: "⌥ Option"
         case .control: "⌃ Control"
         case .tab: "⇥ Tab"
@@ -20,6 +22,7 @@ enum DragKey: String, CaseIterable {
         let flags = NSEvent.modifierFlags
         switch self {
         case .shift: return flags.contains(.shift)
+        case .command: return flags.contains(.command)
         case .option: return flags.contains(.option)
         case .control: return flags.contains(.control)
         case .tab: return CGEventSource.keyState(.combinedSessionState, key: CGKeyCode(kVK_Tab))
@@ -28,12 +31,17 @@ enum DragKey: String, CaseIterable {
     }
 }
 
-/// Watches for file drags in any app. When the chosen key is held mid-drag, asks for the wheel in drop mode;
-/// when the drag ends without a drop on the wheel, asks for it to go away.
+/// Watches for file drags in any app. Each wheel (Convert, Tools, Recipes) has its own key: pressing one
+/// mid-drag opens that wheel in drop mode, and tapping another switches to it. When the drag ends without
+/// a drop on the wheel, asks for it to go away.
 @MainActor
 final class DragShortcut {
-    var onTrigger: ([URL]) -> Void = { _ in }
+    var onTrigger: ([URL], Action.Group) -> Void = { _, _ in }
+    var onSwitch: (Action.Group) -> Void = { _ in }
     var onDragEnded: () -> Void = {}
+
+    private static let order: [Action.Group] = [.convert, .tool, .recipe]
+    private var held: Set<Action.Group> = []
 
     private var monitors: [Any] = []
     private var timer: Timer?
@@ -54,6 +62,7 @@ final class DragShortcut {
     private func mouseDown() {
         dragCountAtMouseDown = NSPasteboard(name: .drag).changeCount
         fired = false
+        held = []
         timer?.invalidate()
         // Poll while the button is held: the key can go down at any point of the drag, even with the mouse still.
         timer = Timer.scheduledTimer(withTimeInterval: 1.0 / 30, repeats: true) { _ in
@@ -70,13 +79,21 @@ final class DragShortcut {
 
     private func poll() {
         guard NSEvent.pressedMouseButtons & 1 != 0 else { mouseUp(); return }
-        guard !fired, Preferences.shared.dragKey.isDown else { return }
+        let prefs = Preferences.shared
+        let down = Set(Self.order.filter { prefs.dragKey(for: $0).isDown })
+        let newlyPressed = Self.order.first { down.contains($0) && !held.contains($0) }
+        held = down
+        if fired {
+            if let group = newlyPressed { onSwitch(group) }
+            return
+        }
+        guard let group = newlyPressed ?? Self.order.first(where: down.contains) else { return }
         // A changed drag pasteboard means a real drag started after the click.
         let pasteboard = NSPasteboard(name: .drag)
         guard pasteboard.changeCount != dragCountAtMouseDown else { return }
         let urls = pasteboard.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL] ?? []
         guard !urls.isEmpty else { return }
         fired = true
-        onTrigger(urls)
+        onTrigger(urls, group)
     }
 }
