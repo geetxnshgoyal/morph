@@ -15,9 +15,9 @@ final class Preferences: ObservableObject {
     @Published var playSounds: Bool { didSet { defaults.set(playSounds, forKey: "playSounds") } }
     @Published var revealWhenDone: Bool { didSet { defaults.set(revealWhenDone, forKey: "revealWhenDone") } }
     @Published var compression: CompressionLevel { didSet { defaults.set(compression.rawValue, forKey: "compression") } }
-    @Published var convertKey: DragKey { didSet { defaults.set(convertKey.rawValue, forKey: "convertKey") } }
-    @Published var toolsKey: DragKey { didSet { defaults.set(toolsKey.rawValue, forKey: "toolsKey") } }
-    @Published var recipesKey: DragKey { didSet { defaults.set(recipesKey.rawValue, forKey: "recipesKey") } }
+    @Published var convertKeys: DragKeys { didSet { defaults.set(convertKeys.rawValue, forKey: "convertKeys") } }
+    @Published var toolsKeys: DragKeys { didSet { defaults.set(toolsKeys.rawValue, forKey: "toolsKeys") } }
+    @Published var recipesKeys: DragKeys { didSet { defaults.set(recipesKeys.rawValue, forKey: "recipesKeys") } }
     /// nil saves results next to the original.
     @Published var outputFolder: URL? { didSet { defaults.set(outputFolder?.path, forKey: "outputFolder") } }
 
@@ -28,33 +28,49 @@ final class Preferences: ObservableObject {
         revealWhenDone = defaults.bool(forKey: "revealWhenDone")
         compression = defaults.string(forKey: "compression").flatMap(CompressionLevel.init) ?? .balanced
         outputFolder = defaults.string(forKey: "outputFolder").map { URL(fileURLWithPath: $0) }
-        convertKey = (defaults.string(forKey: "convertKey") ?? defaults.string(forKey: "dragKey")).flatMap(DragKey.init) ?? .shift
-        toolsKey = defaults.string(forKey: "toolsKey").flatMap(DragKey.init) ?? .command
-        recipesKey = defaults.string(forKey: "recipesKey").flatMap(DragKey.init) ?? .control
+        convertKeys = Self.storedKeys(defaults, "convertKeys", legacy: ["convertKey", "dragKey"]) ?? .shift
+        toolsKeys = Self.storedKeys(defaults, "toolsKeys", legacy: ["toolsKey"]) ?? .command
+        recipesKeys = Self.storedKeys(defaults, "recipesKeys", legacy: ["recipesKey"]) ?? .control
     }
 
-    func dragKey(for group: Action.Group) -> DragKey {
+    /// A saved combination, or one carried over from when each wheel had a single named key.
+    private static func storedKeys(_ defaults: UserDefaults, _ key: String, legacy: [String]) -> DragKeys? {
+        if defaults.object(forKey: key) != nil { return DragKeys(rawValue: defaults.integer(forKey: key)) }
+        let names: [String: DragKeys] = ["shift": .shift, "command": .command, "option": .option,
+                                         "control": .control, "tab": .tab, "off": .off]
+        return legacy.lazy.compactMap { defaults.string(forKey: $0).flatMap { names[$0] } }.first
+    }
+
+    static let wheels: [Action.Group] = [.convert, .tool, .recipe]
+
+    func dragKeys(for group: Action.Group) -> DragKeys {
         switch group {
-        case .convert: convertKey
-        case .tool: toolsKey
-        case .recipe: recipesKey
+        case .convert: convertKeys
+        case .tool: toolsKeys
+        case .recipe: recipesKeys
         }
     }
 
-    /// Assigns `key` to `group`; a wheel that already used it takes this one's old key, so keys never clash.
-    func setDragKey(_ key: DragKey, for group: Action.Group) {
-        let old = dragKey(for: group)
-        if key != .off, let other = ([.convert, .tool, .recipe] as [Action.Group]).first(where: { $0 != group && dragKey(for: $0) == key }) {
+    /// The wheel whose keys are exactly `keys`. Holding extra keys matches nothing, so ⌘⇧ never opens ⌘'s wheel.
+    func group(for keys: DragKeys) -> Action.Group? {
+        guard !keys.isEmpty else { return nil }
+        return Self.wheels.first { dragKeys(for: $0) == keys }
+    }
+
+    /// Assigns `keys` to `group`; a wheel that already used them takes this one's old keys, so wheels never clash.
+    func setDragKeys(_ keys: DragKeys, for group: Action.Group) {
+        let old = dragKeys(for: group)
+        if !keys.isEmpty, let other = Self.wheels.first(where: { $0 != group && dragKeys(for: $0) == keys }) {
             assign(old, to: other)
         }
-        assign(key, to: group)
+        assign(keys, to: group)
     }
 
-    private func assign(_ key: DragKey, to group: Action.Group) {
+    private func assign(_ keys: DragKeys, to group: Action.Group) {
         switch group {
-        case .convert: convertKey = key
-        case .tool: toolsKey = key
-        case .recipe: recipesKey = key
+        case .convert: convertKeys = keys
+        case .tool: toolsKeys = keys
+        case .recipe: recipesKeys = keys
         }
     }
 

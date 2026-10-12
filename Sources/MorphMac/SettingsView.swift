@@ -65,15 +65,15 @@ struct DragShortcutRow: View {
                 SymbolBubble(symbol: "hand.draw.fill")
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Drag shortcuts").font(Theme.font(14, .semibold))
-                    Text("While dragging files anywhere, hold a key to open that wheel. Tap another to switch.")
+                    Text("While dragging files anywhere, tap a wheel's keys to open it. Tap another wheel's keys to switch, or Esc to close.")
                         .font(Theme.font(12)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 }
             }
-            ForEach([Action.Group.convert, .tool, .recipe], id: \.self) { group in
+            ForEach(Preferences.wheels, id: \.self) { group in
                 HStack {
                     Text(group.label).font(Theme.font(13, .medium))
                     Spacer()
-                    KeyPicker(key: Binding(get: { prefs.dragKey(for: group) }, set: { prefs.setDragKey($0, for: group) }))
+                    KeyPicker(keys: Binding(get: { prefs.dragKeys(for: group) }, set: { prefs.setDragKeys($0, for: group) }))
                 }
                 .padding(.leading, 50)
             }
@@ -82,25 +82,32 @@ struct DragShortcutRow: View {
     }
 }
 
-/// A tinted pill that opens a menu of keys.
+/// A tinted pill that opens a menu of keys: single keys, modifier combinations, or off.
 struct KeyPicker: View {
-    @Binding var key: DragKey
+    @Binding var keys: DragKeys
 
     var body: some View {
         Menu {
-            ForEach(DragKey.allCases, id: \.self) { option in
-                Button { key = option } label: {
-                    if option == key { Label(option.label, systemImage: "checkmark") } else { Text(option.label) }
-                }
+            ForEach(DragKeys.singles, id: \.self, content: option)
+            Menu("Combinations") {
+                ForEach(DragKeys.combinations, id: \.self, content: option)
             }
+            Divider()
+            option(.off)
         } label: {
-            Text(key.label).font(Theme.font(12, .semibold))
+            Text(keys.label).font(Theme.font(12, .semibold))
         }
         .menuStyle(.borderlessButton)
         .menuIndicator(.hidden)
         .fixedSize()
         .padding(.horizontal, 12).padding(.vertical, 5)
         .background(Capsule().fill(Theme.tint))
+    }
+
+    private func option(_ choice: DragKeys) -> some View {
+        Button { keys = choice } label: {
+            if choice == keys { Label(choice.label, systemImage: "checkmark") } else { Text(choice.label) }
+        }
     }
 }
 
