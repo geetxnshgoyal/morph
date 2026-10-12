@@ -42,10 +42,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             onWelcome: { [weak self] in self?.popover.performClose(nil); self?.showWelcome() }
         ))
 
-        // Hold the chosen key while dragging files anywhere: the wheel appears under the cursor to drop on.
+        // Tap a wheel's keys while dragging files anywhere: that wheel appears under the cursor to drop on.
         dragShortcut.onTrigger = { [weak self] urls, group in self?.showWheel(for: urls, dropMode: true, group: group) }
         dragShortcut.onSwitch = { [weak self] group in
             if let wheel = self?.wheel, wheel.model.dropMode { wheel.model.select(group) }
+        }
+        // Esc mid-drag: the wheel isn't key in drop mode, so it can't hear the key itself.
+        dragShortcut.onCancel = { [weak self] in
+            if let wheel = self?.wheel, wheel.model.dropMode, case .choosing = wheel.model.phase { wheel.close() }
         }
         dragShortcut.onDragEnded = { [weak self] in
             if let wheel = self?.wheel, wheel.model.dropMode, case .choosing = wheel.model.phase { wheel.close() }
