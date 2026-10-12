@@ -1,7 +1,9 @@
 import Foundation
 
 public struct Action: Identifiable, Sendable {
-    public enum Group: String, Codable, Sendable { case convert, tool, recipe }
+    /// `file` holds everyday actions on the files themselves (share, copy, move…), which each app supplies;
+    /// the engine's own library has none.
+    public enum Group: String, Codable, Sendable { case convert, tool, recipe, file }
 
     public let id: String
     public let title: String
@@ -15,6 +17,14 @@ public struct Action: Identifiable, Sendable {
     public let targetExtension: String?
     public let needsFFmpeg: Bool
     public let run: @Sendable ([URL], Options) async throws -> [URL]
+
+    public init(id: String, title: String, symbol: String, group: Group, kinds: Set<FileKind>, combinesInputs: Bool,
+                minimumInputs: Int, targetExtension: String?, needsFFmpeg: Bool,
+                run: @escaping @Sendable ([URL], Options) async throws -> [URL]) {
+        self.id = id; self.title = title; self.symbol = symbol; self.group = group; self.kinds = kinds
+        self.combinesInputs = combinesInputs; self.minimumInputs = minimumInputs
+        self.targetExtension = targetExtension; self.needsFFmpeg = needsFFmpeg; self.run = run
+    }
 
     public var isAvailable: Bool { !needsFFmpeg || ExternalTool.ffmpeg != nil }
 
