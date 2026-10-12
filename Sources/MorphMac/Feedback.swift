@@ -31,7 +31,7 @@ final class Feedback {
         NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .now)
         // Keep very fast sweeps crisp rather than buzzing.
         let now = Date()
-        guard now.timeIntervalSince(lastTick) > 0.025 else { return }
+        guard now.timeIntervalSince(lastTick) > 0.02 else { return }
         lastTick = now
         // The engine stops when the output device changes; restart on demand.
         if !engine.isRunning { try? engine.start() }
@@ -43,22 +43,27 @@ final class Feedback {
         player.play()
     }
 
-    /// 40 ms "pop": a quick downward chirp with a fast exponential decay and a click-free attack.
+    /// 60 ms detent click: a bright edge that is gone within a millisecond, a short knock under it and a
+    /// soft low thump carrying the tail. Crisp rather than tonal, so fast sweeps sound like a dial turning.
     private static func makeTick(format: AVAudioFormat) -> AVAudioPCMBuffer {
         let rate = format.sampleRate
-        let length = 0.04
-        let frames = AVAudioFrameCount(rate * length)
+        let frames = AVAudioFrameCount(rate * 0.06)
         let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frames)!
         buffer.frameLength = frames
         let samples = buffer.floatChannelData![0]
-        var phase = 0.0
+        func wave(_ frequency: Double, _ t: Double) -> Double { sin(2 * .pi * frequency * t) }
+        var peak = 0.0
         for i in 0..<Int(frames) {
             let t = Double(i) / rate
-            let frequency = 1_800 - 900 * (t / length)
-            phase += 2 * .pi * frequency / rate
-            let envelope = exp(-t * 110) * min(1, t * 4_000)
-            samples[i] = Float(sin(phase) * envelope * 0.6)
+            let edge = (wave(9_200, t) + 0.45 * wave(14_800, t) + 0.35 * wave(6_300, t)) * exp(-t / 0.000_45)
+            let knock = 0.24 * wave(1_100, t) * exp(-t / 0.000_8)
+            let thump = 0.09 * wave(230, t) * exp(-t / 0.005_2) * (1 - exp(-t / 0.000_6))
+            let value = (edge + knock) * min(1, t / 0.000_2) + thump
+            samples[i] = Float(value)
+            peak = max(peak, abs(value))
         }
+        // Normalise so the mixer's volume alone sets loudness.
+        for i in 0..<Int(frames) { samples[i] = Float(Double(samples[i]) / peak * 0.4) }
         return buffer
     }
 }
