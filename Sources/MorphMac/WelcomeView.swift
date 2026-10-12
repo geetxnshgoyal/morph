@@ -60,7 +60,7 @@ struct WelcomeView: View {
     private var howItWorks: some View {
         VStack(alignment: .leading, spacing: 14) {
             Text("How it works").font(Theme.font(26, .bold))
-            step(1, "Hand Morph some files", "While dragging a file anywhere, hold Shift: the wheel pops up right under it. Or drop on the menu bar icon.")
+            step(1, "Hand Morph some files", "While dragging a file anywhere, hold ⇧ for Convert or ⌘ for Tools: a wheel pops up right under it.")
             step(2, "Pick from the wheel", "Only actions that fit your files show up. Hover one to see what it does.")
             step(3, "Find the result beside the original", "Originals are never touched, and any job can be undone from the menu bar.")
             TryItZone(onFiles: onTry).padding(.top, 4)

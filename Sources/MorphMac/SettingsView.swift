@@ -60,20 +60,47 @@ struct DragShortcutRow: View {
     @ObservedObject private var prefs = Preferences.shared
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 14) {
                 SymbolBubble(symbol: "hand.draw.fill")
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Drag shortcut").font(Theme.font(14, .semibold))
-                    Text(prefs.dragKey == .off
-                         ? "Off. Turn it on to summon the wheel mid-drag."
-                         : "While dragging files anywhere, hold \(prefs.dragKey.label) and drop them on the wheel.")
+                    Text("Drag shortcuts").font(Theme.font(14, .semibold))
+                    Text("While dragging files anywhere, hold a key to open that wheel. Tap another to switch.")
                         .font(Theme.font(12)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 }
             }
-            PillPicker(options: DragKey.allCases, selection: $prefs.dragKey) { $0.label }
+            ForEach([Action.Group.convert, .tool, .recipe], id: \.self) { group in
+                HStack {
+                    Text(group.label).font(Theme.font(13, .medium))
+                    Spacer()
+                    KeyPicker(key: Binding(get: { prefs.dragKey(for: group) }, set: { prefs.setDragKey($0, for: group) }))
+                }
+                .padding(.leading, 50)
+            }
         }
         .card(padding: 14)
+    }
+}
+
+/// A tinted pill that opens a menu of keys.
+struct KeyPicker: View {
+    @Binding var key: DragKey
+
+    var body: some View {
+        Menu {
+            ForEach(DragKey.allCases, id: \.self) { option in
+                Button { key = option } label: {
+                    if option == key { Label(option.label, systemImage: "checkmark") } else { Text(option.label) }
+                }
+            }
+        } label: {
+            Text(key.label).font(Theme.font(12, .semibold))
+        }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .padding(.horizontal, 12).padding(.vertical, 5)
+        .background(Capsule().fill(Theme.tint))
     }
 }
 
@@ -171,7 +198,8 @@ struct SettingsView: View {
         LoginItemRow()
         DragShortcutRow()
         if AppLocation.isBundled, !AppLocation.isInstalled { MoveToApplicationsRow() }
-        SetupRow(symbol: "speaker.wave.2.fill", title: "Sounds", detail: "A soft chime when a job finishes.") {
+        SetupRow(symbol: "speaker.wave.2.fill", title: "Sounds & haptics",
+                 detail: "A soft tick as you move around the wheel, and a chime when a job finishes.") {
             Toggle("", isOn: $prefs.playSounds).toggleStyle(.switch).labelsHidden()
         }
         SetupRow(symbol: "magnifyingglass", title: "Show results in Finder",
