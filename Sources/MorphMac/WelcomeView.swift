@@ -9,18 +9,7 @@ struct WelcomeView: View {
 
     @State var page = 0
     @State private var forward = true
-    @ObservedObject private var prefs = Preferences.shared
     private let pages = 3
-
-    /// "⇧ for Convert, ⌘ for Tools or ⌃ for Recipes", following the keys chosen in Settings.
-    private var wheelKeys: String {
-        let parts = Preferences.wheels.compactMap { group -> String? in
-            let keys = prefs.dragKeys(for: group)
-            return keys.isEmpty ? nil : "\(keys.symbols) for \(group.label)"
-        }
-        guard let last = parts.last else { return "a wheel's keys" }
-        return parts.count == 1 ? last : parts.dropLast().joined(separator: ", ") + " or " + last
-    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -69,12 +58,14 @@ struct WelcomeView: View {
     }
 
     private var howItWorks: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text("How it works").font(Theme.font(26, .bold))
-            step(1, "Hand Morph some files", "While dragging a file anywhere, tap \(wheelKeys): a wheel pops up right under it. Or drop on the menu bar icon.")
-            step(2, "Pick from the wheel", "Only actions that fit your files show up. Hover one to see what it does.")
-            step(3, "Find the result beside the original", "Originals are never touched, and any job can be undone from the menu bar.")
-            TryItZone(onFiles: onTry).padding(.top, 4)
+        VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("How it works").font(Theme.font(26, .bold))
+                Text("Drag files anywhere and tap a key: that wheel pops up under your cursor. Drop on an action and the result lands beside the original, which is never touched.")
+                    .font(Theme.font(13)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            }
+            WheelTour()
+            TryItZone(onFiles: onTry)
         }
     }
 
@@ -130,17 +121,6 @@ struct WelcomeView: View {
         }
         .frame(maxWidth: .infinity)
         .card(padding: 14)
-    }
-
-    private func step(_ n: Int, _ title: String, _ detail: String) -> some View {
-        HStack(alignment: .top, spacing: 14) {
-            Text("\(n)").font(Theme.font(15, .bold)).foregroundStyle(.white)
-                .frame(width: 30, height: 30).background(Circle().fill(Theme.accent))
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(Theme.font(15, .semibold))
-                Text(detail).font(Theme.font(12)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-            }
-        }
     }
 }
 
