@@ -129,14 +129,14 @@ final class WheelModel: ObservableObject {
         self.files = files
         self.dropMode = dropMode
         // Work on a local copy: closures can't read `self` until every property is set.
-        let available = Library.actions(for: files)
+        let available = Library.actions(for: files) + FileActions.actions(for: files)
         actions = available
         let fallback: Action.Group = available.contains { $0.group == .convert } ? .convert : .tool
         self.group = group.flatMap { g in available.contains { $0.group == g } ? g : nil } ?? fallback
     }
 
     var groups: [Action.Group] {
-        [.convert, .tool, .recipe].filter { g in actions.contains { $0.group == g } }
+        Preferences.wheels.filter { g in actions.contains { $0.group == g } }
     }
 
     var visible: [Action] { actions.filter { $0.group == group } }
@@ -245,9 +245,17 @@ final class WheelModel: ObservableObject {
     // MARK: Running
 
     func run(_ action: Action) {
-        phase = .running(action, done: 0, total: files.count)
         let files = files
         let prefs = Preferences.shared
+        if action.group == .file {
+            // Acts on the files themselves and may open its own window, so get out of the way first.
+            dismiss()
+            Task {
+                do { _ = try await action.run(files, prefs.options) } catch { FileActions.report(error) }
+            }
+            return
+        }
+        phase = .running(action, done: 0, total: files.count)
         Task {
             let result = await Runner.run(action, inputs: files, options: prefs.options) { done, total in
                 Task { @MainActor in
@@ -275,7 +283,7 @@ final class WheelModel: ObservableObject {
 // MARK: - Wheel view
 
 /// A ring of glass petals around a glass hub, with a bar below for switching wheels. Each wheel (Convert,
-/// Tools, Recipes) uses the same layout; the bar shows the keys that summon each one mid-drag.
+/// Tools, Recipes, Actions) uses the same layout; the bar shows the keys that summon each one mid-drag.
 struct WheelView: View {
     @ObservedObject var model: WheelModel
 
@@ -617,6 +625,7 @@ extension Action.Group {
         case .convert: "Convert"
         case .tool: "Tools"
         case .recipe: "Recipes"
+        case .file: "Actions"
         }
     }
 }

@@ -18,6 +18,7 @@ final class Preferences: ObservableObject {
     @Published var convertKeys: DragKeys { didSet { defaults.set(convertKeys.rawValue, forKey: "convertKeys") } }
     @Published var toolsKeys: DragKeys { didSet { defaults.set(toolsKeys.rawValue, forKey: "toolsKeys") } }
     @Published var recipesKeys: DragKeys { didSet { defaults.set(recipesKeys.rawValue, forKey: "recipesKeys") } }
+    @Published var actionsKeys: DragKeys { didSet { defaults.set(actionsKeys.rawValue, forKey: "actionsKeys") } }
     /// nil saves results next to the original.
     @Published var outputFolder: URL? { didSet { defaults.set(outputFolder?.path, forKey: "outputFolder") } }
 
@@ -28,9 +29,15 @@ final class Preferences: ObservableObject {
         revealWhenDone = defaults.bool(forKey: "revealWhenDone")
         compression = defaults.string(forKey: "compression").flatMap(CompressionLevel.init) ?? .balanced
         outputFolder = defaults.string(forKey: "outputFolder").map { URL(fileURLWithPath: $0) }
-        convertKeys = Self.storedKeys(defaults, "convertKeys", legacy: ["convertKey", "dragKey"]) ?? .shift
-        toolsKeys = Self.storedKeys(defaults, "toolsKeys", legacy: ["toolsKey"]) ?? .command
-        recipesKeys = Self.storedKeys(defaults, "recipesKeys", legacy: ["recipesKey"]) ?? .control
+        let convert = Self.storedKeys(defaults, "convertKeys", legacy: ["convertKey", "dragKey"]) ?? .shift
+        let tools = Self.storedKeys(defaults, "toolsKeys", legacy: ["toolsKey"]) ?? .command
+        let recipes = Self.storedKeys(defaults, "recipesKeys", legacy: ["recipesKey"]) ?? .control
+        convertKeys = convert
+        toolsKeys = tools
+        recipesKeys = recipes
+        // The newest wheel takes ⌥ unless an older one already uses it; then the first single key still free.
+        actionsKeys = Self.storedKeys(defaults, "actionsKeys", legacy: [])
+            ?? ([.option] + DragKeys.singles).first { ![convert, tools, recipes].contains($0) } ?? .off
     }
 
     /// A saved combination, or one carried over from when each wheel had a single named key.
@@ -41,13 +48,14 @@ final class Preferences: ObservableObject {
         return legacy.lazy.compactMap { defaults.string(forKey: $0).flatMap { names[$0] } }.first
     }
 
-    static let wheels: [Action.Group] = [.convert, .tool, .recipe]
+    static let wheels: [Action.Group] = [.convert, .tool, .recipe, .file]
 
     func dragKeys(for group: Action.Group) -> DragKeys {
         switch group {
         case .convert: convertKeys
         case .tool: toolsKeys
         case .recipe: recipesKeys
+        case .file: actionsKeys
         }
     }
 
@@ -71,6 +79,7 @@ final class Preferences: ObservableObject {
         case .convert: convertKeys = keys
         case .tool: toolsKeys = keys
         case .recipe: recipesKeys = keys
+        case .file: actionsKeys = keys
         }
     }
 
