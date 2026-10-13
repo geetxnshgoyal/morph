@@ -42,6 +42,16 @@ targets:
         UIFileSharingEnabled: true
         LSSupportsOpeningDocumentsInPlace: false
         NSPhotoLibraryAddUsageDescription: Morph saves the photos and videos you convert to your library.
+        # Press and hold the app icon.
+        UIApplicationShortcutItems:
+          - UIApplicationShortcutItemType: app.morph.photos
+            UIApplicationShortcutItemTitle: Convert Photos
+            UIApplicationShortcutItemSubtitle: Pick from your library
+            UIApplicationShortcutItemIconSymbolName: photo.on.rectangle.angled
+          - UIApplicationShortcutItemType: app.morph.files
+            UIApplicationShortcutItemTitle: Choose Files
+            UIApplicationShortcutItemSubtitle: From iCloud Drive or your iPhone
+            UIApplicationShortcutItemIconSymbolName: folder
         # Puts Morph in every share sheet ("Open in Morph").
         CFBundleDocumentTypes:
           - CFBundleTypeName: Any file
