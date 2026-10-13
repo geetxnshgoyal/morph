@@ -3,8 +3,14 @@ import MorphCore
 
 @main
 struct MorphApp: App {
-    @StateObject private var state = AppState()
+    @UIApplicationDelegateAdaptor private var appDelegate: AppDelegate
+    @StateObject private var state = AppState.shared
     @AppStorage("hasSeenWelcome") private var hasSeenWelcome = false
+
+    init() {
+        // Lets Siri and Spotlight offer "Run <action> with Morph" for every action and recipe.
+        MorphShortcuts.updateAppShortcutParameters()
+    }
 
     var body: some Scene {
         WindowGroup {
@@ -35,9 +41,14 @@ struct Batch: Identifiable {
 
 @MainActor
 final class AppState: ObservableObject {
+    /// One per app, so Shortcuts ("Open in Morph") and home-screen quick actions can reach the UI.
+    static let shared = AppState()
+
     @Published var batch: Batch?
     @Published var recent: [HistoryEntry] = []
     @Published var importError: String?
+    /// A home-screen quick action waiting for the home screen to act on it.
+    @Published var quickAction: QuickAction?
 
     /// Results go to Documents, which the Files app shows as "On My iPhone → Morph".
     nonisolated static let results: URL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
@@ -79,6 +90,39 @@ final class AppState: ObservableObject {
         let dir = FileManager.default.temporaryDirectory.appendingPathComponent("Inbox/\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         return dir
+    }
+}
+
+// MARK: - Home-screen quick actions
+
+/// The menu from pressing and holding Morph's icon (declared as UIApplicationShortcutItems in Info.plist).
+enum QuickAction: String {
+    case photos = "app.morph.photos"
+    case files = "app.morph.files"
+}
+
+final class AppDelegate: NSObject, UIApplicationDelegate {
+    func application(_ application: UIApplication, configurationForConnecting session: UISceneSession,
+                     options: UIScene.ConnectionOptions) -> UISceneConfiguration {
+        // A quick action that launched the app arrives here; one used while it runs goes to the scene delegate.
+        if let item = options.shortcutItem { MainActor.assumeIsolated { SceneDelegate.handle(item) } }
+        let configuration = UISceneConfiguration(name: nil, sessionRole: session.role)
+        configuration.delegateClass = SceneDelegate.self
+        return configuration
+    }
+}
+
+final class SceneDelegate: NSObject, UIWindowSceneDelegate {
+    func windowScene(_ windowScene: UIWindowScene, performActionFor shortcutItem: UIApplicationShortcutItem,
+                     completionHandler: @escaping (Bool) -> Void) {
+        completionHandler(Self.handle(shortcutItem))
+    }
+
+    @MainActor @discardableResult
+    static func handle(_ item: UIApplicationShortcutItem) -> Bool {
+        guard let action = QuickAction(rawValue: item.type) else { return false }
+        AppState.shared.quickAction = action
+        return true
     }
 }
 
