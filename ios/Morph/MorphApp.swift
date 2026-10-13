@@ -123,6 +123,7 @@ extension Action.Group {
         case .convert: "Convert"
         case .tool: "Tools"
         case .recipe: "Recipes"
+        case .file: "Actions"
         }
     }
 }
