@@ -27,34 +27,55 @@ enum Theme {
     }
 }
 
-/// Filled tangerine pill for the main action on a screen.
+/// Tangerine pill for the main action on a screen: tinted Liquid Glass on macOS 26, a gradient before that.
 struct BubbleButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
-        configuration.label
+        let label = configuration.label
             .font(Theme.font(14, .semibold))
             .foregroundStyle(.white)
             .padding(.horizontal, 22).padding(.vertical, 10)
-            .background(Capsule().fill(Theme.accent))
-            .shadow(color: Theme.coral.opacity(configuration.isPressed ? 0.15 : 0.35), radius: 10, y: 4)
-            .scaleEffect(configuration.isPressed ? 0.96 : 1)
-            .animation(.spring(response: 0.25, dampingFraction: 0.7), value: configuration.isPressed)
+        if #available(macOS 26.0, *) {
+            // Interactive glass does its own press response.
+            label.glassEffect(.regular.tint(Theme.tangerine).interactive(), in: Capsule())
+        } else {
+            label
+                .background(Capsule().fill(Theme.accent))
+                .shadow(color: Theme.coral.opacity(configuration.isPressed ? 0.15 : 0.35), radius: 10, y: 4)
+                .scaleEffect(configuration.isPressed ? 0.96 : 1)
+                .animation(.spring(response: 0.25, dampingFraction: 0.7), value: configuration.isPressed)
+        }
     }
 }
 
-/// Tinted pill for secondary actions.
+/// Quieter pill for secondary actions: clear Liquid Glass on macOS 26, a tinted capsule before that.
 struct SoftButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
-        configuration.label
+        let label = configuration.label
             .font(Theme.font(12, .semibold))
             .foregroundStyle(Theme.tangerine)
             .padding(.horizontal, 12).padding(.vertical, 6)
-            .background(Capsule().fill(Theme.tint))
-            .scaleEffect(configuration.isPressed ? 0.95 : 1)
-            .animation(.spring(response: 0.25, dampingFraction: 0.7), value: configuration.isPressed)
+        if #available(macOS 26.0, *) {
+            label.glassEffect(.regular.interactive(), in: Capsule())
+        } else {
+            label
+                .background(Capsule().fill(Theme.tint))
+                .scaleEffect(configuration.isPressed ? 0.95 : 1)
+                .animation(.spring(response: 0.25, dampingFraction: 0.7), value: configuration.isPressed)
+        }
     }
 }
 
 extension View {
+    /// Floating controls: Liquid Glass on macOS 26, a soft surface before that. Content such as cards stays
+    /// solid, as Apple's design guidance asks.
+    @ViewBuilder func glassControl(in shape: some Shape) -> some View {
+        if #available(macOS 26.0, *) {
+            modifier(MorphGlass(shape: shape))
+        } else {
+            background(shape.fill(Theme.surface)).shadow(color: .black.opacity(0.05), radius: 6, y: 2)
+        }
+    }
+
     /// A soft rounded card on the canvas.
     func card(padding: CGFloat = 16) -> some View {
         self.padding(padding)
@@ -78,7 +99,8 @@ struct SymbolBubble: View {
     }
 }
 
-/// Bubbly replacement for a segmented control: the selection is a gradient pill that slides between options.
+/// Bubbly replacement for a segmented control on a glass track: the selection is a gradient pill that slides
+/// between options.
 struct PillPicker<Value: Hashable>: View {
     let options: [Value]
     @Binding var selection: Value
@@ -103,7 +125,24 @@ struct PillPicker<Value: Hashable>: View {
             }
         }
         .padding(4)
-        .background(Capsule().fill(Theme.surface))
-        .shadow(color: .black.opacity(0.05), radius: 6, y: 2)
+        .glassControl(in: Capsule())
+    }
+}
+
+// MARK: - Liquid Glass
+
+/// Standard system Liquid Glass, so it follows the Clear or Tinted choice in System Settings automatically;
+/// a frosted material before macOS 26.
+struct MorphGlass<S: Shape>: ViewModifier {
+    let shape: S
+    var tint: Color? = nil
+    var interactive = false
+
+    func body(content: Content) -> some View {
+        if #available(macOS 26.0, *) {
+            content.glassEffect(.regular.tint(tint).interactive(interactive), in: shape)
+        } else {
+            content.background(shape.fill(.ultraThinMaterial))
+        }
     }
 }

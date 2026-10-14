@@ -543,13 +543,9 @@ private struct WheelBar: View {
 }
 
 private extension View {
-    /// Liquid Glass on macOS 26 and later; frosted material before that.
-    @ViewBuilder func wheelGlass(in shape: some Shape, tint: Color? = nil) -> some View {
-        if #available(macOS 26.0, *) {
-            glassEffect(.regular.tint(tint), in: shape)
-        } else {
-            background(shape.fill(.ultraThinMaterial))
-        }
+    /// Liquid Glass that follows the system's Clear or Tinted setting; frosted material before macOS 26.
+    func wheelGlass(in shape: some Shape, tint: Color? = nil) -> some View {
+        modifier(MorphGlass(shape: shape, tint: tint))
     }
 }
 
