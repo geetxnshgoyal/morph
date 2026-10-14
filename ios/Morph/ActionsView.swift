@@ -159,20 +159,23 @@ struct RunningView: View {
     let action: Action
     let done: Int
     let total: Int
-    @State private var spin = false
 
     var body: some View {
         VStack(spacing: 22) {
             ZStack {
-                Circle().stroke(Theme.tint, lineWidth: 12)
-                Circle()
-                    .trim(from: 0, to: total > 1 ? max(0.08, Double(done) / Double(total)) : 0.28)
-                    .stroke(Theme.accent, style: StrokeStyle(lineWidth: 12, lineCap: .round))
-                    .rotationEffect(.degrees(total > 1 ? -90 : (spin ? 270 : -90)))
-                    .animation(total > 1 ? .spring : .linear(duration: 1).repeatForever(autoreverses: false), value: spin)
-                Image(systemName: action.symbol).font(.system(size: 34, weight: .semibold)).foregroundStyle(Theme.tangerine)
+                // Several files: a thin aura ring fills as each one finishes, around the liquid loader.
+                if total > 1 {
+                    Circle().stroke(Theme.tint, lineWidth: 6)
+                    Circle()
+                        .trim(from: 0, to: max(0.04, Double(done) / Double(total)))
+                        .stroke(AngularGradient(colors: Theme.auraColors, center: .center),
+                                style: StrokeStyle(lineWidth: 6, lineCap: .round))
+                        .rotationEffect(.degrees(-90))
+                        .animation(.spring, value: done)
+                }
+                MorphLoader(size: 112)
             }
-            .frame(width: 130, height: 130)
+            .frame(width: 140, height: 140)
             VStack(spacing: 4) {
                 Text(action.group == .convert ? "Making \(action.title)…" : "\(action.title)…").font(Theme.font(20, .bold))
                 if total > 1 { Text("\(done) of \(total)").font(Theme.font(15)).foregroundStyle(.secondary) }
@@ -180,7 +183,6 @@ struct RunningView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding(.top, 40)
-        .onAppear { spin = true }
     }
 }
 
@@ -201,11 +203,17 @@ struct ResultView: View {
         ScrollView {
             VStack(spacing: 20) {
                 ZStack {
-                    Circle().fill(ok ? AnyShapeStyle(Theme.accent) : AnyShapeStyle(Theme.coral.opacity(0.85)))
+                    // A ring of aura ripples out once as the result lands.
+                    Circle().stroke(Theme.aura, lineWidth: 3)
+                        .scaleEffect(pop ? 1.9 : 1)
+                        .opacity(pop ? 0 : 0.9)
+                        .animation(.easeOut(duration: 0.9), value: pop)
+                    Circle().fill(ok ? AnyShapeStyle(Theme.aura) : AnyShapeStyle(Theme.coral.opacity(0.85)))
                     Image(systemName: ok ? "checkmark" : "exclamationmark").font(.system(size: 40, weight: .bold)).foregroundStyle(.white)
+                        .symbolEffect(.bounce, value: pop)
                 }
                 .frame(width: 96, height: 96)
-                .shadow(color: Theme.coral.opacity(0.35), radius: 16, y: 8)
+                .shadow(color: Theme.rose.opacity(0.4), radius: 18, y: 8)
                 .scaleEffect(pop ? 1 : 0.4)
                 .padding(.top, 30)
 

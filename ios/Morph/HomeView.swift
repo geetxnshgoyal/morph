@@ -89,7 +89,7 @@ struct HomeView: View {
         .padding(24)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background {
-            RoundedRectangle(cornerRadius: 32, style: .continuous).fill(Theme.accent)
+            HeroAura()
                 .overlay(alignment: .topTrailing) {
                     // Soft bubbles for a bit of play.
                     Circle().fill(.white.opacity(0.12)).frame(width: 150).offset(x: 50, y: -50)
@@ -210,3 +210,27 @@ struct RecentRow: View {
     }
 }
 
+/// The hero card's colour. On iOS 18 and later a mesh of the aura drifts slowly, like light through liquid;
+/// before that, the plain accent gradient.
+private struct HeroAura: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        if #available(iOS 18.0, *) {
+            TimelineView(.animation(minimumInterval: 1.0 / 30, paused: reduceMotion)) { timeline in
+                let t = timeline.date.timeIntervalSinceReferenceDate
+                MeshGradient(width: 3, height: 3, points: [
+                    [0, 0], [Float(0.5 + 0.12 * sin(t * 0.4)), 0], [1, 0],
+                    [0, Float(0.5 + 0.1 * cos(t * 0.5))], [Float(0.5 + 0.18 * sin(t * 0.6)), Float(0.5 + 0.14 * cos(t * 0.45))], [1, 0.5],
+                    [0, 1], [Float(0.5 + 0.12 * cos(t * 0.35)), 1], [1, 1],
+                ], colors: [
+                    Theme.tangerine, Theme.tangerine, Theme.coral,
+                    Theme.tangerine, Theme.coral, Theme.rose,
+                    Theme.coral, Theme.rose, Theme.violet,
+                ])
+            }
+        } else {
+            Theme.accent
+        }
+    }
+}

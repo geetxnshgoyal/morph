@@ -6,6 +6,7 @@ struct MorphApp: App {
     @UIApplicationDelegateAdaptor private var appDelegate: AppDelegate
     @StateObject private var state = AppState.shared
     @AppStorage("hasSeenWelcome") private var hasSeenWelcome = false
+    @State private var showSplash = !UIAccessibility.isReduceMotionEnabled
 
     init() {
         // Lets Siri and Spotlight offer "Run <action> with Morph" for every action and recipe.
@@ -14,21 +15,31 @@ struct MorphApp: App {
 
     var body: some Scene {
         WindowGroup {
-            HomeView()
-                .environmentObject(state)
-                .tint(Theme.tangerine)
-                .fullScreenCover(isPresented: Binding(get: { !hasSeenWelcome }, set: { hasSeenWelcome = !$0 })) {
-                    OnboardingView { hasSeenWelcome = true }
+            ZStack {
+                HomeView()
+                    // The app settles into place as the launch mark dissolves over it.
+                    .scaleEffect(showSplash ? 0.94 : 1)
+                    .blur(radius: showSplash ? 10 : 0)
+                if showSplash {
+                    MorphSplash { withAnimation(.spring(response: 0.55, dampingFraction: 0.85)) { showSplash = false } }
+                        .transition(.asymmetric(insertion: .identity, removal: .opacity.combined(with: .scale(scale: 2.4))))
+                        .zIndex(1)
                 }
-                // "Open in Morph" from another app's share sheet.
-                .onOpenURL { state.open([$0]) }
-                #if DEBUG
-                // `simctl launch … -open /path/to/file` jumps straight to the actions sheet.
-                .task {
-                    let args = ProcessInfo.processInfo.arguments
-                    if let i = args.firstIndex(of: "-open"), i + 1 < args.count { state.open([URL(fileURLWithPath: args[i + 1])]) }
-                }
-                #endif
+            }
+            .environmentObject(state)
+            .tint(Theme.tangerine)
+            .fullScreenCover(isPresented: Binding(get: { !hasSeenWelcome && !showSplash }, set: { hasSeenWelcome = !$0 })) {
+                OnboardingView { hasSeenWelcome = true }
+            }
+            // "Open in Morph" from another app's share sheet.
+            .onOpenURL { state.open([$0]) }
+            #if DEBUG
+            // `simctl launch … -open /path/to/file` jumps straight to the actions sheet.
+            .task {
+                let args = ProcessInfo.processInfo.arguments
+                if let i = args.firstIndex(of: "-open"), i + 1 < args.count { state.open([URL(fileURLWithPath: args[i + 1])]) }
+            }
+            #endif
         }
     }
 }
