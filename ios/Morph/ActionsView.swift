@@ -63,7 +63,7 @@ struct ActionsView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .background(Theme.canvas.ignoresSafeArea())
+        .sheetCanvas()
         .presentationDragIndicator(.visible)
         #if DEBUG
         // `simctl launch … -open <file> -run <action id>` runs an action straight away.

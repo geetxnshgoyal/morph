@@ -26,7 +26,7 @@ struct HomeView: View {
             ActionsView(files: batch.files)
                 .presentationDetents([.medium, .large])
                 .presentationCornerRadius(34)
-                .presentationBackground(Theme.canvas)
+                .sheetBackground()
         }
         .sheet(isPresented: $showSettings) {
             SettingsView().presentationCornerRadius(34)
@@ -65,8 +65,7 @@ struct HomeView: View {
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundStyle(.secondary)
                     .frame(width: 44, height: 44)
-                    .background(Circle().fill(Theme.surface))
-                    .shadow(color: .black.opacity(0.05), radius: 6, y: 2)
+                    .glassControl(in: Circle())
             }
             .accessibilityLabel("Settings")
         }
@@ -109,7 +108,7 @@ struct HomeView: View {
             .foregroundStyle(Theme.tangerine)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 14)
-            .background(Capsule().fill(.white))
+            .glassControl(in: Capsule(), tint: .white)
     }
 
     @ViewBuilder private var recent: some View {
@@ -210,3 +209,4 @@ struct RecentRow: View {
         }
     }
 }
+

@@ -26,33 +26,44 @@ enum Theme {
     }
 }
 
-/// Filled tangerine pill for the main action on a screen.
+/// Tangerine pill for the main action on a screen: tinted Liquid Glass on iOS 26, a gradient before that.
 struct BubbleButtonStyle: ButtonStyle {
     var fullWidth = false
 
     func makeBody(configuration: Configuration) -> some View {
-        configuration.label
+        let label = configuration.label
             .font(Theme.font(17, .semibold))
             .foregroundStyle(.white)
             .frame(maxWidth: fullWidth ? .infinity : nil)
             .padding(.horizontal, 26).padding(.vertical, 15)
-            .background(Capsule().fill(Theme.accent))
-            .shadow(color: Theme.coral.opacity(configuration.isPressed ? 0.15 : 0.35), radius: 12, y: 5)
-            .scaleEffect(configuration.isPressed ? 0.96 : 1)
-            .animation(.spring(response: 0.25, dampingFraction: 0.7), value: configuration.isPressed)
+        if #available(iOS 26.0, *) {
+            // Interactive glass does its own press response.
+            label.glassEffect(.regular.tint(Theme.tangerine).interactive(), in: Capsule())
+        } else {
+            label
+                .background(Capsule().fill(Theme.accent))
+                .shadow(color: Theme.coral.opacity(configuration.isPressed ? 0.15 : 0.35), radius: 12, y: 5)
+                .scaleEffect(configuration.isPressed ? 0.96 : 1)
+                .animation(.spring(response: 0.25, dampingFraction: 0.7), value: configuration.isPressed)
+        }
     }
 }
 
-/// Tinted pill for secondary actions.
+/// Quieter pill for secondary actions: clear Liquid Glass on iOS 26, a tinted capsule before that.
 struct SoftButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
-        configuration.label
+        let label = configuration.label
             .font(Theme.font(15, .semibold))
             .foregroundStyle(Theme.tangerine)
             .padding(.horizontal, 16).padding(.vertical, 10)
-            .background(Capsule().fill(Theme.tint))
-            .scaleEffect(configuration.isPressed ? 0.95 : 1)
-            .animation(.spring(response: 0.25, dampingFraction: 0.7), value: configuration.isPressed)
+        if #available(iOS 26.0, *) {
+            label.glassEffect(.regular.interactive(), in: Capsule())
+        } else {
+            label
+                .background(Capsule().fill(Theme.tint))
+                .scaleEffect(configuration.isPressed ? 0.95 : 1)
+                .animation(.spring(response: 0.25, dampingFraction: 0.7), value: configuration.isPressed)
+        }
     }
 }
 
@@ -66,6 +77,26 @@ struct SquishyButtonStyle: ButtonStyle {
 }
 
 extension View {
+    /// Floating controls (toolbar buttons and the like): Liquid Glass on iOS 26, a soft surface before that.
+    /// Content such as cards stays solid, as Apple's design guidance asks.
+    @ViewBuilder func glassControl(in shape: some Shape, tint: Color? = nil) -> some View {
+        if #available(iOS 26.0, *) {
+            modifier(MorphGlass(shape: shape, tint: tint, interactive: true))
+        } else {
+            background(shape.fill(tint ?? Theme.surface)).shadow(color: .black.opacity(0.05), radius: 6, y: 2)
+        }
+    }
+
+    /// Lets sheets use the system's Liquid Glass background on iOS 26; the cream canvas before that.
+    @ViewBuilder func sheetBackground() -> some View {
+        if #available(iOS 26.0, *) { self } else { presentationBackground(Theme.canvas) }
+    }
+
+    /// The cream canvas behind a sheet's content, left out on iOS 26 so the glass sheet shows through.
+    @ViewBuilder func sheetCanvas() -> some View {
+        if #available(iOS 26.0, *) { self } else { background(Theme.canvas.ignoresSafeArea()) }
+    }
+
     /// A soft rounded card on the canvas.
     func card(padding: CGFloat = 18) -> some View {
         self.padding(padding)
@@ -106,7 +137,7 @@ struct LogoMark: View {
     }
 }
 
-/// Bubbly segmented control: the selection is a gradient pill that slides between options.
+/// Bubbly segmented control on a glass track: the selection is a gradient pill that slides between options.
 struct PillPicker<Value: Hashable>: View {
     let options: [Value]
     @Binding var selection: Value
@@ -132,7 +163,24 @@ struct PillPicker<Value: Hashable>: View {
             }
         }
         .padding(5)
-        .background(Capsule().fill(Theme.surface))
-        .shadow(color: .black.opacity(0.05), radius: 8, y: 2)
+        .glassControl(in: Capsule())
+    }
+}
+
+// MARK: - Liquid Glass
+
+/// Standard system Liquid Glass, so it follows the Clear or Tinted choice in System Settings automatically;
+/// a frosted material before iOS 26.
+struct MorphGlass<S: Shape>: ViewModifier {
+    let shape: S
+    var tint: Color? = nil
+    var interactive = false
+
+    func body(content: Content) -> some View {
+        if #available(iOS 26.0, *) {
+            content.glassEffect(.regular.tint(tint).interactive(interactive), in: shape)
+        } else {
+            content.background(shape.fill(.ultraThinMaterial))
+        }
     }
 }
