@@ -1,7 +1,7 @@
 #!/bin/sh
 # Builds Morph.app (menu bar app + bundled `morph` CLI) into ./dist.
 # `scripts/bundle.sh --install` also copies it to /Applications and launches it.
-# `scripts/bundle.sh --dmg` also makes dist/Morph.dmg for sharing.
+# `scripts/bundle.sh --dmg` also makes dist/Morph-<version>.dmg for sharing.
 # Builds universal (Apple Silicon + Intel).
 #
 # Signing: ad-hoc by default (runs here; other Macs need "Open Anyway"). For Gatekeeper-ready builds:
@@ -14,7 +14,8 @@ ARCHS="--arch arm64 --arch x86_64"
 swift build -c release $ARCHS --product MorphMac
 swift build -c release $ARCHS --product morph
 BIN=$(swift build -c release $ARCHS --show-bin-path)
-VERSION=0.1.0
+VERSION=0.2.0
+DMG="dist/Morph-$VERSION.dmg"
 SIGN_ID="${MORPH_SIGN_ID:--}"
 sign() {
     if [ "$SIGN_ID" = "-" ]; then codesign --force --sign - "$1"
@@ -43,7 +44,7 @@ cat > "$APP/Contents/Info.plist" <<PLIST
   <key>NSHighResolutionCapable</key><true/>
   <key>NSHumanReadableCopyright</key><string>Free file converter and toolbox</string>
   <key>CFBundleShortVersionString</key><string>$VERSION</string>
-  <key>CFBundleVersion</key><string>1</string>
+  <key>CFBundleVersion</key><string>2</string>
   <key>LSMinimumSystemVersion</key><string>14.0</string>
   <key>LSUIElement</key><true/>
   <key>CFBundleDocumentTypes</key><array><dict>
@@ -72,19 +73,19 @@ if [ "$1" = "--dmg" ]; then
     [ -x .build/dmg-venv/bin/dmgbuild ] || { python3 -m venv .build/dmg-venv && .build/dmg-venv/bin/pip install -q dmgbuild; }
     ART=$(mktemp -d)
     swift scripts/make-dmg-background.swift "$ART"
-    rm -f dist/Morph.dmg
+    rm -f dist/Morph*.dmg
     .build/dmg-venv/bin/dmgbuild -s scripts/dmg-settings.py \
         -D app="$APP" -D volume_icon="$APP/Contents/Resources/AppIcon.icns" -D background="$ART/background.png" \
-        "Morph $VERSION" dist/Morph.dmg >/dev/null
+        "Morph $VERSION" "$DMG" >/dev/null
     rm -r "$ART"
-    if [ "$SIGN_ID" = "-" ]; then codesign --force --sign - dist/Morph.dmg
-    else codesign --force --timestamp --sign "$SIGN_ID" dist/Morph.dmg; fi
+    if [ "$SIGN_ID" = "-" ]; then codesign --force --sign - "$DMG"
+    else codesign --force --timestamp --sign "$SIGN_ID" "$DMG"; fi
     if [ -n "$MORPH_NOTARY_PROFILE" ]; then
-        xcrun notarytool submit dist/Morph.dmg --keychain-profile "$MORPH_NOTARY_PROFILE" --wait
-        xcrun stapler staple dist/Morph.dmg
-        spctl --assess --type open --context context:primary-signature -v dist/Morph.dmg
+        xcrun notarytool submit "$DMG" --keychain-profile "$MORPH_NOTARY_PROFILE" --wait
+        xcrun stapler staple "$DMG"
+        spctl --assess --type open --context context:primary-signature -v "$DMG"
     fi
-    echo "Built dist/Morph.dmg"
+    echo "Built $DMG"
 fi
 
 if [ "$1" = "--install" ]; then
