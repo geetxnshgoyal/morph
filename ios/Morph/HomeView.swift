@@ -7,6 +7,7 @@ struct HomeView: View {
     @EnvironmentObject private var state: AppState
     @State private var photoItems: [PhotosPickerItem] = []
     @State private var showFiles = false
+    @State private var showPhotos = false
     @State private var showSettings = false
     @State private var loadingPhotos = false
     @State private var preview: URL?
@@ -33,7 +34,17 @@ struct HomeView: View {
         .fileImporter(isPresented: $showFiles, allowedContentTypes: [.item], allowsMultipleSelection: true) { result in
             if case let .success(urls) = result { state.open(urls) }
         }
+        .photosPicker(isPresented: $showPhotos, selection: $photoItems, matching: .any(of: [.images, .videos]), photoLibrary: .shared())
         .onChange(of: photoItems) { _, items in loadPhotos(items) }
+        // Home-screen quick actions, including one that launched the app before this view existed.
+        .onReceive(state.$quickAction.compactMap { $0 }) { action in
+            state.quickAction = nil
+            state.batch = nil
+            switch action {
+            case .photos: showPhotos = true
+            case .files: showFiles = true
+            }
+        }
         .quickLookPreview($preview)
         .alert("Couldn't open that file", isPresented: Binding(get: { state.importError != nil }, set: { _ in state.importError = nil })) {
             Button("OK", role: .cancel) {}

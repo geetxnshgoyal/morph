@@ -41,6 +41,29 @@
 	<false/>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Morph saves the photos and videos you convert to your library.</string>
+	<key>UIApplicationShortcutItems</key>
+	<array>
+		<dict>
+			<key>UIApplicationShortcutItemIconSymbolName</key>
+			<string>photo.on.rectangle.angled</string>
+			<key>UIApplicationShortcutItemSubtitle</key>
+			<string>Pick from your library</string>
+			<key>UIApplicationShortcutItemTitle</key>
+			<string>Convert Photos</string>
+			<key>UIApplicationShortcutItemType</key>
+			<string>app.morph.photos</string>
+		</dict>
+		<dict>
+			<key>UIApplicationShortcutItemIconSymbolName</key>
+			<string>folder</string>
+			<key>UIApplicationShortcutItemSubtitle</key>
+			<string>From iCloud Drive or your iPhone</string>
+			<key>UIApplicationShortcutItemTitle</key>
+			<string>Choose Files</string>
+			<key>UIApplicationShortcutItemType</key>
+			<string>app.morph.files</string>
+		</dict>
+	</array>
 	<key>UIFileSharingEnabled</key>
 	<true/>
 	<key>UILaunchScreen</key>
