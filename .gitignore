@@ -10,3 +10,10 @@ android/keystore.properties
 android/local.properties
 android/.gradle/
 .DS_Store
+
+# Windows (.NET) build output
+bin/
+obj/
+.vs/
+*.user
+TestResults/
