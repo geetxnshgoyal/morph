@@ -6,6 +6,12 @@ enum Theme {
     static let tangerine = Color(red: 1.00, green: 0.56, blue: 0.22)   // #FF8F38
     static let coral = Color(red: 1.00, green: 0.40, blue: 0.38)       // #FF6661
     static let accent = LinearGradient(colors: [tangerine, coral], startPoint: .topLeading, endPoint: .bottomTrailing)
+    static let rose = Color(red: 0.94, green: 0.31, blue: 0.55)        // #F0508C
+    static let violet = Color(red: 0.55, green: 0.42, blue: 1.00)      // #8C6BFF
+    /// Morph's signature "aura": the tangerine accent melting through coral and rose into violet. Used for
+    /// highlights, glows and anything that moves, so Morph never reads as just another orange app.
+    static let auraColors = [tangerine, coral, rose, violet]
+    static let aura = LinearGradient(colors: auraColors, startPoint: .topLeading, endPoint: .bottomTrailing)
 
     /// Cream in light mode, warm charcoal in dark.
     static let canvas = dynamic(light: UIColor(red: 1.00, green: 0.97, blue: 0.94, alpha: 1),
