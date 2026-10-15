@@ -1,6 +1,13 @@
 # Morph
 
-A free file converter and toolbox for macOS, iOS and Android. Drop a file on Morph and it shows only the actions that make sense for that file: convert it, compress it, strip its metadata, pull the text out of it and more. Everything runs on your device; nothing is uploaded.
+**Drag a file, tap a key, drop it on the wheel.**
+
+Morph is a free file converter and toolbox for macOS, iOS and Android. It shows only the actions that make sense for the files you give it: convert them, compress them, strip their metadata, pull the text out of them and more. Everything runs on your device; nothing is uploaded.
+
+<p>
+  <img src="docs/images/mac-wheel-convert.png" width="49%" alt="The Convert wheel open over a file, with HEIC highlighted">
+  <img src="docs/images/mac-wheel-tools-dark.png" width="49%" alt="The Tools wheel in dark mode with Compress highlighted">
+</p>
 
 ## Download
 
@@ -8,13 +15,48 @@ Grab the latest build from [Releases](../../releases/latest):
 
 | Platform | File | Needs |
 | --- | --- | --- |
-| macOS | `Morph-0.1.0.dmg` | macOS 14 or later, Apple Silicon or Intel |
+| macOS | `Morph-0.2.0.dmg` | macOS 14 or later, Apple Silicon or Intel |
 | Android | `Morph-0.1.0.apk` | Android 10 or later |
 | iOS | build from source, see [ios/README.md](ios/README.md) | iOS 17 or later |
 
 **macOS:** open the DMG and drag Morph into Applications. The build is ad-hoc signed, so the first launch is blocked: open System Settings → Privacy & Security and click **Open Anyway**.
 
 **Android:** open the APK on your phone and allow installs from that source when asked. See [android/README.md](android/README.md).
+
+## The Mac app
+
+Morph lives in the menu bar. While you drag files anywhere (Finder, the desktop, any app), tap a wheel's keys and that wheel opens right under the cursor. Drop the files on an action and the result appears next to the original.
+
+| Keys | Wheel | What's on it |
+| --- | --- | --- |
+| ⇧ | Convert | Every format the files can become |
+| ⌘ | Tools | Compress, resize, remove metadata, blur faces, extract text, read QR codes, merge PDFs, zip |
+| ⌃ | Recipes | Several steps in one drop, like "Web Image" or "Under 1 MB" |
+| ⌥ | Actions | AirDrop, Messages, Mail, Copy, Copy Path, Move To…, Copy To…, open Terminal there |
+
+- A tap is enough: the wheel stays open after you let go of the key. Tap another wheel's keys to switch, or press Esc to close.
+- Every wheel's keys can be changed in Settings, to a single key or a combination such as ⌃⇧.
+- Hover moves a highlight around the ring with a soft tick; arrow keys, the scroll wheel and Tab work too.
+- The wheel uses Liquid Glass on macOS 26 and follows your Clear or Tinted choice in System Settings.
+
+Other ways in: drop files on the menu bar icon, or right-click in Finder → Services → **Open in Morph**. The app also bundles the `morph` command-line tool.
+
+<p>
+  <img src="docs/images/mac-wheel-actions.png" width="49%" alt="The Actions wheel with Move To highlighted">
+  <img src="docs/images/mac-welcome.png" width="49%" alt="The welcome guide showing each wheel and its key">
+</p>
+
+## The iPhone app
+
+Pick photos or files, or send them to Morph from any share sheet, then choose an action. Results are saved in the Files app under **On My iPhone → Morph**, and converted photos and videos can go straight to your library.
+
+Every action also works in **Shortcuts**, **Siri**, **Spotlight** and the **Action button**: Convert Images, Compress Files, Remove Metadata, Extract Text, Read QR Codes and Barcodes, Merge PDFs, Run Morph Action (any action or recipe) and Open in Morph. Results are handed to the next step of the shortcut. Press and hold the app icon for **Convert Photos** and **Choose Files**.
+
+<p>
+  <img src="docs/images/ios-home.png" width="32%" alt="Morph's home screen on iPhone">
+  <img src="docs/images/ios-actions-dark.png" width="32%" alt="Choosing an action for a photo, in dark mode">
+  <img src="docs/images/ios-result.png" width="32%" alt="A finished conversion with Share and Save to Photos">
+</p>
 
 ## What it does
 
@@ -38,16 +80,11 @@ Grab the latest build from [Releases](../../releases/latest):
 
 **Recipes** chain several actions into one, like "Web Image" (resize + WEBP) or "Under 1 MB".
 
+**Actions** (Mac) do everyday things with the files themselves: send, copy, move, or open a Terminal in their folder.
+
 Formats marked as needing ffmpeg (WEBM, MKV, MP3, FLAC, OGG, OPUS and the loudness tools) show up on the Mac once `ffmpeg` is installed, for example with `brew install ffmpeg`.
 
-## macOS app
-
-Morph lives in the menu bar. There are a few ways to use it:
-- Drop files on the menu bar icon.
-- Hold a key (Shift, Option, Control or Tab, set in Settings) while dragging files anywhere, and the action wheel pops up under the cursor.
-- In Finder, right-click files → Services → **Open in Morph**.
-
-The app also bundles the `morph` command-line tool.
+Originals are never touched: results get a new name beside them, and every job can be undone from the menu bar (or `morph undo`).
 
 ## Command line
 
@@ -80,17 +117,19 @@ swift build
 scripts/bundle.sh --dmg
 ```
 
-`bundle.sh` builds a universal `dist/Morph.app`; `--dmg` also makes `dist/Morph.dmg`, and `--install` copies the app to /Applications and launches it. To sign with a Developer ID and notarize, see the comments at the top of the script.
+`bundle.sh` builds a universal `dist/Morph.app`; `--dmg` also makes `dist/Morph-<version>.dmg`, and `--install` copies the app to /Applications and launches it. To sign with a Developer ID and notarize, see the comments at the top of the script.
 
-The iOS and Android apps have their own instructions in [ios/README.md](ios/README.md) and [android/README.md](android/README.md).
+The iOS and Android apps have their own instructions in [ios/README.md](ios/README.md) and [android/README.md](android/README.md). The website lives in [`docs/`](docs) (GitHub Pages) and launch copy in [`marketing/`](marketing). Changes are listed in [CHANGELOG.md](CHANGELOG.md).
 
 ## Project layout
 
 ```
 Sources/MorphCore   shared engine: image, PDF, media, document, vision and archive ops, recipes, history
-Sources/MorphMac    macOS menu bar app
+Sources/MorphMac    macOS menu bar app: the wheel, drag shortcuts, Actions, settings, welcome guide
 Sources/morph       command-line tool
-ios/                iOS app (SwiftUI, uses MorphCore)
+ios/                iOS app (SwiftUI, uses MorphCore; App Intents for Shortcuts)
 android/            Android app (Kotlin + Jetpack Compose)
+docs/               website and screenshots
+marketing/          launch copy
 scripts/            app bundle, icon and DMG build scripts
 ```
