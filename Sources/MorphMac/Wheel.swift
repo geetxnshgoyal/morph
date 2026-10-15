@@ -97,11 +97,20 @@ final class WheelPanel: NSPanel {
 
     override func cancelOperation(_ sender: Any?) { close() }
 
+    /// Closing melts the wheel back into a drop (unless Reduce Motion is on) before the window goes.
     override func close() {
+        guard !isClosing else { return }
+        isClosing = true
         if let monitor { NSEvent.removeMonitor(monitor) }
         monitor = nil
-        super.close()
+        guard isVisible, !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion else { return super.close() }
+        model.closing = true
+        NSAnimationContext.runAnimationGroup({ $0.duration = 0.24; animator().alphaValue = 0 }) {
+            MainActor.assumeIsolated { super.close() }
+        }
     }
+
+    private var isClosing = false
 }
 
 // MARK: - Wheel model
@@ -119,6 +128,8 @@ final class WheelModel: ObservableObject {
     @Published private(set) var group: Action.Group
     @Published private(set) var page = 0
     @Published var phase: Phase = .choosing
+    /// The window is going away: the view plays the wheel's exit.
+    @Published var closing = false
     @Published var hovered: String? {
         didSet { if hovered != oldValue, hovered != nil { Feedback.shared.tick() } }
     }
@@ -286,27 +297,63 @@ final class WheelModel: ObservableObject {
 /// Tools, Recipes, Actions) uses the same layout; the bar shows the keys that summon each one mid-drag.
 struct WheelView: View {
     @ObservedObject var model: WheelModel
+    @State private var appeared = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    /// Open and not on its way out: drives the hub's drop-like entrance and exit.
+    private var present: Bool { appeared && !model.closing }
 
     var body: some View {
         ZStack(alignment: .topLeading) {
             ZStack {
                 if case .choosing = model.phase {
+                    AuraHalo().opacity(present ? 1 : 0)
                     PetalRing(model: model, items: model.pageItems)
                         .id("\(model.group)-\(model.page)")
                         .transition(.opacity.combined(with: .scale(scale: 0.94)))
                 }
                 WheelHub(model: model)
+                    .scaleEffect(present ? 1 : 0.3)
+                    .blur(radius: present ? 0 : 12)
+                    .opacity(present ? 1 : 0)
             }
             .frame(width: WheelMetrics.side, height: WheelMetrics.side)
             .position(WheelMetrics.center)
 
             if case .choosing = model.phase, model.groups.count > 1 {
                 WheelBar(model: model)
+                    .scaleEffect(present ? 1 : 0.85)
+                    .opacity(present ? 1 : 0)
                     .position(x: WheelMetrics.center.x, y: WheelMetrics.center.y + WheelMetrics.outerRadius + WheelMetrics.lift + 42)
                     .transition(.opacity)
             }
         }
         .frame(width: WheelMetrics.width, height: WheelMetrics.height)
+        // In: the hub springs out of a drop. Out: everything is pulled back into it.
+        .animation(reduceMotion ? nil : model.closing ? .easeIn(duration: 0.2) : .spring(response: 0.42, dampingFraction: 0.6),
+                   value: present)
+        .onAppear { appeared = true }
+    }
+}
+
+/// A soft ring of aura light turning slowly behind the petals, so the glass glows with Morph's colours.
+private struct AuraHalo: View {
+    @State private var turning = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        AngularGradient(colors: Theme.auraColors + [Theme.tangerine], center: .center)
+            .frame(width: WheelMetrics.side, height: WheelMetrics.side)
+            .mask(Circle().stroke(lineWidth: 64).frame(width: WheelMetrics.labelRadius * 2, height: WheelMetrics.labelRadius * 2))
+            .blur(radius: 28)
+            .opacity(colorScheme == .dark ? 0.55 : 0.4)
+            .rotationEffect(.degrees(turning ? 360 : 0))
+            .allowsHitTesting(false)
+            .onAppear {
+                guard !reduceMotion else { return }
+                withAnimation(.linear(duration: 14).repeatForever(autoreverses: false)) { turning = true }
+            }
     }
 }
 
@@ -323,8 +370,8 @@ private struct PetalRing: View {
             ForEach(Array(items.enumerated()), id: \.element.id) { index, action in
                 PetalView(action: action, index: index, count: items.count,
                           highlighted: model.hovered == action.id, bloomed: bloomed)
-                    .animation(reduceMotion ? nil : .spring(response: 0.48, dampingFraction: 0.74)
-                        .delay(Double(index) * 0.022), value: bloomed)
+                    .animation(reduceMotion ? nil : model.closing ? .easeIn(duration: 0.18)
+                        : .spring(response: 0.48, dampingFraction: 0.74).delay(Double(index) * 0.022), value: bloomed)
                     .animation(reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.68),
                                value: model.hovered == action.id)
             }
@@ -345,6 +392,7 @@ private struct PetalRing: View {
         // Dropping the dragged files on a petal runs it.
         .onDrop(of: [.fileURL], delegate: RingDropDelegate(model: model, centered: centered))
         .onAppear { bloomed = true }
+        .onChange(of: model.closing) { _, closing in if closing { bloomed = false } }
     }
 
     private func centered(_ point: CGPoint) -> CGPoint {
@@ -377,7 +425,7 @@ private struct RingDropDelegate: DropDelegate {
 }
 
 /// One action: a glass wedge tinted by a glow that deepens toward the rim, with a bright rim stroke and its
-/// icon and name. Highlighted, it lifts outward and fills with the tangerine gradient.
+/// icon and name. Highlighted, it lifts outward, fills with the aura and glows.
 private struct PetalView: View {
     let action: Action
     let index: Int
@@ -397,9 +445,10 @@ private struct PetalView: View {
 
         ZStack {
             Color.clear.wheelGlass(in: shape, tint: highlighted ? Theme.tangerine.opacity(0.35) : nil)
-            shape.fill(RadialGradient(colors: highlighted ? [Theme.tangerine, Theme.coral] : [Theme.tangerine.opacity(0.04), Theme.coral.opacity(0.3)],
+            shape.fill(RadialGradient(colors: highlighted ? [Theme.tangerine, Theme.coral, Theme.rose] : [Theme.tangerine.opacity(0.04), Theme.coral.opacity(0.3)],
                                       center: .center, startRadius: M.innerRadius, endRadius: M.outerRadius + M.lift))
-                .opacity(highlighted ? 0.92 : 1)
+                .opacity(highlighted ? 0.94 : 1)
+                .shadow(color: Theme.rose.opacity(highlighted ? 0.55 : 0), radius: 18)
             shape.stroke(LinearGradient(colors: [.white.opacity(highlighted ? 0.7 : 0.5), .white.opacity(0.06)],
                                         startPoint: .top, endPoint: .bottom), lineWidth: 1)
                 .opacity(bloomed ? 1 : 0)
@@ -467,8 +516,7 @@ private struct WheelHub: View {
             }
         case let .running(action, done, total):
             VStack(spacing: 8) {
-                ProgressView(value: total > 0 ? Double(done) / Double(total) : 0).progressViewStyle(.circular)
-                    .tint(Theme.tangerine)
+                MorphLoader(size: 58)
                 Text(action.title).font(Theme.font(14, .semibold))
                 if total > 1 { Text("\(done) of \(total)").font(.caption).foregroundStyle(.secondary) }
             }
@@ -476,7 +524,7 @@ private struct WheelHub: View {
             VStack(spacing: 6) {
                 Image(systemName: result.failures.isEmpty ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
                     .font(.system(size: 30))
-                    .foregroundStyle(result.failures.isEmpty ? AnyShapeStyle(Theme.accent) : AnyShapeStyle(Theme.coral))
+                    .foregroundStyle(result.failures.isEmpty ? AnyShapeStyle(Theme.aura) : AnyShapeStyle(Theme.coral))
                 Text(result.failures.isEmpty ? "Done" : "\(result.failures.count) failed")
                     .font(Theme.font(14, .semibold))
                 if let first = result.failures.first {
