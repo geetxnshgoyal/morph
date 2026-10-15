@@ -1,0 +1,528 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Morph: convert any file with a tap of a key</title>
+<meta name="description" content="Morph converts, shrinks and cleans up files right where they are, on Mac, iPhone and Android. Drag a file, tap a key, drop it on the wheel. Free, and nothing is ever uploaded.">
+<meta property="og:title" content="Morph">
+<meta property="og:description" content="Drag a file, tap a key, drop it on the wheel. Free, local file conversion for Mac, iPhone and Android.">
+<meta property="og:image" content="images/mac-wheel-convert.png">
+<meta name="theme-color" content="#8C6BFF">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23FF8F38'/%3E%3Cstop offset='.5' stop-color='%23F0508C'/%3E%3Cstop offset='1' stop-color='%238C6BFF'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='16' fill='url(%23g)'/%3E%3Cg fill='white'%3E%3Ccircle cx='32' cy='32' r='6'/%3E%3Ccircle cx='32' cy='17' r='6'/%3E%3Ccircle cx='32' cy='47' r='6'/%3E%3Ccircle cx='19' cy='24.5' r='6'/%3E%3Ccircle cx='45' cy='24.5' r='6'/%3E%3Ccircle cx='19' cy='39.5' r='6'/%3E%3Ccircle cx='45' cy='39.5' r='6'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,400..800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1C1533;
+    --ink-soft: #5B5274;
+    --paper: #FAF8FF;
+    --lilac: #EEE8FF;
+    --tangerine: #FF8F38;
+    --coral: #FF6661;
+    --rose: #F0508C;
+    --violet: #8C6BFF;
+    --aura: linear-gradient(120deg, var(--tangerine), var(--coral) 35%, var(--rose) 68%, var(--violet));
+    --display: "Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+    --body: "Figtree", system-ui, -apple-system, sans-serif;
+    --measure: 34rem;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font: 400 1.0625rem/1.6 var(--body);
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  img { max-width: 100%; display: block; }
+  a { color: inherit; }
+  :focus-visible { outline: 3px solid var(--violet); outline-offset: 3px; border-radius: 8px; }
+
+  .wrap { width: min(1160px, 100% - 2.5rem); margin-inline: auto; }
+
+  /* Top bar */
+  .bar { display: flex; align-items: center; justify-content: space-between; padding: 1.4rem 0; }
+  .brand { display: flex; align-items: center; gap: .65rem; font: 700 1.35rem/1 var(--display); text-decoration: none; }
+  .brand svg { width: 34px; height: 34px; }
+  .bar nav { display: flex; gap: 1.6rem; font-weight: 600; font-size: .95rem; }
+  .bar nav a { text-decoration: none; color: var(--ink-soft); }
+  .bar nav a:hover { color: var(--ink); }
+
+  /* Hero */
+  .hero { display: grid; grid-template-columns: 1.05fr 1fr; gap: 3rem; align-items: center; padding: 3.5rem 0 5rem; }
+  h1 {
+    font: 750 clamp(2.9rem, 6.2vw, 5.4rem)/0.98 var(--display);
+    font-variation-settings: "wdth" 82, "opsz" 96;
+    letter-spacing: -0.02em;
+    margin: 0 0 1.5rem;
+    animation: unsquish 1.2s cubic-bezier(.2, .8, .2, 1) both;
+  }
+  @keyframes unsquish {
+    from { font-variation-settings: "wdth" 100, "opsz" 96; opacity: 0; }
+    to { font-variation-settings: "wdth" 82, "opsz" 96; opacity: 1; }
+  }
+  .lede { font-size: 1.25rem; color: var(--ink-soft); max-width: var(--measure); margin: 0 0 2.2rem; }
+  .cta { display: flex; flex-wrap: wrap; gap: .8rem; align-items: center; }
+  .button {
+    display: inline-flex; align-items: center; gap: .55rem;
+    padding: .95rem 1.5rem; border-radius: 999px;
+    font: 650 1rem/1 var(--body); text-decoration: none;
+    transition: transform .2s ease, box-shadow .2s ease;
+  }
+  .button.primary { color: white; background: var(--aura); box-shadow: 0 12px 30px -10px rgba(240, 80, 140, .6); }
+  .button.primary:hover { transform: translateY(-2px); box-shadow: 0 16px 34px -10px rgba(240, 80, 140, .7); }
+  .button.quiet { color: var(--ink); background: white; border: 1px solid #E3DCF5; }
+  .button.quiet:hover { border-color: var(--violet); }
+  .fineprint { font-size: .88rem; color: var(--ink-soft); margin-top: 1rem; }
+
+  /* The live wheel */
+  .stage { position: relative; display: grid; justify-items: center; gap: 1.4rem; }
+  .halo {
+    position: absolute; inset: 6% 6% auto; aspect-ratio: 1;
+    border-radius: 50%;
+    background: conic-gradient(from 0deg, var(--tangerine), var(--coral), var(--rose), var(--violet), var(--tangerine));
+    -webkit-mask: radial-gradient(circle, transparent 38%, black 46%, black 64%, transparent 74%);
+            mask: radial-gradient(circle, transparent 38%, black 46%, black 64%, transparent 74%);
+    filter: blur(26px); opacity: .55;
+    animation: turn 16s linear infinite;
+  }
+  @keyframes turn { to { transform: rotate(360deg); } }
+  #wheel { width: min(100%, 470px); height: auto; position: relative; overflow: visible; touch-action: manipulation; }
+  .petal { cursor: pointer; transform-box: view-box; transform-origin: 220px 220px; }
+  .petal .face { transition: transform .32s cubic-bezier(.3, 1.6, .5, 1); }
+  .petal path { fill: url(#petalFill); stroke: rgba(255, 255, 255, .95); stroke-width: 1.2; transition: fill .2s; }
+  .petal text { font: 650 12.5px/1 var(--body); fill: var(--ink); text-anchor: middle; dominant-baseline: middle; pointer-events: none; }
+  .petal.on path { fill: url(#auraFill); filter: drop-shadow(0 8px 16px rgba(240, 80, 140, .45)); }
+  .petal.on text { fill: white; }
+  .bloom { animation: bloom .7s cubic-bezier(.25, 1.5, .45, 1) both; }
+  @keyframes bloom { from { transform: scale(.35); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .hub circle { fill: rgba(255, 255, 255, .92); stroke: white; }
+  .hub .title { font: 700 17px/1 var(--display); fill: var(--ink); text-anchor: middle; }
+  .hub .caption { font: 500 12px/1 var(--body); fill: var(--ink-soft); text-anchor: middle; }
+  .keys { display: flex; flex-wrap: wrap; justify-content: center; gap: .5rem; padding: .4rem; border-radius: 999px; background: rgba(255, 255, 255, .7); border: 1px solid #ECE6FA; backdrop-filter: blur(14px); }
+  .key {
+    display: inline-flex; align-items: center; gap: .45rem;
+    border: 0; background: transparent; color: var(--ink);
+    padding: .6rem 1rem; border-radius: 999px; cursor: pointer;
+    font: 600 .95rem/1 var(--body);
+  }
+  .key kbd { font: 700 1rem/1 var(--body); opacity: .55; }
+  .key[aria-pressed="true"] { background: var(--aura); color: white; }
+  .key[aria-pressed="true"] kbd { opacity: .9; }
+  .hint { font-size: .9rem; color: var(--ink-soft); text-align: center; margin: 0; }
+
+  /* Sections */
+  section { padding: 5.5rem 0; }
+  h2 {
+    font: 720 clamp(2.1rem, 4vw, 3.3rem)/1.04 var(--display);
+    font-variation-settings: "wdth" 88, "opsz" 72;
+    letter-spacing: -0.015em; margin: 0 0 1.1rem; max-width: 18ch;
+  }
+  .lead { color: var(--ink-soft); font-size: 1.15rem; max-width: var(--measure); margin: 0; }
+  .split { display: grid; grid-template-columns: 0.9fr 1.1fr; gap: 3.5rem; align-items: center; }
+  .shot { border-radius: 28px; overflow: hidden; box-shadow: 0 30px 70px -30px rgba(60, 30, 110, .45); }
+  .mac-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; align-items: start; }
+  .mac-pair .shot:last-child { margin-top: 3.5rem; }
+  .points { list-style: none; padding: 0; margin: 2rem 0 0; display: grid; gap: 1.1rem; max-width: var(--measure); }
+  .points li { display: grid; grid-template-columns: auto 1fr; gap: .9rem; align-items: baseline; }
+  .points kbd {
+    min-width: 2.4rem; text-align: center; padding: .35rem .5rem; border-radius: 9px;
+    background: white; border: 1px solid #E3DCF5; box-shadow: 0 3px 0 #E3DCF5;
+    font: 700 1rem/1 var(--body);
+  }
+  .points strong { font-weight: 650; }
+
+  .phone-band { background: var(--ink); color: white; border-radius: 44px; padding: 5rem 0; margin: 2rem auto; width: min(1240px, 100% - 1.5rem); position: relative; overflow: hidden; }
+  .phone-band::before {
+    content: ""; position: absolute; inset: -40% -10% auto auto; width: 70%; aspect-ratio: 1; border-radius: 50%;
+    background: radial-gradient(circle, rgba(140, 107, 255, .45), transparent 60%);
+  }
+  .phone-band .lead { color: #CFC6EA; }
+  .phones { display: flex; gap: 1.2rem; justify-content: center; align-items: flex-end; position: relative; }
+  .phones img { width: 31%; border-radius: 34px; box-shadow: 0 30px 60px -20px rgba(0, 0, 0, .6); }
+  .phones img:nth-child(2) { width: 34%; transform: translateY(-1.5rem); }
+  .shortcuts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .6rem 1.4rem; margin: 2rem 0 0; padding: 0; list-style: none; max-width: var(--measure); }
+  .shortcuts li { padding-left: 1.1rem; position: relative; color: #EDE8FF; }
+  .shortcuts li::before { content: ""; position: absolute; left: 0; top: .62em; width: .45rem; height: .45rem; border-radius: 50%; background: var(--aura); }
+  .siri { margin-top: 1.8rem; font-family: var(--display); font-size: 1.35rem; font-variation-settings: "wdth" 90; color: white; max-width: var(--measure); }
+
+  .wheels { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 2.4rem; margin-top: 3rem; }
+  .wheels h3 { font: 700 1.3rem/1.2 var(--display); margin: 0 0 .9rem; display: flex; align-items: center; gap: .6rem; }
+  .wheels h3 kbd { font: 700 .95rem/1 var(--body); color: white; background: var(--aura); border-radius: 8px; padding: .3rem .5rem; }
+  .wheels ul { margin: 0; padding: 0; list-style: none; color: var(--ink-soft); display: grid; gap: .45rem; }
+
+  .promise { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 2.5rem; margin-top: 2.5rem; }
+  .promise p { margin: .4rem 0 0; color: var(--ink-soft); }
+  .promise h3 { font: 700 1.25rem/1.2 var(--display); margin: 0; }
+
+  .download { text-align: left; }
+  .platforms { display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 1.2rem; margin-top: 2.5rem; }
+  .platform { border-radius: 26px; padding: 1.8rem; background: white; border: 1px solid #ECE6FA; display: grid; gap: .6rem; align-content: start; }
+  .platform.mac { background: var(--aura); color: white; border: 0; }
+  .platform h3 { font: 720 1.6rem/1.1 var(--display); margin: 0; }
+  .platform p { margin: 0; }
+  .platform.mac p { color: rgba(255, 255, 255, .9); }
+  .platform:not(.mac) p { color: var(--ink-soft); }
+  .platform .button { justify-self: start; margin-top: .6rem; }
+  .platform.mac .button { background: white; color: var(--ink); }
+  pre {
+    margin: 2.8rem 0 0; padding: 1.5rem 1.7rem; border-radius: 22px; overflow-x: auto;
+    background: var(--ink); color: #EDE8FF; font: 500 .92rem/1.7 ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  pre .c { color: #9C91C2; }
+
+  footer { padding: 3rem 0 4rem; color: var(--ink-soft); font-size: .92rem; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 1rem; }
+
+  @media (max-width: 900px) {
+    .hero, .split { grid-template-columns: 1fr; }
+    .hero { padding-top: 1.5rem; gap: 2.5rem; }
+    .wheels { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .promise, .platforms { grid-template-columns: 1fr; }
+    .bar nav { display: none; }
+    .phone-band { border-radius: 30px; padding: 3.5rem 0; }
+    .split .shots-first { order: -1; }
+  }
+  @media (max-width: 520px) {
+    .wheels { grid-template-columns: 1fr; }
+    .shortcuts { grid-template-columns: 1fr; }
+    .mac-pair { grid-template-columns: 1fr; }
+    .mac-pair .shot:last-child { margin-top: 0; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    h1, .bloom, .halo { animation: none; }
+    .petal .face { transition: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="bar">
+    <a class="brand" href="#">
+      <svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="logo" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FF8F38"/><stop offset=".5" stop-color="#F0508C"/><stop offset="1" stop-color="#8C6BFF"/></linearGradient></defs><rect width="64" height="64" rx="16" fill="url(#logo)"/><g fill="#fff"><circle cx="32" cy="32" r="6"/><circle cx="32" cy="17" r="6"/><circle cx="32" cy="47" r="6"/><circle cx="19" cy="24.5" r="6"/><circle cx="45" cy="24.5" r="6"/><circle cx="19" cy="39.5" r="6"/><circle cx="45" cy="39.5" r="6"/></g></svg>
+      Morph
+    </a>
+    <nav aria-label="Sections">
+      <a href="#mac">Mac</a>
+      <a href="#iphone">iPhone</a>
+      <a href="#wheels">What it does</a>
+      <a href="#download">Download</a>
+    </nav>
+  </header>
+
+  <main>
+    <div class="hero">
+      <div>
+        <h1>Drag a file, tap a key, drop it on the wheel.</h1>
+        <p class="lede">Morph converts, shrinks and cleans up files right where they are, on your Mac, iPhone and Android. It's free, and nothing is ever uploaded.</p>
+        <div class="cta">
+          <a class="button primary" href="https://github.com/geetxnshgoyal/morph/releases/latest">Download for Mac</a>
+          <a class="button quiet" href="#download">iPhone and Android</a>
+        </div>
+        <p class="fineprint">macOS 14 or later, Apple Silicon and Intel.</p>
+      </div>
+
+      <div class="stage">
+        <div class="halo" aria-hidden="true"></div>
+        <svg id="wheel" viewBox="0 0 440 440" role="group" aria-label="Interactive preview of the Morph wheel">
+          <defs>
+            <radialGradient id="petalFill" gradientUnits="userSpaceOnUse" cx="220" cy="220" r="200">
+              <stop offset=".45" stop-color="#FFFFFF" stop-opacity=".88"/>
+              <stop offset="1" stop-color="#FFE3EE" stop-opacity=".82"/>
+            </radialGradient>
+            <linearGradient id="auraFill" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#FF8F38"/>
+              <stop offset=".55" stop-color="#FF6661"/>
+              <stop offset="1" stop-color="#F0508C"/>
+            </linearGradient>
+          </defs>
+          <g id="petals"></g>
+          <g class="hub" aria-live="polite">
+            <circle cx="220" cy="220" r="78"/>
+            <text class="title" id="hubTitle" x="220" y="216">photo.heic</text>
+            <text class="caption" id="hubCaption" x="220" y="240">Tap ⇧ ⌘ ⌃ ⌥</text>
+          </g>
+        </svg>
+        <div class="keys" role="group" aria-label="Wheels">
+          <button class="key" data-wheel="convert" aria-pressed="true"><kbd>⇧</kbd>Convert</button>
+          <button class="key" data-wheel="tools" aria-pressed="false"><kbd>⌘</kbd>Tools</button>
+          <button class="key" data-wheel="recipes" aria-pressed="false"><kbd>⌃</kbd>Recipes</button>
+          <button class="key" data-wheel="actions" aria-pressed="false"><kbd>⌥</kbd>Actions</button>
+        </div>
+        <p class="hint">Try it: press Shift, Command, Control or Option, or tap a key above.</p>
+      </div>
+    </div>
+  </main>
+</div>
+
+<section id="mac">
+  <div class="wrap split">
+    <div>
+      <h2>On the Mac, the wheel comes to your cursor.</h2>
+      <p class="lead">While you drag files from Finder, the desktop or any app, tap a wheel's keys. That wheel opens right under the cursor; drop on an action and the result appears next to the original.</p>
+      <ul class="points">
+        <li><kbd>⇧</kbd><span><strong>Convert</strong> images, video, audio, documents and data to the format you need.</span></li>
+        <li><kbd>⌘</kbd><span><strong>Tools</strong> compress, resize, strip location data, blur faces and read text.</span></li>
+        <li><kbd>⌃</kbd><span><strong>Recipes</strong> run several steps in one drop, like resize and convert to WEBP.</span></li>
+        <li><kbd>⌥</kbd><span><strong>Actions</strong> send with AirDrop, copy the path, move, or open Terminal there.</span></li>
+      </ul>
+      <p class="lead" style="margin-top:1.6rem">Tap another wheel's keys to switch mid-drag, or press Esc to close. Every key and combination can be changed in Settings.</p>
+    </div>
+    <div class="mac-pair shots-first">
+      <img class="shot" src="images/mac-wheel-convert.png" alt="The Convert wheel open over a file, with HEIC highlighted and the wheel bar showing each wheel's key" loading="lazy">
+      <img class="shot" src="images/mac-wheel-tools-dark.png" alt="The Tools wheel in dark mode with Compress highlighted" loading="lazy">
+    </div>
+  </div>
+</section>
+
+<section id="iphone" class="phone-band">
+  <div class="wrap split">
+    <div class="phones">
+      <img src="images/ios-home.png" alt="Morph's home screen on iPhone with recent jobs" loading="lazy">
+      <img src="images/ios-actions-dark.png" alt="Choosing what to make from a photo, in dark mode" loading="lazy">
+      <img src="images/ios-result.png" alt="A finished conversion with options to share or save to Photos" loading="lazy">
+    </div>
+    <div>
+      <h2>On iPhone, it's a Shortcuts app too.</h2>
+      <p class="lead">Open files from any share sheet, or let your shortcuts do the work. Every action runs on the device and hands its results to the next step.</p>
+      <ul class="shortcuts">
+        <li>Convert Images</li>
+        <li>Compress Files</li>
+        <li>Remove Metadata</li>
+        <li>Extract Text</li>
+        <li>Read QR Codes and Barcodes</li>
+        <li>Merge PDFs</li>
+        <li>Run any Morph action or recipe</li>
+        <li>Open in Morph</li>
+      </ul>
+      <p class="siri">"Remove location from photos with Morph."</p>
+      <p class="lead" style="margin-top:.6rem">Works with Siri, Spotlight and the Action button. Press and hold the app icon to convert photos straight away.</p>
+    </div>
+  </div>
+</section>
+
+<section id="wheels">
+  <div class="wrap">
+    <h2>What's on the wheels</h2>
+    <p class="lead">Only the actions that fit the files you're holding show up.</p>
+    <div class="wheels">
+      <div>
+        <h3><kbd>⇧</kbd>Convert</h3>
+        <ul>
+          <li>JPG, PNG, HEIC, WEBP, AVIF, TIFF, GIF, BMP</li>
+          <li>Images into one PDF</li>
+          <li>MP4, MOV, WEBM, MKV, GIF</li>
+          <li>M4A, WAV, AIFF, MP3, FLAC, OGG, OPUS</li>
+          <li>DOCX, ODT, RTF, HTML, Markdown, PDF</li>
+          <li>SRT and VTT, CSV, TSV and JSON</li>
+        </ul>
+      </div>
+      <div>
+        <h3><kbd>⌘</kbd>Tools</h3>
+        <ul>
+          <li>Compress images, video and PDFs</li>
+          <li>Resize</li>
+          <li>Remove metadata and location</li>
+          <li>Blur faces, hide personal info</li>
+          <li>Extract text, read QR codes</li>
+          <li>Merge and split PDFs</li>
+          <li>Zip and extract archives</li>
+        </ul>
+      </div>
+      <div>
+        <h3><kbd>⌃</kbd>Recipes</h3>
+        <ul>
+          <li>Web Image</li>
+          <li>Under 1 MB</li>
+          <li>Share-Safe Photo</li>
+          <li>Your own, saved from the command line</li>
+        </ul>
+      </div>
+      <div>
+        <h3><kbd>⌥</kbd>Actions</h3>
+        <ul>
+          <li>AirDrop, Messages, Mail</li>
+          <li>Copy, or copy the path</li>
+          <li>Move to or copy to a folder</li>
+          <li>Open Terminal there</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Free, private and careful with your files.</h2>
+    <div class="promise">
+      <div><h3>Nothing leaves your device</h3><p>Every conversion runs locally. There are no accounts, no uploads and no tracking.</p></div>
+      <div><h3>Originals stay untouched</h3><p>Results are saved beside the original with a new name, never on top of it.</p></div>
+      <div><h3>Any job can be undone</h3><p>Morph keeps a history; undo moves that job's results to the Trash.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="download" class="download">
+  <div class="wrap">
+    <h2>Get Morph</h2>
+    <p class="lead">Morph is open source. Builds are on the GitHub releases page.</p>
+    <div class="platforms">
+      <div class="platform mac">
+        <h3>Mac</h3>
+        <p>Menu bar app with the drag wheel and the <code>morph</code> command-line tool. macOS 14 or later.</p>
+        <a class="button" href="https://github.com/geetxnshgoyal/morph/releases/latest">Download the DMG</a>
+      </div>
+      <div class="platform">
+        <h3>Android</h3>
+        <p>Share files to Morph from any app. Android 10 or later.</p>
+        <a class="button quiet" href="https://github.com/geetxnshgoyal/morph/releases/latest">Download the APK</a>
+      </div>
+      <div class="platform">
+        <h3>iPhone and iPad</h3>
+        <p>Build it with Xcode from the source code. iOS 17 or later.</p>
+        <a class="button quiet" href="https://github.com/geetxnshgoyal/morph/tree/main/ios">Build instructions</a>
+      </div>
+    </div>
+<pre><span class="c"># The command-line tool ships inside the Mac app.</span>
+morph actions photo.heic              <span class="c"># what fits this file</span>
+morph run convert.webp --max 1600 photo.heic
+morph run "recipe.Under 1 MB" scans/*.pdf
+morph watch ~/Downloads tool.strip-metadata</pre>
+  </div>
+</section>
+
+<div class="wrap">
+  <footer>
+    <span>Morph is free and open source.</span>
+    <a href="https://github.com/geetxnshgoyal/morph">Source on GitHub</a>
+  </footer>
+</div>
+
+<script>
+(() => {
+  const wheels = {
+    convert: { name: "Convert", verb: "Convert to ", items: ["JPG", "PNG", "HEIC", "WEBP", "PDF", "MP4", "GIF", "M4A"] },
+    tools: { name: "Tools", verb: "", items: ["Compress", "Resize", "Remove Metadata", "Blur Faces", "Extract Text", "Read QR", "Merge PDFs", "Zip"] },
+    recipes: { name: "Recipes", verb: "", items: ["Web Image", "Under 1 MB", "Share-Safe Photo"] },
+    actions: { name: "Actions", verb: "", items: ["AirDrop", "Messages", "Mail", "Copy", "Copy Path", "Move To…", "Copy To…", "Terminal"] },
+  };
+  const keyToWheel = { Shift: "convert", Meta: "tools", Control: "recipes", Alt: "actions" };
+  const C = 220, R_IN = 92, R_OUT = 178, GAP = 8, CORNER = 10, LIFT = 10;
+  const svgNS = "http://www.w3.org/2000/svg";
+  const petals = document.getElementById("petals");
+  const title = document.getElementById("hubTitle");
+  const caption = document.getElementById("hubCaption");
+  const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let current = "convert";
+  let resetTimer;
+
+  const pt = (r, a) => [C + r * Math.cos(a), C + r * Math.sin(a)];
+  const unit = (from, to) => { const dx = to[0] - from[0], dy = to[1] - from[1], l = Math.hypot(dx, dy); return [dx / l, dy / l]; };
+  const along = (p, u, d) => [p[0] + u[0] * d, p[1] + u[1] * d];
+  const f = (p) => p.map((v) => v.toFixed(2)).join(" ");
+
+  // An annular wedge whose sides run parallel to the boundary between petals, so every gap keeps the same
+  // width from hub to rim, with each corner rounded: the same shape the apps draw.
+  function petalPath(mid, sector) {
+    const half = (r) => sector / 2 - Math.asin(Math.min(1, GAP / 2 / r));
+    const ho = half(R_OUT), hi = half(R_IN);
+    const os = pt(R_OUT, mid - ho), oe = pt(R_OUT, mid + ho), ie = pt(R_IN, mid + hi), is = pt(R_IN, mid - hi);
+    const r = CORNER, dO = r / R_OUT, dI = r / R_IN;
+    const large = (span) => (span > Math.PI ? 1 : 0);
+    return [
+      "M", f(along(os, unit(os, is), r)),
+      "Q", f(os), f(pt(R_OUT, mid - ho + dO)),
+      "A", R_OUT, R_OUT, 0, large(2 * (ho - dO)), 1, f(pt(R_OUT, mid + ho - dO)),
+      "Q", f(oe), f(along(oe, unit(oe, ie), r)),
+      "L", f(along(ie, unit(ie, oe), r)),
+      "Q", f(ie), f(pt(R_IN, mid + hi - dI)),
+      "A", R_IN, R_IN, 0, large(2 * (hi - dI)), 0, f(pt(R_IN, mid - hi + dI)),
+      "Q", f(is), f(along(is, unit(is, os), r)),
+      "Z",
+    ].join(" ");
+  }
+
+  function setHub(main, sub) { title.textContent = main; caption.textContent = sub; }
+
+  function build(name) {
+    const wheel = wheels[name];
+    const n = wheel.items.length, sector = (2 * Math.PI) / n;
+    petals.replaceChildren();
+    wheel.items.forEach((label, i) => {
+      const mid = i * sector - Math.PI / 2;
+      const g = document.createElementNS(svgNS, "g");
+      g.setAttribute("class", "petal" + (reduceMotion ? "" : " bloom"));
+      g.setAttribute("tabindex", "0");
+      g.setAttribute("role", "button");
+      g.setAttribute("aria-label", wheel.verb + label);
+      g.style.animationDelay = reduceMotion ? "0s" : `${i * 28}ms`;
+      const face = document.createElementNS(svgNS, "g");
+      face.setAttribute("class", "face");
+      const path = document.createElementNS(svgNS, "path");
+      path.setAttribute("d", petalPath(mid, sector));
+      const text = document.createElementNS(svgNS, "text");
+      const [tx, ty] = pt((R_IN + R_OUT) / 2 + 2, mid);
+      text.setAttribute("x", tx.toFixed(1));
+      text.setAttribute("y", ty.toFixed(1));
+      // Long names wrap onto two lines at the space nearest the middle, so they stay inside the petal.
+      const space = label.length > 9 ? [...label].reduce((best, ch, k) =>
+        ch === " " && Math.abs(k - label.length / 2) < Math.abs(best - label.length / 2) ? k : best, -1) : -1;
+      if (space > 0) {
+        [label.slice(0, space), label.slice(space + 1)].forEach((line, k) => {
+          const span = document.createElementNS(svgNS, "tspan");
+          span.setAttribute("x", tx.toFixed(1));
+          span.setAttribute("dy", k === 0 ? "-0.6em" : "1.2em");
+          span.textContent = line;
+          text.append(span);
+        });
+      } else {
+        text.textContent = label;
+      }
+      face.append(path, text);
+      g.append(face);
+      const lift = () => {
+        petals.querySelectorAll(".petal.on").forEach((p) => { p.classList.remove("on"); p.firstChild.style.transform = ""; });
+        g.classList.add("on");
+        face.style.transform = `translate(${(Math.cos(mid) * LIFT).toFixed(1)}px, ${(Math.sin(mid) * LIFT).toFixed(1)}px)`;
+        setHub(wheel.verb ? wheel.verb + label : label, "Click to run");
+      };
+      const drop = () => { g.classList.remove("on"); face.style.transform = ""; setHub("photo.heic", wheel.name); };
+      const run = () => {
+        lift();
+        setHub("Done", "Saved next to the original");
+        clearTimeout(resetTimer);
+        resetTimer = setTimeout(() => setHub("photo.heic", wheel.name), 1600);
+      };
+      g.addEventListener("pointerenter", lift);
+      g.addEventListener("pointerleave", drop);
+      g.addEventListener("focus", lift);
+      g.addEventListener("blur", drop);
+      g.addEventListener("click", run);
+      g.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); run(); } });
+      petals.append(g);
+    });
+  }
+
+  function show(name) {
+    if (!wheels[name]) return;
+    current = name;
+    document.querySelectorAll(".key").forEach((k) => k.setAttribute("aria-pressed", String(k.dataset.wheel === name)));
+    build(name);
+    setHub("photo.heic", wheels[name].name);
+  }
+
+  document.querySelectorAll(".key").forEach((k) => k.addEventListener("click", () => show(k.dataset.wheel)));
+  // Like the app: tapping a wheel's key opens that wheel.
+  addEventListener("keydown", (e) => {
+    const name = keyToWheel[e.key];
+    if (name && !e.repeat && name !== current) show(name);
+  });
+  show("convert");
+})();
+</script>
+</body>
+</html>
