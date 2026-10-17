@@ -277,7 +277,8 @@ final class WheelModel: ObservableObject {
             if result.failures.isEmpty {
                 if prefs.playSounds { NSSound(named: "Glass")?.play() }
                 if prefs.revealWhenDone, !result.outputs.isEmpty { reveal(result); return }
-                try? await Task.sleep(for: .seconds(2.5))
+                // Long enough to read "171 KB → 144 KB".
+                try? await Task.sleep(for: .seconds(3.5))
                 if case .finished = phase { dismiss() }
             } else if prefs.playSounds {
                 NSSound.beep()
@@ -520,14 +521,23 @@ private struct WheelHub: View {
                 Text(action.title).font(Theme.font(14, .semibold))
                 if total > 1 { Text("\(done) of \(total)").font(.caption).foregroundStyle(.secondary) }
             }
-        case let .finished(_, result):
-            VStack(spacing: 6) {
-                Image(systemName: result.failures.isEmpty ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
-                    .font(.system(size: 30))
+        case let .finished(action, result):
+            // Nothing made and nothing failed: every file was already as small as it can usefully get.
+            let unchanged = result.outputs.isEmpty && result.failures.isEmpty && !result.notes.isEmpty
+            VStack(spacing: 5) {
+                Image(systemName: !result.failures.isEmpty ? "exclamationmark.triangle.fill"
+                      : unchanged ? "equal.circle.fill" : "checkmark.circle.fill")
+                    .font(.system(size: 26))
                     .foregroundStyle(result.failures.isEmpty ? AnyShapeStyle(Theme.aura) : AnyShapeStyle(Theme.coral))
-                Text(result.failures.isEmpty ? "Done" : "\(result.failures.count) failed")
+                Text(!result.failures.isEmpty ? "\(result.failures.count) failed" : unchanged ? "Already small" : "Done")
                     .font(Theme.font(14, .semibold))
-                if let first = result.failures.first {
+                if action.reportsSize, let sizes = result.sizeSummary, let change = result.sizeChange {
+                    Text(sizes).font(Theme.font(12, .semibold)).monospacedDigit()
+                    Text(change).font(Theme.font(11)).foregroundStyle(.secondary)
+                } else if unchanged {
+                    Text("Any smaller would look worse").font(.caption2).foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                } else if let first = result.failures.first {
                     Text(first).font(.caption2).foregroundStyle(.secondary).lineLimit(3)
                         .multilineTextAlignment(.center)
                 }
