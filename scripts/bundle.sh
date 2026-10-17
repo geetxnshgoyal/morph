@@ -4,10 +4,11 @@
 # `scripts/bundle.sh --dmg` also makes dist/Morph-<version>.dmg for sharing.
 # Builds universal (Apple Silicon + Intel).
 #
-# Signing: ad-hoc by default (runs here; other Macs need "Open Anyway"). For Gatekeeper-ready builds:
-#   MORPH_SIGN_ID="Developer ID Application: Your Name (TEAMID)"   hardened runtime + secure timestamp
-#   MORPH_NOTARY_PROFILE=morph   with --dmg, also notarizes and staples; create the profile once with
-#     xcrun notarytool store-credentials morph --apple-id you@example.com --team-id TEAMID
+# Signing: uses the keychain's "Developer ID Application" certificate when there is one (hardened runtime +
+# secure timestamp), otherwise ad-hoc (runs here; other Macs need "Open Anyway"). MORPH_SIGN_ID overrides it.
+# With a Developer ID, --dmg also notarizes and staples the DMG using the notarytool keychain profile "morph"
+# (or MORPH_NOTARY_PROFILE). Create the profile once with
+#   xcrun notarytool store-credentials morph --apple-id you@example.com --team-id TEAMID
 set -e
 cd "$(dirname "$0")/.."
 ARCHS="--arch arm64 --arch x86_64"
@@ -16,7 +17,9 @@ swift build -c release $ARCHS --product morph
 BIN=$(swift build -c release $ARCHS --show-bin-path)
 VERSION=0.2.0
 DMG="dist/Morph-$VERSION.dmg"
-SIGN_ID="${MORPH_SIGN_ID:--}"
+SIGN_ID="${MORPH_SIGN_ID:-$(security find-identity -v -p codesigning | sed -n 's/.*"\(Developer ID Application: [^"]*\)".*/\1/p' | head -1)}"
+SIGN_ID="${SIGN_ID:--}"
+NOTARY_PROFILE="${MORPH_NOTARY_PROFILE:-morph}"
 sign() {
     if [ "$SIGN_ID" = "-" ]; then codesign --force --sign - "$1"
     else codesign --force --options runtime --timestamp --sign "$SIGN_ID" "$1"; fi
@@ -80,10 +83,14 @@ if [ "$1" = "--dmg" ]; then
     rm -r "$ART"
     if [ "$SIGN_ID" = "-" ]; then codesign --force --sign - "$DMG"
     else codesign --force --timestamp --sign "$SIGN_ID" "$DMG"; fi
-    if [ -n "$MORPH_NOTARY_PROFILE" ]; then
-        xcrun notarytool submit "$DMG" --keychain-profile "$MORPH_NOTARY_PROFILE" --wait
-        xcrun stapler staple "$DMG"
-        spctl --assess --type open --context context:primary-signature -v "$DMG"
+    if [ "$SIGN_ID" != "-" ]; then
+        if xcrun notarytool history --keychain-profile "$NOTARY_PROFILE" >/dev/null 2>&1; then
+            xcrun notarytool submit "$DMG" --keychain-profile "$NOTARY_PROFILE" --wait
+            xcrun stapler staple "$DMG"
+            spctl --assess --type open --context context:primary-signature -v "$DMG"
+        else
+            echo "Not notarized: no notarytool profile \"$NOTARY_PROFILE\" (see the top of this script)"
+        fi
     fi
     echo "Built $DMG"
 fi
