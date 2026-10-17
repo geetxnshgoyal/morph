@@ -7,6 +7,14 @@ public struct MorphError: LocalizedError, Sendable {
     public var errorDescription: String? { message }
 }
 
+/// Not a failure: the file was left alone on purpose (say, it's already as small as it can get without
+/// losing quality). Runner reports it as a note rather than an error.
+public struct MorphNote: LocalizedError, Sendable {
+    public let message: String
+    public init(_ message: String) { self.message = message }
+    public var errorDescription: String? { message }
+}
+
 public enum FileKind: String, Codable, Sendable, CaseIterable {
     case image, video, audio, pdf, document, subtitle, data, archive, folder, other
 
@@ -35,8 +43,10 @@ public enum FileKind: String, Codable, Sendable, CaseIterable {
 public enum CompressionLevel: String, Codable, Sendable, CaseIterable {
     case light, balanced, strong
 
-    var imageQuality: Double {
-        switch self { case .light: 0.85; case .balanced: 0.7; case .strong: 0.5 }
+    /// How close a compressed image must stay to the original (SSIM on luminance, 1 = identical).
+    /// Light is indistinguishable, balanced looks the same side by side, strong may soften on a close look.
+    var minimumSimilarity: Double {
+        switch self { case .light: 0.995; case .balanced: 0.985; case .strong: 0.97 }
     }
 }
 
