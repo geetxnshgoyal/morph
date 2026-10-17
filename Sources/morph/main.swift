@@ -89,6 +89,8 @@ case "run":
         let size = (try? out.resourceValues(forKeys: [.fileSizeKey]).fileSize).map { ByteCountFormatter.string(fromByteCount: Int64($0), countStyle: .file) }
         print("✓ \(display(out))\(size.map { "  (\($0))" } ?? "")")
     }
+    if action.reportsSize, let sizes = result.sizeSummary, let change = result.sizeChange { print("  \(sizes)  (\(change))") }
+    for note in result.notes { print("– \(note)") }
     for f in result.failures { FileHandle.standardError.write(Data("✗ \(f)\n".utf8)) }
     FileHandle.standardError.write(Data(String(format: "%.1fs\n", Date().timeIntervalSince(start)).utf8))
     exit(result.failures.isEmpty ? 0 : 1)
