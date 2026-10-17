@@ -184,8 +184,8 @@ public enum ImageOps {
 
     /// Makes the file smaller without a visible change: re-encodes at a range of qualities, compares each with
     /// the original and keeps the smallest that still looks the same at the chosen compression level. Throws
-    /// `MorphNote` when that saves under 5%, rather than writing a near-identical copy. With `targetBytes`,
-    /// binary-searches quality, then downscales until the file fits.
+    /// `MorphNote` when that saves under 5%, rather than writing a near-identical copy. With `targetBytes`, makes
+    /// a JPEG (what upload forms accept), binary-searching quality and then downscaling until the file fits.
     public static func compress(_ url: URL, options: Options) throws -> URL {
         let src = try source(url)
         var img = try image(from: src, maxPixel: options.maxPixel)
@@ -210,13 +210,17 @@ public enum ImageOps {
             try data.write(to: out)
             return out
         }
-        let out = Output.url(for: url, ext: fmt.rawValue, suffix: "compressed", options: options)
+        let originalBytes = (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? .max
+        if srcFmt == .jpg, originalBytes <= target {
+            throw MorphNote("\(url.lastPathComponent) is already under \(SizeLimit.label(target))")
+        }
+        let out = Output.url(for: url, ext: ImageFormat.jpg.rawValue, suffix: "compressed", options: options)
         var longest = max(img.width, img.height)
-        for _ in 0..<10 {
+        while true {
             var lo = 0.05, hi = 0.95, best: Data?
             for _ in 0..<7 {
                 let mid = (lo + hi) / 2
-                let data = try encode(img, as: fmt, quality: mid, metadata: meta)
+                let data = try encode(img, as: .jpg, quality: mid, metadata: meta)
                 if data.count <= target { best = data; lo = mid } else { hi = mid }
             }
             if let best { try best.write(to: out); return out }
@@ -224,7 +228,7 @@ public enum ImageOps {
             guard longest > 64 else { break }
             img = try image(from: src, maxPixel: longest)
         }
-        throw MorphError("Couldn't get \(url.lastPathComponent) under \(ByteCountFormatter.string(fromByteCount: Int64(target), countStyle: .file))")
+        throw MorphError("Couldn't get \(url.lastPathComponent) under \(SizeLimit.label(target))")
     }
 
     /// The smallest encoding that still scores at least `similarity` against `img`. Qualities are tried from
@@ -232,27 +236,65 @@ public enum ImageOps {
     /// (encoders change chroma subsampling at some steps), so every passing step is kept and the smallest wins.
     static func smallestLookalike(_ img: CGImage, as fmt: ImageFormat, metadata: [CFString: Any],
                                   similarity: Double) throws -> Data? {
-        let reference = Similarity(reference: fmt.supportsAlpha ? img : flattened(img))
-        var best: Data?
+        let sample = sample(of: fmt.supportsAlpha ? img : flattened(img))
+        let reference = Similarity(reference: sample)
+        let qualities = Array(stride(from: 0.95, through: 0.3, by: -0.05))
+        // The sample is small, so every quality is tried at once, one per core.
+        let results = UnsafeMutableBufferPointer<(size: Int, passes: Bool)?>.allocate(capacity: qualities.count)
+        results.initialize(repeating: nil)
+        defer { results.deallocate() }
+        DispatchQueue.concurrentPerform(iterations: qualities.count) { i in
+            guard let data = try? encode(sample, as: fmt, quality: qualities[i]),
+                  let decoded = decodeFully(data, maxPixel: max(sample.width, sample.height)) else { return }
+            results[i] = (data.count, reference.score(decoded) >= similarity)
+        }
+        // Read back from high quality to low, exactly as if they had been tried one by one.
+        var chosen: (quality: Double, size: Int)?
         var misses = 0
-        for quality in stride(from: 0.95, through: 0.3, by: -0.05) {
-            let data = try encode(img, as: fmt, quality: quality, metadata: metadata, progressive: true)
-            // Decode fully up front through the thumbnail path: a lazily decoded image would be decoded again for
-            // every tile that's checked.
-            let decodeNow = [kCGImageSourceCreateThumbnailFromImageAlways: true, kCGImageSourceShouldCacheImmediately: true,
-                             kCGImageSourceThumbnailMaxPixelSize: max(img.width, img.height)] as CFDictionary
-            guard let decoded = CGImageSourceCreateWithData(data as CFData, nil).flatMap({ CGImageSourceCreateThumbnailAtIndex($0, 0, decodeNow) })
-            else { continue }
-            if reference.score(decoded) >= similarity {
+        for (quality, result) in zip(qualities, results) {
+            guard let result else { continue }
+            if result.passes {
                 misses = 0
-                if data.count < best?.count ?? .max { best = data }
+                if result.size < chosen?.size ?? .max { chosen = (quality, result.size) }
             } else {
                 // One step can dip and the next recover; two in a row means it only gets worse from here.
                 misses += 1
                 if misses == 2 { break }
             }
         }
-        return best
+        guard let chosen else { return nil }
+        return try encode(img, as: fmt, quality: chosen.quality, metadata: metadata, progressive: true)
+    }
+
+    /// Full-resolution patches from across the image, the 4×4 grid of 256-pixel squares that `Similarity` checks,
+    /// packed into one 1024-pixel image. Patches sit on the 16-pixel grid JPEG and HEIC blocks use, so each one
+    /// compresses just as it does inside the whole image, and trying a quality on this costs a fraction of trying
+    /// it on a big photo. Small images are used whole.
+    static func sample(of img: CGImage) -> CGImage {
+        let side = 256
+        guard img.width > side * 2 || img.height > side * 2 else { return img }
+        let w = min(side, img.width), h = min(side, img.height)
+        let alpha = hasAlpha(img)
+        let space = img.colorSpace.flatMap { $0.model == .rgb ? $0 : nil } ?? CGColorSpace(name: CGColorSpace.sRGB)!
+        guard let ctx = CGContext(data: nil, width: w * 4, height: h * 4, bitsPerComponent: 8, bytesPerRow: 0, space: space,
+                                  bitmapInfo: (alpha ? CGImageAlphaInfo.premultipliedLast : .noneSkipLast).rawValue) else { return img }
+        for row in 0..<4 {
+            for column in 0..<4 {
+                let x = (img.width - w) * column / 3 / 16 * 16, y = (img.height - h) * row / 3 / 16 * 16
+                guard let patch = img.cropping(to: CGRect(x: x, y: y, width: w, height: h)) else { continue }
+                // Core Graphics counts rows from the bottom; keep the patches in reading order.
+                ctx.draw(patch, in: CGRect(x: column * w, y: (3 - row) * h, width: w, height: h))
+            }
+        }
+        return ctx.makeImage() ?? img
+    }
+
+    /// Decodes every pixel up front through the thumbnail path: a lazily decoded image would be decoded again for
+    /// every tile that's checked.
+    private static func decodeFully(_ data: Data, maxPixel: Int) -> CGImage? {
+        let options = [kCGImageSourceCreateThumbnailFromImageAlways: true, kCGImageSourceShouldCacheImmediately: true,
+                       kCGImageSourceThumbnailMaxPixelSize: maxPixel] as CFDictionary
+        return CGImageSourceCreateWithData(data as CFData, nil).flatMap { CGImageSourceCreateThumbnailAtIndex($0, 0, options) }
     }
 
     // MARK: Privacy
