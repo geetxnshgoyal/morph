@@ -197,6 +197,8 @@ struct ResultView: View {
     @State private var pop = false
 
     private var ok: Bool { result.failures.isEmpty }
+    /// Nothing made and nothing failed: every file was already as small as it can usefully get.
+    private var unchanged: Bool { ok && result.outputs.isEmpty && !result.notes.isEmpty }
     private var media: [URL] { result.outputs.filter { [.image, .video].contains(FileKind(url: $0)) } }
 
     var body: some View {
@@ -209,7 +211,7 @@ struct ResultView: View {
                         .opacity(pop ? 0 : 0.9)
                         .animation(.easeOut(duration: 0.9), value: pop)
                     Circle().fill(ok ? AnyShapeStyle(Theme.aura) : AnyShapeStyle(Theme.coral.opacity(0.85)))
-                    Image(systemName: ok ? "checkmark" : "exclamationmark").font(.system(size: 40, weight: .bold)).foregroundStyle(.white)
+                    Image(systemName: unchanged ? "equal" : ok ? "checkmark" : "exclamationmark").font(.system(size: 40, weight: .bold)).foregroundStyle(.white)
                         .symbolEffect(.bounce, value: pop)
                 }
                 .frame(width: 96, height: 96)
@@ -218,9 +220,21 @@ struct ResultView: View {
                 .padding(.top, 30)
 
                 VStack(spacing: 4) {
-                    Text(ok ? "All done!" : result.outputs.isEmpty ? "That didn't work" : "Partly done").font(Theme.font(24, .bold))
-                    Text(ok ? "Saved to Morph in the Files app." : result.failures.first ?? "")
+                    Text(unchanged ? "Already small" : ok ? "All done!" : result.outputs.isEmpty ? "That didn't work" : "Partly done")
+                        .font(Theme.font(24, .bold))
+                    Text(unchanged ? "Any smaller would look worse, so nothing was changed."
+                         : ok ? "Saved to Morph in the Files app." : result.failures.first ?? "")
                         .font(Theme.font(15)).foregroundStyle(.secondary).multilineTextAlignment(.center)
+                }
+
+                if action.reportsSize, let sizes = result.sizeSummary, let change = result.sizeChange {
+                    HStack(spacing: 10) {
+                        Text(sizes).monospacedDigit()
+                        Text(change).foregroundStyle(Theme.tangerine)
+                    }
+                    .font(Theme.font(16, .semibold))
+                    .padding(.horizontal, 16).padding(.vertical, 9)
+                    .background(Capsule().fill(Theme.tint))
                 }
 
                 ForEach(result.outputs, id: \.self) { url in

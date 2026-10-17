@@ -100,9 +100,9 @@ enum CompressionOption: String, AppEnum {
 
     static let typeDisplayRepresentation: TypeDisplayRepresentation = "Compression"
     static let caseDisplayRepresentations: [CompressionOption: DisplayRepresentation] = [
-        .light: DisplayRepresentation(title: "Light", subtitle: "Barely noticeable, modest savings"),
-        .balanced: DisplayRepresentation(title: "Balanced", subtitle: "Good quality, much smaller files"),
-        .strong: DisplayRepresentation(title: "Strong", subtitle: "Smallest files, visible softening"),
+        .light: DisplayRepresentation(title: "Light", subtitle: "Looks identical, smaller savings"),
+        .balanced: DisplayRepresentation(title: "Balanced", subtitle: "Looks the same side by side, much smaller"),
+        .strong: DisplayRepresentation(title: "Strong", subtitle: "Smallest files; a close look may show softening"),
     ]
 
     var level: CompressionLevel { CompressionLevel(rawValue: rawValue) ?? .balanced }
@@ -278,7 +278,9 @@ enum IntentJob {
         let inputs = try stage(input)
         guard action.accepts(inputs) else { throw MorphIntentError.wrongFiles(action.title) }
         let result = await Runner.run(action, inputs: inputs, options: options)
-        if result.outputs.isEmpty { throw MorphIntentError.failed(result.failures.first ?? "Nothing was made") }
+        if result.outputs.isEmpty {
+            throw MorphIntentError.failed(result.failures.first ?? result.notes.first ?? "Nothing was made")
+        }
         return result.outputs
     }
 

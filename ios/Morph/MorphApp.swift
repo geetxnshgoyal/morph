@@ -150,9 +150,9 @@ extension CompressionLevel {
 
     var detail: String {
         switch self {
-        case .light: "Barely noticeable, modest savings."
-        case .balanced: "Good quality, much smaller files."
-        case .strong: "Smallest files, visible softening."
+        case .light: "Looks identical, smaller savings."
+        case .balanced: "Looks the same side by side, much smaller."
+        case .strong: "Smallest files; a close look may show softening."
         }
     }
 }
