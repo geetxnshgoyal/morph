@@ -19,6 +19,7 @@
 - **New look.** A launch animation where a drop splits into the Morph mark, a drifting aura behind the home card (iOS 18 and later), a liquid loader while working and an aura check when done.
 
 ### Engine
+- **Smarter compression.** Images are re-encoded at a range of qualities and the smallest version that still looks the same (by SSIM against the original) is kept; Light, Balanced and Strong set how strict "looks the same" is. JPEGs are written progressive. If a file can't get at least 5% smaller without looking worse, nothing is written and Morph says so instead of handing back a near-identical copy. Every result shows before → after sizes ("171 KB → 144 KB, 16% smaller") on the Mac, iPhone and command line.
 - New `file` action group for app-supplied file actions, and a public `Action` initializer so apps can define their own.
 
 ## 0.1.0 (2026-10-09)
