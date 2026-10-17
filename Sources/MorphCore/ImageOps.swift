@@ -102,7 +102,9 @@ public enum ImageOps {
         return out
     }
 
-    static func encode(_ img: CGImage, as fmt: ImageFormat, quality: Double, metadata: [CFString: Any] = [:]) throws -> Data {
+    /// `progressive` writes a progressive JPEG, usually a few percent smaller at the same quality.
+    static func encode(_ img: CGImage, as fmt: ImageFormat, quality: Double, metadata: [CFString: Any] = [:],
+                       progressive: Bool = false) throws -> Data {
         let img = fmt.supportsAlpha ? img : flattened(img)
         let data = NSMutableData()
         guard let dest = CGImageDestinationCreateWithData(data, fmt.type.identifier as CFString, 1, nil) else {
@@ -110,6 +112,7 @@ public enum ImageOps {
         }
         var props = metadata
         props[kCGImageDestinationLossyCompressionQuality] = quality
+        if progressive, fmt == .jpg { props[kCGImagePropertyJFIFDictionary] = [kCGImagePropertyJFIFIsProgressive: true] }
         CGImageDestinationAddImage(dest, img, props as CFDictionary)
         guard CGImageDestinationFinalize(dest) else { throw MorphError("Couldn't encode \(fmt.rawValue.uppercased())") }
         return data as Data
@@ -179,19 +182,35 @@ public enum ImageOps {
         return out
     }
 
-    /// Lossy re-encode. With `targetBytes`, binary-searches quality, then downscales until it fits.
+    /// Makes the file smaller without a visible change: re-encodes at a range of qualities, compares each with
+    /// the original and keeps the smallest that still looks the same at the chosen compression level. Throws
+    /// `MorphNote` when that saves under 5%, rather than writing a near-identical copy. With `targetBytes`,
+    /// binary-searches quality, then downscales until the file fits.
     public static func compress(_ url: URL, options: Options) throws -> URL {
         let src = try source(url)
         var img = try image(from: src, maxPixel: options.maxPixel)
         let srcFmt = outputFormat(for: src)
         let fmt: ImageFormat = srcFmt.isLossy ? srcFmt : (hasAlpha(img) ? .heic : .jpg)
-        let out = Output.url(for: url, ext: fmt.rawValue, suffix: "compressed", options: options)
         let meta = carriedMetadata(src)
 
         guard let target = options.targetBytes else {
-            try encode(img, as: fmt, quality: options.quality ?? options.compression.imageQuality, metadata: meta).write(to: out)
+            let data: Data
+            if let quality = options.quality {
+                data = try encode(img, as: fmt, quality: quality, metadata: meta, progressive: true)
+            } else {
+                let originalBytes = (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? .max
+                guard let best = try smallestLookalike(img, as: fmt, metadata: meta,
+                                                       similarity: options.compression.minimumSimilarity),
+                      Double(best.count) < Double(originalBytes) * 0.95 else {
+                    throw MorphNote("\(url.lastPathComponent) is already as small as it can get without losing quality")
+                }
+                data = best
+            }
+            let out = Output.url(for: url, ext: fmt.rawValue, suffix: "compressed", options: options)
+            try data.write(to: out)
             return out
         }
+        let out = Output.url(for: url, ext: fmt.rawValue, suffix: "compressed", options: options)
         var longest = max(img.width, img.height)
         for _ in 0..<10 {
             var lo = 0.05, hi = 0.95, best: Data?
@@ -206,6 +225,34 @@ public enum ImageOps {
             img = try image(from: src, maxPixel: longest)
         }
         throw MorphError("Couldn't get \(url.lastPathComponent) under \(ByteCountFormatter.string(fromByteCount: Int64(target), countStyle: .file))")
+    }
+
+    /// The smallest encoding that still scores at least `similarity` against `img`. Qualities are tried from
+    /// high to low, stopping once quality clearly falls short: size and similarity aren't perfectly monotonic
+    /// (encoders change chroma subsampling at some steps), so every passing step is kept and the smallest wins.
+    static func smallestLookalike(_ img: CGImage, as fmt: ImageFormat, metadata: [CFString: Any],
+                                  similarity: Double) throws -> Data? {
+        let reference = Similarity(reference: fmt.supportsAlpha ? img : flattened(img))
+        var best: Data?
+        var misses = 0
+        for quality in stride(from: 0.95, through: 0.3, by: -0.05) {
+            let data = try encode(img, as: fmt, quality: quality, metadata: metadata, progressive: true)
+            // Decode fully up front through the thumbnail path: a lazily decoded image would be decoded again for
+            // every tile that's checked.
+            let decodeNow = [kCGImageSourceCreateThumbnailFromImageAlways: true, kCGImageSourceShouldCacheImmediately: true,
+                             kCGImageSourceThumbnailMaxPixelSize: max(img.width, img.height)] as CFDictionary
+            guard let decoded = CGImageSourceCreateWithData(data as CFData, nil).flatMap({ CGImageSourceCreateThumbnailAtIndex($0, 0, decodeNow) })
+            else { continue }
+            if reference.score(decoded) >= similarity {
+                misses = 0
+                if data.count < best?.count ?? .max { best = data }
+            } else {
+                // One step can dip and the next recover; two in a row means it only gets worse from here.
+                misses += 1
+                if misses == 2 { break }
+            }
+        }
+        return best
     }
 
     // MARK: Privacy

@@ -3,6 +3,26 @@ import Foundation
 public struct RunResult: Sendable {
     public var outputs: [URL] = []
     public var failures: [String] = []
+    /// Files left alone on purpose, with why (say, already as small as they can get).
+    public var notes: [String] = []
+    /// Combined size of the inputs that produced something, and of what they produced.
+    public var inputBytes: Int64 = 0
+    public var outputBytes: Int64 = 0
+
+    /// "171 KB → 139 KB", when there's a before and after to compare.
+    public var sizeSummary: String? {
+        guard inputBytes > 0, outputBytes > 0 else { return nil }
+        return "\(Self.format(inputBytes)) → \(Self.format(outputBytes))"
+    }
+
+    /// "19% smaller", "12% larger" or "Same size".
+    public var sizeChange: String? {
+        guard inputBytes > 0, outputBytes > 0 else { return nil }
+        let percent = Int((Double(inputBytes - outputBytes) / Double(inputBytes) * 100).rounded())
+        return percent > 0 ? "\(percent)% smaller" : percent < 0 ? "\(-percent)% larger" : "Same size"
+    }
+
+    static func format(_ bytes: Int64) -> String { ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file) }
 }
 
 public enum Runner {
@@ -11,28 +31,44 @@ public enum Runner {
                            progress: (@Sendable (Int, Int) -> Void)? = nil) async -> RunResult {
         var result = RunResult()
         if action.combinesInputs {
-            do { result.outputs = try await action.run(inputs, options) }
-            catch { result.failures.append(error.localizedDescription) }
+            do {
+                result.outputs = try await action.run(inputs, options)
+                if !result.outputs.isEmpty {
+                    result.inputBytes = inputs.reduce(0) { $0 + size(of: $1) }
+                    result.outputBytes = result.outputs.reduce(0) { $0 + size(of: $1) }
+                }
+            } catch let note as MorphNote {
+                result.notes.append(note.message)
+            } catch {
+                result.failures.append(error.localizedDescription)
+            }
             progress?(1, 1)
         } else {
             let limit = max(ProcessInfo.processInfo.activeProcessorCount / 2, 2)
             var done = 0
-            await withTaskGroup(of: (Int, Result<[URL], Error>).self) { group in
+            await withTaskGroup(of: (Int, Outcome).self) { group in
                 var next = 0
                 func add() {
                     let index = next, url = inputs[index]
                     next += 1
                     group.addTask {
-                        do { return (index, .success(try await action.run([url], options))) }
-                        catch { return (index, .failure(MorphError("\(url.lastPathComponent): \(error.localizedDescription)"))) }
+                        do { return (index, .made(try await action.run([url], options))) }
+                        catch let note as MorphNote { return (index, .skipped(note.message)) }
+                        catch { return (index, .failed("\(url.lastPathComponent): \(error.localizedDescription)")) }
                     }
                 }
                 while next < min(limit, inputs.count) { add() }
                 var ordered: [Int: [URL]] = [:]
                 for await (index, outcome) in group {
                     switch outcome {
-                    case .success(let urls): ordered[index] = urls
-                    case .failure(let error): result.failures.append(error.localizedDescription)
+                    case .made(let urls):
+                        ordered[index] = urls
+                        if !urls.isEmpty {
+                            result.inputBytes += size(of: inputs[index])
+                            result.outputBytes += urls.reduce(0) { $0 + size(of: $1) }
+                        }
+                    case .skipped(let message): result.notes.append(message)
+                    case .failed(let message): result.failures.append(message)
                     }
                     done += 1
                     progress?(done, inputs.count)
@@ -45,6 +81,14 @@ public enum Runner {
             History.shared.append(HistoryEntry(title: action.title, inputs: inputs, outputs: result.outputs, failures: result.failures))
         }
         return result
+    }
+
+    private enum Outcome: Sendable {
+        case made([URL]), skipped(String), failed(String)
+    }
+
+    static func size(of url: URL) -> Int64 {
+        Int64((try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0)
     }
 }
 

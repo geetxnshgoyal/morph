@@ -28,6 +28,13 @@ public struct Action: Identifiable, Sendable {
 
     public var isAvailable: Bool { !needsFFmpeg || ExternalTool.ffmpeg != nil }
 
+    /// Whether "171 KB → 139 KB" is worth showing after this action: true for actions that remake the same
+    /// content, false for ones that extract something else (text, codes, snapshots).
+    public var reportsSize: Bool {
+        group == .recipe || ["tool.compress", "tool.resize", "tool.strip-metadata"].contains(id)
+            || (group == .convert && !["convert.pdf-text", "convert.pdf-images"].contains(id))
+    }
+
     public func accepts(_ urls: [URL]) -> Bool {
         guard urls.count >= minimumInputs, isAvailable else { return false }
         guard urls.allSatisfy({ kinds.contains(FileKind(url: $0)) }) else { return false }
@@ -112,11 +119,17 @@ public enum Library {
 
         // Tools
         list.append(one("tool.compress", "Compress", "arrow.down.right.and.arrow.up.left", .tool, [.image, .video, .pdf]) { url, o in
-            switch FileKind(url: url) {
+            let out: URL = switch FileKind(url: url) {
             case .video: try await MediaOps.compressVideo(url, options: o)
             case .pdf: try PDFOps.compress(url, options: o)
             default: try ImageOps.compress(url, options: o)
             }
+            // A "compressed" copy that isn't meaningfully smaller is only a worse duplicate.
+            if o.targetBytes == nil, Double(Runner.size(of: out)) >= Double(Runner.size(of: url)) * 0.95 {
+                try? FileManager.default.removeItem(at: out)
+                throw MorphNote("\(url.lastPathComponent) is already as small as it can get without losing quality")
+            }
+            return out
         })
         list.append(one("tool.resize", "Resize", "arrow.up.left.and.down.right.magnifyingglass", .tool, [.image]) { try ImageOps.resize($0, options: $1) })
         list.append(one("tool.strip-metadata", "Remove Metadata", "eye.slash", .tool, [.image, .video, .audio]) { url, o in
