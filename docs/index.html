@@ -59,12 +59,14 @@
     font-variation-settings: "wdth" 82, "opsz" 96;
     letter-spacing: -0.02em;
     margin: 0 0 1.5rem;
+    text-wrap: balance;
     animation: unsquish 1.2s cubic-bezier(.2, .8, .2, 1) both;
   }
   @keyframes unsquish {
     from { font-variation-settings: "wdth" 100, "opsz" 96; opacity: 0; }
     to { font-variation-settings: "wdth" 82, "opsz" 96; opacity: 1; }
   }
+  .lede, .lead { text-wrap: pretty; }
   .lede { font-size: 1.25rem; color: var(--ink-soft); max-width: var(--measure); margin: 0 0 2.2rem; }
   .cta { display: flex; flex-wrap: wrap; gap: .8rem; align-items: center; }
   .button {
@@ -81,17 +83,20 @@
 
   /* The live wheel */
   .stage { position: relative; display: grid; justify-items: center; gap: 1.4rem; }
+  /* The wheel and its glow share one square, so the glow stays centred on the ring at any width. */
+  .dial { position: relative; width: min(100%, 470px); aspect-ratio: 1; }
   .halo {
-    position: absolute; inset: 6% 6% auto; aspect-ratio: 1;
+    position: absolute; inset: 6%;
     border-radius: 50%;
     background: conic-gradient(from 0deg, var(--tangerine), var(--coral), var(--rose), var(--violet), var(--tangerine));
-    -webkit-mask: radial-gradient(circle, transparent 38%, black 46%, black 64%, transparent 74%);
-            mask: radial-gradient(circle, transparent 38%, black 46%, black 64%, transparent 74%);
-    filter: blur(26px); opacity: .55;
+    /* closest-side makes the stops fractions of the ring's radius: light only under the outer half of the petals. */
+    -webkit-mask: radial-gradient(circle closest-side, transparent 50%, black 68%, black 92%, transparent 100%);
+            mask: radial-gradient(circle closest-side, transparent 50%, black 68%, black 92%, transparent 100%);
+    filter: blur(20px); opacity: .6;
     animation: turn 16s linear infinite;
   }
   @keyframes turn { to { transform: rotate(360deg); } }
-  #wheel { width: min(100%, 470px); height: auto; position: relative; overflow: visible; touch-action: manipulation; }
+  #wheel { position: relative; display: block; width: 100%; height: 100%; overflow: visible; touch-action: manipulation; }
   .petal { cursor: pointer; transform-box: view-box; transform-origin: 220px 220px; }
   .petal .face { transition: transform .32s cubic-bezier(.3, 1.6, .5, 1); }
   .petal path { fill: url(#petalFill); stroke: rgba(255, 255, 255, .95); stroke-width: 1.2; transition: fill .2s; }
@@ -121,6 +126,7 @@
     font: 720 clamp(2.1rem, 4vw, 3.3rem)/1.04 var(--display);
     font-variation-settings: "wdth" 88, "opsz" 72;
     letter-spacing: -0.015em; margin: 0 0 1.1rem; max-width: 18ch;
+    text-wrap: balance;
   }
   .lead { color: var(--ink-soft); font-size: 1.15rem; max-width: var(--measure); margin: 0; }
   .split { display: grid; grid-template-columns: 0.9fr 1.1fr; gap: 3.5rem; align-items: center; }
@@ -187,6 +193,8 @@
     .split .shots-first { order: -1; }
   }
   @media (max-width: 520px) {
+    .keys { display: grid; grid-template-columns: 1fr 1fr; border-radius: 26px; width: 100%; }
+    .key { justify-content: center; }
     .wheels { grid-template-columns: 1fr; }
     .shortcuts { grid-template-columns: 1fr; }
     .mac-pair { grid-template-columns: 1fr; }
@@ -227,26 +235,28 @@
       </div>
 
       <div class="stage">
-        <div class="halo" aria-hidden="true"></div>
-        <svg id="wheel" viewBox="0 0 440 440" role="group" aria-label="Interactive preview of the Morph wheel">
-          <defs>
-            <radialGradient id="petalFill" gradientUnits="userSpaceOnUse" cx="220" cy="220" r="200">
-              <stop offset=".45" stop-color="#FFFFFF" stop-opacity=".88"/>
-              <stop offset="1" stop-color="#FFE3EE" stop-opacity=".82"/>
-            </radialGradient>
-            <linearGradient id="auraFill" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0" stop-color="#FF8F38"/>
-              <stop offset=".55" stop-color="#FF6661"/>
-              <stop offset="1" stop-color="#F0508C"/>
-            </linearGradient>
-          </defs>
-          <g id="petals"></g>
-          <g class="hub" aria-live="polite">
-            <circle cx="220" cy="220" r="78"/>
-            <text class="title" id="hubTitle" x="220" y="216">photo.heic</text>
-            <text class="caption" id="hubCaption" x="220" y="240">Tap ⇧ ⌘ ⌃ ⌥</text>
-          </g>
-        </svg>
+        <div class="dial">
+          <div class="halo" aria-hidden="true"></div>
+          <svg id="wheel" viewBox="0 0 440 440" role="group" aria-label="Interactive preview of the Morph wheel">
+            <defs>
+              <radialGradient id="petalFill" gradientUnits="userSpaceOnUse" cx="220" cy="220" r="200">
+                <stop offset=".45" stop-color="#FFFFFF" stop-opacity=".88"/>
+                <stop offset="1" stop-color="#FFE3EE" stop-opacity=".82"/>
+              </radialGradient>
+              <linearGradient id="auraFill" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stop-color="#FF8F38"/>
+                <stop offset=".55" stop-color="#FF6661"/>
+                <stop offset="1" stop-color="#F0508C"/>
+              </linearGradient>
+            </defs>
+            <g id="petals"></g>
+            <g class="hub" aria-live="polite">
+              <circle cx="220" cy="220" r="78"/>
+              <text class="title" id="hubTitle" x="220" y="216">photo.heic</text>
+              <text class="caption" id="hubCaption" x="220" y="240">Tap ⇧ ⌘ ⌃ ⌥</text>
+            </g>
+          </svg>
+        </div>
         <div class="keys" role="group" aria-label="Wheels">
           <button class="key" data-wheel="convert" aria-pressed="true"><kbd>⇧</kbd>Convert</button>
           <button class="key" data-wheel="tools" aria-pressed="false"><kbd>⌘</kbd>Tools</button>
