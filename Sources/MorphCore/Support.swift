@@ -74,6 +74,24 @@ public struct Options: Codable, Sendable {
     }
 }
 
+/// Size limits the apps offer for Compress, for upload forms that cap a file's size (often 20 KB to 2 MB).
+/// Stored in bytes under `key`; 0 means no limit. Sizes are decimal, so "200 KB" also fits a 200 KiB cap.
+public enum SizeLimit {
+    public static let key = "sizeLimit"
+    public static let presets = [20_000, 50_000, 100_000, 200_000, 500_000, 1_000_000, 2_000_000, 5_000_000]
+
+    public static func label(_ bytes: Int) -> String {
+        bytes <= 0 ? "No limit" : ByteCountFormatter.string(fromByteCount: Int64(bytes), countStyle: .file)
+    }
+
+    /// What Compress does with this limit, for the Settings screens.
+    public static func detail(_ bytes: Int) -> String {
+        bytes <= 0
+            ? "Compress makes the smallest file that still looks the same. Set a limit for upload forms that cap file size."
+            : "Compress fits photos under \(label(bytes)) as JPG, at the best quality that fits, ready for upload forms."
+    }
+}
+
 /// Picks non-colliding output paths next to the source (originals are never overwritten).
 public enum Output {
     private static let lock = NSLock()
