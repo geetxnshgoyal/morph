@@ -9,10 +9,12 @@ let width: CGFloat = 640, height: CGFloat = 420
 /// Icon centres, in Finder's top-left coordinates; keep in sync with dmg-settings.py.
 let appCenter = CGPoint(x: 170, y: 220), appsCenter = CGPoint(x: 470, y: 220)
 
-let tangerine = NSColor(srgbRed: 1.00, green: 0.56, blue: 0.22, alpha: 1)
-let coral = NSColor(srgbRed: 1.00, green: 0.40, blue: 0.38, alpha: 1)
-let ink = NSColor(srgbRed: 0.14, green: 0.12, blue: 0.11, alpha: 1)
-let muted = NSColor(srgbRed: 0.54, green: 0.50, blue: 0.47, alpha: 1)
+func hex(_ value: Int) -> NSColor {
+    NSColor(srgbRed: CGFloat(value >> 16 & 0xFF) / 255, green: CGFloat(value >> 8 & 0xFF) / 255, blue: CGFloat(value & 0xFF) / 255, alpha: 1)
+}
+let brand = hex(0x0B6E69)   // Teal Ink
+let ink = hex(0x121A19)
+let muted = hex(0x5C6664)
 
 func rounded(_ size: CGFloat, _ weight: NSFont.Weight) -> NSFont {
     let base = NSFont.systemFont(ofSize: size, weight: weight)
@@ -37,15 +39,13 @@ func render(scale: CGFloat) -> Data {
     NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
     defer { NSGraphicsContext.restoreGraphicsState() }
 
-    // Cream canvas with a warm glow from the top.
-    NSColor(srgbRed: 1.00, green: 0.97, blue: 0.94, alpha: 1).setFill()
+    // Flat cool-paper canvas.
+    hex(0xF1F4F3).setFill()
     NSRect(x: 0, y: 0, width: width, height: height).fill()
-    NSGradient(colors: [tangerine.withAlphaComponent(0.16), tangerine.withAlphaComponent(0)])!
-        .draw(fromCenter: CGPoint(x: width / 2, y: height + 40), radius: 0, toCenter: CGPoint(x: width / 2, y: height + 40), radius: 380, options: [])
 
     // Playful soft bubbles in the corners.
     for (center, radius, alpha) in [(CGPoint(x: 600, y: 390), 90.0, 0.10), (CGPoint(x: 40, y: 40), 70.0, 0.08), (CGPoint(x: 590, y: 50), 36.0, 0.07)] {
-        coral.withAlphaComponent(alpha).setFill()
+        brand.withAlphaComponent(alpha * 0.8).setFill()
         NSBezierPath(ovalIn: NSRect(x: center.x - radius, y: center.y - radius, width: radius * 2, height: radius * 2)).fill()
     }
 
@@ -54,11 +54,14 @@ func render(scale: CGFloat) -> Data {
     let wordWidth = ("Morph" as NSString).size(withAttributes: word).width
     // Centre the mark and wordmark together.
     let mark = NSRect(x: (width - (34 + 12 + wordWidth)) / 2, y: height - 70, width: 34, height: 34)
-    NSGradient(colors: [tangerine, coral])!.draw(in: NSBezierPath(roundedRect: mark, xRadius: 10, yRadius: 10), angle: -60)
-    let config = NSImage.SymbolConfiguration(pointSize: 17, weight: .medium).applying(.init(paletteColors: [.white]))
-    if let glyph = NSImage(systemSymbolName: "circle.hexagongrid.fill", accessibilityDescription: nil)?.withSymbolConfiguration(config) {
-        glyph.draw(in: NSRect(x: mark.midX - glyph.size.width / 2, y: mark.midY - glyph.size.height / 2,
-                              width: glyph.size.width, height: glyph.size.height))
+    brand.setFill()
+    NSBezierPath(roundedRect: mark, xRadius: 10, yRadius: 10).fill()
+    // The app icon's seven drops.
+    NSColor.white.setFill()
+    for i in -1..<6 {
+        let angle = Double(i) * .pi / 3 - .pi / 2
+        let x = mark.midX + (i < 0 ? 0 : cos(angle) * 6.5), y = mark.midY + (i < 0 ? 0 : sin(angle) * 6.5)
+        NSBezierPath(ovalIn: NSRect(x: x - 2.5, y: y - 2.5, width: 5, height: 5)).fill()
     }
     ("Morph" as NSString).draw(at: CGPoint(x: mark.maxX + 12, y: mark.midY - 19), withAttributes: word)
     text("Convert anything, right where it is.", font: rounded(14, .medium), color: muted, centerX: width / 2, top: 82)
@@ -69,7 +72,7 @@ func render(scale: CGFloat) -> Data {
         let disc = NSBezierPath(ovalIn: NSRect(x: c.x - 82, y: c.y - 82, width: 164, height: 164))
         NSGraphicsContext.saveGraphicsState()
         let shadow = NSShadow()
-        shadow.shadowColor = coral.withAlphaComponent(0.18)
+        shadow.shadowColor = NSColor.black.withAlphaComponent(0.08)
         shadow.shadowBlurRadius = 22
         shadow.shadowOffset = NSSize(width: 0, height: -6)
         shadow.set()
@@ -78,7 +81,7 @@ func render(scale: CGFloat) -> Data {
         NSGraphicsContext.restoreGraphicsState()
     }
 
-    // Curved gradient arrow from the app to Applications.
+    // Curved arrow from the app to Applications.
     let start = flip(CGPoint(x: appCenter.x + 98, y: appCenter.y - 6))
     let end = flip(CGPoint(x: appsCenter.x - 104, y: appsCenter.y - 6))
     let control2 = CGPoint(x: end.x - 40, y: end.y + 44)
@@ -99,7 +102,7 @@ func render(scale: CGFloat) -> Data {
     head.lineWidth = 7
     head.lineCapStyle = .round
     head.lineJoinStyle = .round
-    // Stroke into a mask, then fill the mask with the gradient.
+    // Stroke into a mask, then fill the mask.
     let ctx = NSGraphicsContext.current!.cgContext
     ctx.saveGState()
     ctx.setLineWidth(7)
@@ -109,18 +112,19 @@ func render(scale: CGFloat) -> Data {
     ctx.addPath(head.cgPath)
     ctx.replacePathWithStrokedPath()
     ctx.clip()
-    NSGradient(colors: [tangerine, coral])!.draw(in: NSRect(x: start.x - 10, y: end.y - 40, width: end.x - start.x + 20, height: 130), angle: 0)
+    brand.setFill()
+    NSRect(x: start.x - 10, y: end.y - 40, width: end.x - start.x + 20, height: 130).fill()
     ctx.restoreGState()
 
     // Footer instructions.
     text("Drag Morph onto Applications to install", font: rounded(15, .semibold), color: ink, centerX: width / 2, top: 330)
-    text("FREE  ·  PRIVATE  ·  WORKS OFFLINE", font: rounded(10, .bold), color: tangerine, centerX: width / 2, top: 354, kern: 1.6)
+    text("FREE  ·  PRIVATE  ·  WORKS OFFLINE", font: rounded(10, .bold), color: brand, centerX: width / 2, top: 354, kern: 1.6)
 
     // Credit line: Morph is free, so word of mouth is the marketing.
     let credit = NSMutableAttributedString()
     let small: [NSAttributedString.Key: Any] = [.font: rounded(11, .medium), .foregroundColor: muted]
     credit.append(NSAttributedString(string: "Made with ", attributes: small))
-    credit.append(NSAttributedString(string: "♥", attributes: [.font: rounded(11, .bold), .foregroundColor: coral]))
+    credit.append(NSAttributedString(string: "♥", attributes: [.font: rounded(11, .bold), .foregroundColor: brand]))
     credit.append(NSAttributedString(string: " by ", attributes: small))
     credit.append(NSAttributedString(string: "Geetansh Goyal", attributes: [.font: rounded(11, .bold), .foregroundColor: ink]))
     credit.append(NSAttributedString(string: "  ·  Free forever, share it with a friend", attributes: small))
