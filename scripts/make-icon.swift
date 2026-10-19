@@ -1,6 +1,7 @@
 // Draws Morph's app icon.
 //   swift scripts/make-icon.swift <out.iconset>        macOS iconset (bundle.sh turns it into AppIcon.icns)
-//   swift scripts/make-icon.swift --square <out.png>   full-bleed 1024px square; iOS and Android mask it themselves
+//   swift scripts/make-icon.swift --square <out.png>   full-bleed, opaque 1024px square (the App Store rejects
+//                                                       alpha); iOS masks it itself
 import AppKit
 
 let args = Array(CommandLine.arguments.dropFirst())
@@ -9,8 +10,8 @@ let out = URL(fileURLWithPath: args.last ?? "AppIcon.iconset")
 
 func render(_ px: Int, square: Bool = false) -> Data {
     let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: px, pixelsHigh: px, bitsPerSample: 8,
-                               samplesPerPixel: 4, hasAlpha: true, isPlanar: false, colorSpaceName: .deviceRGB,
-                               bytesPerRow: 0, bitsPerPixel: 0)!
+                               samplesPerPixel: square ? 3 : 4, hasAlpha: !square, isPlanar: false,
+                               colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0)!
     NSGraphicsContext.saveGraphicsState()
     NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
     let s = CGFloat(px)
@@ -28,18 +29,18 @@ func render(_ px: Int, square: Bool = false) -> Data {
     shadow.set()
     NSColor.black.setFill(); shape.fill()
     NSGraphicsContext.restoreGraphicsState()
-    // Tangerine → coral, the same accent as the apps' Theme.
-    NSGradient(colors: [NSColor(srgbRed: 1.00, green: 0.56, blue: 0.22, alpha: 1),
-                        NSColor(srgbRed: 1.00, green: 0.40, blue: 0.38, alpha: 1)])!
-        .draw(in: shape, angle: -60)
+    // Flat Teal Ink, the apps' brand colour.
+    NSColor(srgbRed: 0x0B / 255, green: 0x6E / 255, blue: 0x69 / 255, alpha: 1).setFill()
+    shape.fill()
 
-    // The menu bar glyph, white, filling the middle of the tile.
-    let config = NSImage.SymbolConfiguration(pointSize: tile.width * (square ? 0.42 : 0.52), weight: .medium)
-        .applying(.init(paletteColors: [.white]))
-    if let glyph = NSImage(systemSymbolName: "circle.hexagongrid.fill", accessibilityDescription: nil)?
-        .withSymbolConfiguration(config) {
-        let g = glyph.size
-        glyph.draw(in: NSRect(x: (s - g.width) / 2, y: (s - g.height) / 2, width: g.width, height: g.height))
+    // Morph's seven drops in white, point up, in the same proportions as MorphMark in the apps.
+    let mark = tile.width * (square ? 0.58 : 0.62)
+    let reach = mark * 0.31, radius = mark * 0.12
+    NSColor.white.setFill()
+    for i in -1..<6 {
+        let angle = Double(i) * .pi / 3 - .pi / 2
+        let x = tile.midX + (i < 0 ? 0 : cos(angle) * reach), y = tile.midY + (i < 0 ? 0 : sin(angle) * reach)
+        NSBezierPath(ovalIn: NSRect(x: x - radius, y: y - radius, width: radius * 2, height: radius * 2)).fill()
     }
 
     NSGraphicsContext.restoreGraphicsState()
