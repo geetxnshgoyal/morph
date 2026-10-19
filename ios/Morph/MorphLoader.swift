@@ -1,6 +1,6 @@
 import SwiftUI
 
-// Morph's liquid motion: drops that orbit, stretch and merge like mercury, coloured with the aura.
+// Morph's liquid motion: drops that orbit, stretch and merge like mercury, in Teal Ink.
 // This file is shared word for word with Sources/MorphMac/MorphLoader.swift.
 
 /// One circle of liquid.
@@ -30,8 +30,7 @@ struct Metaballs: View {
     }
 }
 
-/// The "working on it" loader: four drops circle a pulsing core, reaching out and melting back in, under a
-/// slowly turning aura.
+/// The "working on it" loader: four drops circle a pulsing core, reaching out and melting back in.
 struct MorphLoader: View {
     var size: CGFloat = 64
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -39,8 +38,7 @@ struct MorphLoader: View {
     var body: some View {
         TimelineView(.animation(paused: reduceMotion)) { timeline in
             let t = timeline.date.timeIntervalSinceReferenceDate
-            AngularGradient(colors: Theme.auraColors + [Theme.tangerine], center: .center)
-                .rotationEffect(.radians(t * 0.9))
+            Theme.brand
                 .mask(Metaballs(drops: Self.drops(at: t, size: size), blur: size * 0.085))
         }
         .frame(width: size, height: size)
@@ -69,7 +67,7 @@ struct MorphMark: View {
     var size: CGFloat = 120
 
     var body: some View {
-        Theme.aura
+        Theme.brand
             .mask(Metaballs(drops: Self.drops(split: split, size: size), blur: size * 0.04))
             .frame(width: size, height: size)
     }

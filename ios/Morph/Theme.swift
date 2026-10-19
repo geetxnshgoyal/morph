@@ -1,24 +1,21 @@
 import SwiftUI
+import MorphCore
 import UIKit
 
-/// Morph's soft, bubbly look; mirrors Sources/MorphMac/Theme.swift and the Android theme.
+/// Morph's look: one flat brand colour, Teal Ink, on cool neutrals; mirrors Sources/MorphMac/Theme.swift and
+/// the Android theme.
 enum Theme {
-    static let tangerine = Color(red: 1.00, green: 0.56, blue: 0.22)   // #FF8F38
-    static let coral = Color(red: 1.00, green: 0.40, blue: 0.38)       // #FF6661
-    static let accent = LinearGradient(colors: [tangerine, coral], startPoint: .topLeading, endPoint: .bottomTrailing)
-    static let rose = Color(red: 0.94, green: 0.31, blue: 0.55)        // #F0508C
-    static let violet = Color(red: 0.55, green: 0.42, blue: 1.00)      // #8C6BFF
-    /// Morph's signature "aura": the tangerine accent melting through coral and rose into violet. Used for
-    /// highlights, glows and anything that moves, so Morph never reads as just another orange app.
-    static let auraColors = [tangerine, coral, rose, violet]
-    static let aura = LinearGradient(colors: auraColors, startPoint: .topLeading, endPoint: .bottomTrailing)
+    /// The accent chosen in Settings (Teal Ink unless changed), for the one selected or primary thing on screen.
+    static var brand: Color { Palette.current.fill }
+    /// The accent for text and symbols, readable on the canvas in light and dark mode.
+    static var brandText: Color { Palette.current.text }
+    /// Labels and symbols drawn on a `brand` fill.
+    static var onBrand: Color { Palette.current.onFill }
+    static var tint: Color { Palette.current.tint }
 
-    /// Cream in light mode, warm charcoal in dark.
-    static let canvas = dynamic(light: UIColor(red: 1.00, green: 0.97, blue: 0.94, alpha: 1),
-                                dark: UIColor(red: 0.12, green: 0.11, blue: 0.10, alpha: 1))
-    static let surface = dynamic(light: .white,
-                                 dark: UIColor(red: 0.18, green: 0.16, blue: 0.15, alpha: 1))
-    static let tint = tangerine.opacity(0.14)
+    /// Cool paper in light mode, deep teal-black in dark.
+    static let canvas = dynamic(light: rgb(0xF1F4F3), dark: rgb(0x0E1414))
+    static let surface = dynamic(light: .white, dark: rgb(0x172020))
 
     static let radius: CGFloat = 26
     static let smallRadius: CGFloat = 18
@@ -27,28 +24,202 @@ enum Theme {
         .system(size: size, weight: weight, design: .rounded)
     }
 
-    private static func dynamic(light: UIColor, dark: UIColor) -> Color {
+    fileprivate static func rgb(_ hex: Int) -> UIColor {
+        UIColor(red: CGFloat(hex >> 16 & 0xFF) / 255, green: CGFloat(hex >> 8 & 0xFF) / 255,
+                blue: CGFloat(hex & 0xFF) / 255, alpha: 1)
+    }
+
+    fileprivate static func dynamic(light: UIColor, dark: UIColor) -> Color {
         Color(uiColor: UIColor { $0.userInterfaceStyle == .dark ? dark : light })
     }
 }
 
-/// Tangerine pill for the main action on a screen: tinted Liquid Glass on iOS 26, a gradient before that.
+/// The accent colours people can choose in Settings. Teal Ink is Morph's own and the default; the app icon stays
+/// Teal Ink whatever is picked. Every option keeps labels on its fill at WCAG AA or better in light and dark mode.
+enum Palette: String, CaseIterable, Identifiable {
+    case teal, ultramarine, green, magenta, yellow
+
+    static let key = "palette"
+    /// The chosen palette, kept in memory: views read it on every frame.
+    static var current: Palette { PaletteStore.shared.current }
+
+    var id: String { rawValue }
+
+    var name: String {
+        switch self {
+        case .teal: return "Teal Ink"
+        case .ultramarine: return "Ultramarine"
+        case .green: return "Green"
+        case .magenta: return "Magenta"
+        case .yellow: return "Yellow"
+        }
+    }
+
+    var fill: Color { Self.built[self]!.fill }
+    var text: Color { Self.built[self]!.text }
+    var onFill: Color { Self.built[self]!.onFill }
+    var textOnWhite: Color { Self.built[self]!.textOnWhite }
+    var tint: Color { Self.built[self]!.tint }
+
+    /// Every colour is built once. Views ask for them on every frame, and handing back the same instance lets
+    /// SwiftUI see that nothing changed instead of redrawing.
+    private static let built: [Palette: (fill: Color, text: Color, onFill: Color, textOnWhite: Color, tint: Color)] =
+        Dictionary(uniqueKeysWithValues: allCases.map { palette in
+            let fill = palette.makeFill()
+            return (palette, (fill, palette.makeText(), palette.makeOnFill(), palette.makeTextOnWhite(), fill.opacity(0.12)))
+        })
+
+    /// Fills; Teal Ink steps lighter in dark mode so filled shapes stand off the dark canvas.
+    private func makeFill() -> Color {
+        switch self {
+        case .teal: return Theme.dynamic(light: Theme.rgb(0x0B6E69), dark: Theme.rgb(0x157F79))
+        case .ultramarine: return Color(uiColor: Theme.rgb(0x2F2EFF))
+        case .green: return Color(uiColor: Theme.rgb(0x17804A))
+        case .magenta: return Color(uiColor: Theme.rgb(0xD6007A))
+        case .yellow: return Color(uiColor: Theme.rgb(0xFFD60A))
+        }
+    }
+
+    /// Text and symbols: deep enough to read on light surfaces, light enough on dark ones.
+    private func makeText() -> Color {
+        switch self {
+        case .teal: return Theme.dynamic(light: Theme.rgb(0x0B6E69), dark: Theme.rgb(0x4FC1B9))
+        case .ultramarine: return Theme.dynamic(light: Theme.rgb(0x2F2EFF), dark: Theme.rgb(0xA6A8FF))
+        case .green: return Theme.dynamic(light: Theme.rgb(0x136B3E), dark: Theme.rgb(0x62C48E))
+        case .magenta: return Theme.dynamic(light: Theme.rgb(0xC2006E), dark: Theme.rgb(0xFF8CC6))
+        case .yellow: return Theme.dynamic(light: Theme.rgb(0x735A00), dark: Theme.rgb(0xFFD60A))
+        }
+    }
+
+    /// This palette's text colour as it reads on white, for controls drawn on white in both modes.
+    private func makeTextOnWhite() -> Color {
+        switch self {
+        case .teal: return Color(uiColor: Theme.rgb(0x0B6E69))
+        case .ultramarine: return Color(uiColor: Theme.rgb(0x2F2EFF))
+        case .green: return Color(uiColor: Theme.rgb(0x136B3E))
+        case .magenta: return Color(uiColor: Theme.rgb(0xC2006E))
+        case .yellow: return Color(uiColor: Theme.rgb(0x735A00))
+        }
+    }
+
+    /// Labels on the fill: white, except on yellow.
+    private func makeOnFill() -> Color { self == .yellow ? Color(uiColor: Theme.rgb(0x121318)) : .white }
+}
+
+/// Holds the chosen palette in memory and re-reads it whenever settings change, so `Palette.current` costs nothing.
+private final class PaletteStore {
+    static let shared = PaletteStore()
+    private(set) var current: Palette
+
+    private init() {
+        current = Self.read()
+        NotificationCenter.default.addObserver(forName: UserDefaults.didChangeNotification, object: nil, queue: nil) { [weak self] _ in
+            self?.current = Self.read()
+        }
+    }
+
+    private static func read() -> Palette {
+        Palette(rawValue: UserDefaults.standard.string(forKey: Palette.key) ?? "") ?? .teal
+    }
+}
+
+/// Builds its content again whenever the accent changes in Settings, so every `Theme` colour inside picks it up at
+/// once. The content is a closure on purpose: a view built ahead of time would keep the colours it was built with.
+struct PaletteScope<Content: View>: View {
+    @AppStorage(Palette.key) private var palette = Palette.teal.rawValue
+    @ViewBuilder var content: () -> Content
+
+    var body: some View { content().id(palette) }
+}
+
+/// One round swatch per palette; the chosen one wears a ring.
+struct PalettePicker: View {
+    var size: CGFloat = 26
+    @AppStorage(Palette.key) private var palette = Palette.teal.rawValue
+
+    var body: some View {
+        HStack(spacing: size * 0.3) {
+            ForEach(Palette.allCases) { option in
+                let selected = option.rawValue == palette
+                Button { withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { palette = option.rawValue } } label: {
+                    Circle().fill(option.fill)
+                        .frame(width: size, height: size)
+                        .overlay {
+                            if selected {
+                                Image(systemName: "checkmark").font(.system(size: size * 0.42, weight: .bold)).foregroundStyle(option.onFill)
+                            }
+                        }
+                        .padding(3)
+                        .overlay(Circle().strokeBorder(selected ? option.text : Color.clear, lineWidth: 2))
+                        .contentShape(Circle())
+                }
+                .buttonStyle(.plain)
+                .help(option.name)
+                .accessibilityLabel(option.name)
+                .accessibilityAddTraits(selected ? .isSelected : [])
+            }
+        }
+    }
+}
+
+/// Picks Compress's size limit: none, a common upload-form size, or any size typed in ("300 KB", "1.5 MB").
+struct SizeLimitMenu: View {
+    @Binding var limit: Int
+    @State private var typing = false
+    @State private var custom = ""
+
+    var body: some View {
+        Menu {
+            Picker("Size limit", selection: $limit) {
+                Text("No limit").tag(0)
+                ForEach(SizeLimit.presets, id: \.self) { Text(SizeLimit.label($0)).tag($0) }
+                if limit > 0, !SizeLimit.presets.contains(limit) { Text(SizeLimit.label(limit)).tag(limit) }
+            }
+            .pickerStyle(.inline)
+            Button("Custom Size…") {
+                custom = limit > 0 ? SizeLimit.label(limit) : ""
+                typing = true
+            }
+        } label: {
+            HStack(spacing: 5) {
+                Text(SizeLimit.label(limit))
+                Image(systemName: "chevron.up.chevron.down").font(.system(size: 15 * 0.7, weight: .semibold))
+            }
+            .font(Theme.font(15, .semibold))
+            .foregroundStyle(Theme.brandText)
+            .padding(.horizontal, 16).padding(.vertical, 10)
+            .background(Capsule().fill(Theme.tint))
+        }
+        .menuStyle(.button)
+        .buttonStyle(.plain)
+        .alert("Custom size limit", isPresented: $typing) {
+            TextField("200 KB", text: $custom)
+            Button("Set") {
+                if let bytes = Options.parseSize(custom), bytes >= 5_000 { limit = bytes }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Type a size such as 300 KB or 1.5 MB.")
+        }
+    }
+}
+
+/// Teal pill for the main action on a screen: tinted Liquid Glass on iOS 26, a solid capsule before that.
 struct BubbleButtonStyle: ButtonStyle {
     var fullWidth = false
 
     func makeBody(configuration: Configuration) -> some View {
         let label = configuration.label
             .font(Theme.font(17, .semibold))
-            .foregroundStyle(.white)
+            .foregroundStyle(Theme.onBrand)
             .frame(maxWidth: fullWidth ? .infinity : nil)
             .padding(.horizontal, 26).padding(.vertical, 15)
         if #available(iOS 26.0, *) {
             // Interactive glass does its own press response.
-            label.glassEffect(.regular.tint(Theme.tangerine).interactive(), in: Capsule())
+            label.glassEffect(.regular.tint(Theme.brand).interactive(), in: Capsule())
         } else {
             label
-                .background(Capsule().fill(Theme.accent))
-                .shadow(color: Theme.coral.opacity(configuration.isPressed ? 0.15 : 0.35), radius: 12, y: 5)
+                .background(Capsule().fill(Theme.brand))
                 .scaleEffect(configuration.isPressed ? 0.96 : 1)
                 .animation(.spring(response: 0.25, dampingFraction: 0.7), value: configuration.isPressed)
         }
@@ -60,7 +231,7 @@ struct SoftButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         let label = configuration.label
             .font(Theme.font(15, .semibold))
-            .foregroundStyle(Theme.tangerine)
+            .foregroundStyle(Theme.brandText)
             .padding(.horizontal, 16).padding(.vertical, 10)
         if #available(iOS 26.0, *) {
             label.glassEffect(.regular.interactive(), in: Capsule())
@@ -93,12 +264,12 @@ extension View {
         }
     }
 
-    /// Lets sheets use the system's Liquid Glass background on iOS 26; the cream canvas before that.
+    /// Lets sheets use the system's Liquid Glass background on iOS 26; the plain canvas before that.
     @ViewBuilder func sheetBackground() -> some View {
         if #available(iOS 26.0, *) { self } else { presentationBackground(Theme.canvas) }
     }
 
-    /// The cream canvas behind a sheet's content, left out on iOS 26 so the glass sheet shows through.
+    /// The canvas behind a sheet's content, left out on iOS 26 so the glass sheet shows through.
     @ViewBuilder func sheetCanvas() -> some View {
         if #available(iOS 26.0, *) { self } else { background(Theme.canvas.ignoresSafeArea()) }
     }
@@ -120,30 +291,35 @@ struct SymbolBubble: View {
     var body: some View {
         Image(systemName: symbol)
             .font(.system(size: size * 0.42, weight: .semibold))
-            .foregroundStyle(Theme.tangerine)
+            .foregroundStyle(Theme.brandText)
             .frame(width: size, height: size)
             .background(Circle().fill(Theme.tint))
     }
 }
 
-/// The app icon drawn in SwiftUI (asset-catalog app icons can't be loaded as images).
+/// The app icon drawn in SwiftUI (asset-catalog app icons can't be loaded as images): Morph's seven drops in
+/// white on Teal Ink, whichever accent is chosen, like the icon itself.
 struct LogoMark: View {
     var size: CGFloat = 112
 
     var body: some View {
         RoundedRectangle(cornerRadius: size * 0.27, style: .continuous)
-            .fill(Theme.accent)
+            .fill(Palette.teal.fill)
             .frame(width: size, height: size)
             .overlay {
-                Image(systemName: "circle.hexagongrid.fill")
-                    .font(.system(size: size * 0.46, weight: .medium))
-                    .foregroundStyle(.white)
+                Canvas { context, canvas in
+                    for drop in MorphMark.drops(split: 1, size: canvas.width * 0.62) {
+                        let inset = canvas.width * 0.19
+                        context.fill(Circle().path(in: CGRect(x: inset + drop.center.x - drop.radius, y: inset + drop.center.y - drop.radius,
+                                                              width: drop.radius * 2, height: drop.radius * 2)), with: .color(.white))
+                    }
+                }
             }
-            .shadow(color: Theme.coral.opacity(0.35), radius: 20, y: 10)
+            .shadow(color: .black.opacity(0.12), radius: 14, y: 6)
     }
 }
 
-/// Bubbly segmented control on a glass track: the selection is a gradient pill that slides between options.
+/// Bubbly segmented control on a glass track: the selection is a teal pill that slides between options.
 struct PillPicker<Value: Hashable>: View {
     let options: [Value]
     @Binding var selection: Value
@@ -157,11 +333,11 @@ struct PillPicker<Value: Hashable>: View {
                 Button { withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { selection = option } } label: {
                     Text(label(option))
                         .font(Theme.font(15, .semibold))
-                        .foregroundStyle(selected ? .white : .secondary)
+                        .foregroundStyle(selected ? Theme.onBrand : .secondary)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 10)
                         .background {
-                            if selected { Capsule().fill(Theme.accent).matchedGeometryEffect(id: "pill", in: pill) }
+                            if selected { Capsule().fill(Theme.brand).matchedGeometryEffect(id: "pill", in: pill) }
                         }
                         .contentShape(Capsule())
                 }
