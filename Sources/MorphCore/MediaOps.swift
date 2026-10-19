@@ -67,13 +67,27 @@ public enum MediaOps {
         let out = Output.url(for: url, ext: "mp4", suffix: "compressed", options: options)
         let asset = AVURLAsset(url: url)
         if let target = options.targetBytes {
-            let seconds = try await asset.load(.duration).seconds
-            guard seconds > 0 else { throw MorphError("Video has no duration") }
-            let videoKbps = max(Int(Double(target) * 8 / seconds / 1000 * 0.95) - 128, 100)
-            try await ExternalTool.ffmpeg(["-i", url.path, "-c:v", "h264_videotoolbox", "-b:v", "\(videoKbps)k",
-                                           "-maxrate", "\(videoKbps)k", "-c:a", "aac", "-b:a", "128k",
-                                           "-movflags", "+faststart", out.path])
-            return out
+            guard Runner.size(of: url) > Int64(target) else {
+                throw MorphNote("\(url.lastPathComponent) is already under \(SizeLimit.label(target))")
+            }
+            if ExternalTool.ffmpeg != nil {
+                let seconds = try await asset.load(.duration).seconds
+                guard seconds > 0 else { throw MorphError("Video has no duration") }
+                let videoKbps = max(Int(Double(target) * 8 / seconds / 1000 * 0.95) - 128, 100)
+                try await ExternalTool.ffmpeg(["-i", url.path, "-c:v", "h264_videotoolbox", "-b:v", "\(videoKbps)k",
+                                               "-maxrate", "\(videoKbps)k", "-c:a", "aac", "-b:a", "128k",
+                                               "-movflags", "+faststart", out.path])
+                return out
+            }
+            // Without ffmpeg (always the case on iPhone), step down through the system presets until one fits.
+            for preset in [AVAssetExportPresetHEVC1920x1080, AVAssetExportPreset1280x720, AVAssetExportPreset960x540,
+                           AVAssetExportPreset640x480] {
+                try? FileManager.default.removeItem(at: out)
+                try await export(asset, preset: preset, type: .mp4, to: out)
+                if Runner.size(of: out) <= Int64(target) { return out }
+            }
+            try? FileManager.default.removeItem(at: out)
+            throw MorphError("Couldn't get \(url.lastPathComponent) under \(SizeLimit.label(target))")
         }
         let preset = switch options.compression {
         case .light: AVAssetExportPresetHEVCHighestQuality
