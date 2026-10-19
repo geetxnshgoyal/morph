@@ -2,21 +2,28 @@ import AppKit
 import SwiftUI
 import MorphCore
 
-/// First-launch guide: what Morph is, how to use it (with a live drop zone), then setup.
+/// First-launch guide: what Morph is, how to use it (with a live drop zone), the settings worth choosing up front,
+/// then setup. Picking a colour recolours the guide as you click.
 struct WelcomeView: View {
     let onTry: ([URL]) -> Void
     let onFinish: () -> Void
 
     @State var page = 0
     @State private var forward = true
-    private let pages = 3
+    @ObservedObject private var prefs = Preferences.shared
+    private let pages = 4
 
     var body: some View {
+        PaletteScope { content }
+    }
+
+    private var content: some View {
         VStack(spacing: 0) {
             ZStack {
                 switch page {
                 case 0: intro
                 case 1: howItWorks
+                case 2: makeItYours
                 default: setup
                 }
             }
@@ -31,7 +38,7 @@ struct WelcomeView: View {
         }
         .frame(width: 580, height: 560)
         .background(Theme.canvas)
-        .tint(Theme.tangerine)
+        .tint(Theme.brand)
     }
 
     // MARK: Pages
@@ -40,7 +47,7 @@ struct WelcomeView: View {
         VStack(spacing: 18) {
             Image(nsImage: NSApp.applicationIconImage)
                 .resizable().frame(width: 128, height: 128)
-                .shadow(color: Theme.coral.opacity(0.3), radius: 18, y: 8)
+                .shadow(color: .black.opacity(0.15), radius: 14, y: 6)
             VStack(spacing: 8) {
                 Text("Welcome to Morph").font(Theme.font(32, .bold))
                 Text("Convert, shrink and tidy up any file, right where it is.")
@@ -69,9 +76,40 @@ struct WelcomeView: View {
         }
     }
 
-    private var setup: some View {
+    private var makeItYours: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Make it yours").font(Theme.font(26, .bold))
+            Text("You can change all of this later in Settings.").font(Theme.font(13)).foregroundStyle(.secondary)
+                .padding(.bottom, 4)
+            SetupRow(symbol: "paintpalette.fill", title: "Color",
+                     detail: "\(Palette.current.name) for highlights and buttons. The app icon stays Teal Ink.") {
+                PalettePicker(size: 20)
+            }
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    SymbolBubble(symbol: "arrow.down.right.and.arrow.up.left")
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Size limit").font(Theme.font(14, .semibold))
+                        Text("Upload forms often want photos under 200 KB or 100 KB. Set a limit and Compress makes a JPG that fits.")
+                            .font(Theme.font(12)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                    }
+                    Spacer(minLength: 8)
+                    SizeLimitMenu(limit: $prefs.sizeLimit)
+                }
+            }
+            .card(padding: 14)
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Compression").font(Theme.font(14, .semibold))
+                PillPicker(options: CompressionLevel.allCases, selection: $prefs.compression) { $0.label }
+                Text(prefs.compression.detail).font(Theme.font(12)).foregroundStyle(.secondary)
+            }
+            .card()
+        }
+    }
+
+    private var setup: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Finish setting up").font(Theme.font(26, .bold))
             Text("You can change all of this later in Settings.").font(Theme.font(13)).foregroundStyle(.secondary)
                 .padding(.bottom, 4)
             if AppLocation.isBundled, !AppLocation.isInstalled { MoveToApplicationsRow() }
@@ -88,7 +126,7 @@ struct WelcomeView: View {
         HStack {
             HStack(spacing: 6) {
                 ForEach(0..<pages, id: \.self) { i in
-                    Capsule().fill(i == page ? AnyShapeStyle(Theme.accent) : AnyShapeStyle(Color.secondary.opacity(0.25)))
+                    Capsule().fill(i == page ? AnyShapeStyle(Theme.brand) : AnyShapeStyle(Color.secondary.opacity(0.25)))
                         .frame(width: i == page ? 22 : 8, height: 8)
                 }
             }
@@ -132,13 +170,13 @@ struct TryItZone: View {
     var body: some View {
         RoundedRectangle(cornerRadius: Theme.radius, style: .continuous)
             .strokeBorder(style: StrokeStyle(lineWidth: 2, dash: [7, 6]))
-            .foregroundStyle(targeted ? Theme.tangerine : .secondary.opacity(0.35))
+            .foregroundStyle(targeted ? Theme.brandText : .secondary.opacity(0.35))
             .background(RoundedRectangle(cornerRadius: Theme.radius, style: .continuous)
                 .fill(targeted ? Theme.tint : Theme.surface.opacity(0.6)))
             .frame(height: 104)
             .overlay {
                 VStack(spacing: 6) {
-                    Image(systemName: "arrow.down.circle.fill").font(.system(size: 26)).foregroundStyle(Theme.accent)
+                    Image(systemName: "arrow.down.circle.fill").font(.system(size: 26)).foregroundStyle(Theme.brandText)
                     Text("Try it: drop a file here").font(Theme.font(14, .semibold))
                     Text("A copy is made; your file stays as it is.").font(Theme.font(11)).foregroundStyle(.secondary)
                 }
