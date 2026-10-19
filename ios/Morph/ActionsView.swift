@@ -139,7 +139,7 @@ struct ActionBubble: View {
             VStack(spacing: 8) {
                 Image(systemName: action.symbol)
                     .font(.system(size: 22, weight: .semibold))
-                    .foregroundStyle(Theme.tangerine)
+                    .foregroundStyle(Theme.brandText)
                     .frame(width: 66, height: 66)
                     .background(Circle().fill(Theme.surface))
                     .shadow(color: .black.opacity(0.07), radius: 8, y: 3)
@@ -163,12 +163,12 @@ struct RunningView: View {
     var body: some View {
         VStack(spacing: 22) {
             ZStack {
-                // Several files: a thin aura ring fills as each one finishes, around the liquid loader.
+                // Several files: a thin ring fills as each one finishes, around the liquid loader.
                 if total > 1 {
                     Circle().stroke(Theme.tint, lineWidth: 6)
                     Circle()
                         .trim(from: 0, to: max(0.04, Double(done) / Double(total)))
-                        .stroke(AngularGradient(colors: Theme.auraColors, center: .center),
+                        .stroke(Theme.brand,
                                 style: StrokeStyle(lineWidth: 6, lineCap: .round))
                         .rotationEffect(.degrees(-90))
                         .animation(.spring, value: done)
@@ -205,17 +205,17 @@ struct ResultView: View {
         ScrollView {
             VStack(spacing: 20) {
                 ZStack {
-                    // A ring of aura ripples out once as the result lands.
-                    Circle().stroke(Theme.aura, lineWidth: 3)
+                    // A ring ripples out once as the result lands.
+                    Circle().stroke(ok ? Theme.brand : Color.red, lineWidth: 3)
                         .scaleEffect(pop ? 1.9 : 1)
                         .opacity(pop ? 0 : 0.9)
                         .animation(.easeOut(duration: 0.9), value: pop)
-                    Circle().fill(ok ? AnyShapeStyle(Theme.aura) : AnyShapeStyle(Theme.coral.opacity(0.85)))
-                    Image(systemName: unchanged ? "equal" : ok ? "checkmark" : "exclamationmark").font(.system(size: 40, weight: .bold)).foregroundStyle(.white)
+                    Circle().fill(ok ? Theme.brand : Color.red)
+                    Image(systemName: unchanged ? "equal" : ok ? "checkmark" : "exclamationmark").font(.system(size: 40, weight: .bold)).foregroundStyle(ok ? Theme.onBrand : .white)
                         .symbolEffect(.bounce, value: pop)
                 }
                 .frame(width: 96, height: 96)
-                .shadow(color: Theme.rose.opacity(0.4), radius: 18, y: 8)
+                .shadow(color: .black.opacity(0.12), radius: 14, y: 6)
                 .scaleEffect(pop ? 1 : 0.4)
                 .padding(.top, 30)
 
@@ -230,7 +230,7 @@ struct ResultView: View {
                 if action.reportsSize, let sizes = result.sizeSummary, let change = result.sizeChange {
                     HStack(spacing: 10) {
                         Text(sizes).monospacedDigit()
-                        Text(change).foregroundStyle(Theme.tangerine)
+                        Text(change).foregroundStyle(Theme.brandText)
                     }
                     .font(Theme.font(16, .semibold))
                     .padding(.horizontal, 16).padding(.vertical, 9)
@@ -271,7 +271,7 @@ struct ResultView: View {
                         }
                         Button("Done", action: onDone).buttonStyle(SoftButtonStyle())
                     }
-                    if let saveError { Text(saveError).font(Theme.font(13)).foregroundStyle(Theme.coral) }
+                    if let saveError { Text(saveError).font(Theme.font(13)).foregroundStyle(.red) }
                 }
                 .padding(.top, 6)
             }

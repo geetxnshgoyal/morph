@@ -6,6 +6,7 @@ struct MorphApp: App {
     @UIApplicationDelegateAdaptor private var appDelegate: AppDelegate
     @StateObject private var state = AppState.shared
     @AppStorage("hasSeenWelcome") private var hasSeenWelcome = false
+    @AppStorage(Palette.key) private var palette = Palette.teal.rawValue
     @State private var showSplash = !UIAccessibility.isReduceMotionEnabled
 
     init() {
@@ -27,7 +28,7 @@ struct MorphApp: App {
                 }
             }
             .environmentObject(state)
-            .tint(Theme.tangerine)
+            .tint((Palette(rawValue: palette) ?? .teal).fill)
             .fullScreenCover(isPresented: Binding(get: { !hasSeenWelcome && !showSplash }, set: { hasSeenWelcome = !$0 })) {
                 OnboardingView { hasSeenWelcome = true }
             }
@@ -164,9 +165,13 @@ enum Prefs {
 
     static var haptics: Bool { UserDefaults.standard.object(forKey: "haptics") as? Bool ?? true }
 
+    /// Bytes Compress must fit under, for upload forms; 0 is no limit.
+    static var sizeLimit: Int { UserDefaults.standard.integer(forKey: SizeLimit.key) }
+
     static var options: Options {
         var options = Options()
         options.compression = compression
+        if sizeLimit > 0 { options.targetBytes = sizeLimit }
         options.outputDirectory = AppState.results
         return options
     }

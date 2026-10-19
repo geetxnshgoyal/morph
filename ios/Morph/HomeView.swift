@@ -13,15 +13,17 @@ struct HomeView: View {
     @State private var preview: URL?
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 22) {
-                header
-                hero
-                recent
+        PaletteScope {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 22) {
+                    header
+                    hero
+                    recent
+                }
+                .padding(.horizontal, 20).padding(.bottom, 40)
             }
-            .padding(.horizontal, 20).padding(.bottom, 40)
+            .background(Theme.canvas.ignoresSafeArea())
         }
-        .background(Theme.canvas.ignoresSafeArea())
         .sheet(item: $state.batch, onDismiss: state.reload) { batch in
             ActionsView(files: batch.files)
                 .presentationDetents([.medium, .large])
@@ -52,6 +54,10 @@ struct HomeView: View {
             Text(state.importError ?? "")
         }
         .onAppear(perform: state.reload)
+        #if DEBUG
+        // `simctl launch … -settings` opens Settings, for screenshots.
+        .task { if ProcessInfo.processInfo.arguments.contains("-settings") { showSettings = true } }
+        #endif
     }
 
     // MARK: Sections
@@ -85,11 +91,11 @@ struct HomeView: View {
                 Button { showFiles = true } label: { heroButton("Files", symbol: "folder.fill") }
             }
         }
-        .foregroundStyle(.white)
+        .foregroundStyle(Theme.onBrand)
         .padding(24)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background {
-            HeroAura()
+            Theme.brand
                 .overlay(alignment: .topTrailing) {
                     // Soft bubbles for a bit of play.
                     Circle().fill(.white.opacity(0.12)).frame(width: 150).offset(x: 50, y: -50)
@@ -99,13 +105,13 @@ struct HomeView: View {
                 }
                 .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
         }
-        .shadow(color: Theme.coral.opacity(0.35), radius: 20, y: 10)
+        .shadow(color: .black.opacity(0.12), radius: 16, y: 8)
     }
 
     private func heroButton(_ title: String, symbol: String) -> some View {
         Label(title, systemImage: symbol)
             .font(Theme.font(16, .semibold))
-            .foregroundStyle(Theme.tangerine)
+            .foregroundStyle(Palette.current.textOnWhite)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 14)
             .glassControl(in: Capsule(), tint: .white)
@@ -189,7 +195,7 @@ struct RecentRow: View {
                     ShareLink(items: available) {
                         Image(systemName: "square.and.arrow.up")
                             .font(.system(size: 16, weight: .semibold))
-                            .foregroundStyle(Theme.tangerine)
+                            .foregroundStyle(Theme.brandText)
                             .frame(width: 38, height: 38)
                             .background(Circle().fill(Theme.tint))
                     }
@@ -210,27 +216,3 @@ struct RecentRow: View {
     }
 }
 
-/// The hero card's colour. On iOS 18 and later a mesh of the aura drifts slowly, like light through liquid;
-/// before that, the plain accent gradient.
-private struct HeroAura: View {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    var body: some View {
-        if #available(iOS 18.0, *) {
-            TimelineView(.animation(minimumInterval: 1.0 / 30, paused: reduceMotion)) { timeline in
-                let t = timeline.date.timeIntervalSinceReferenceDate
-                MeshGradient(width: 3, height: 3, points: [
-                    [0, 0], [Float(0.5 + 0.12 * sin(t * 0.4)), 0], [1, 0],
-                    [0, Float(0.5 + 0.1 * cos(t * 0.5))], [Float(0.5 + 0.18 * sin(t * 0.6)), Float(0.5 + 0.14 * cos(t * 0.45))], [1, 0.5],
-                    [0, 1], [Float(0.5 + 0.12 * cos(t * 0.35)), 1], [1, 1],
-                ], colors: [
-                    Theme.tangerine, Theme.tangerine, Theme.coral,
-                    Theme.tangerine, Theme.coral, Theme.rose,
-                    Theme.coral, Theme.rose, Theme.violet,
-                ])
-            }
-        } else {
-            Theme.accent
-        }
-    }
-}

@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Launch: one drop of aura pulls apart into Morph's seven-dot mark, then the mark swells and dissolves into
+/// Launch: one drop of Teal Ink pulls apart into Morph's seven-dot mark, then the mark swells and dissolves into
 /// the app behind it. About a second, skipped entirely with Reduce Motion.
 struct MorphSplash: View {
     let onFinish: () -> Void
@@ -15,7 +15,6 @@ struct MorphSplash: View {
                 Theme.canvas.ignoresSafeArea()
                 VStack(spacing: 18) {
                     MorphMark(split: split, size: 132)
-                        .shadow(color: Theme.rose.opacity(0.35), radius: 24, y: 10)
                     Text("Morph")
                         .font(Theme.font(30, .bold))
                         .opacity(min(1, max(0, (elapsed - 0.45) / 0.3)))
