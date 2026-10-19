@@ -114,12 +114,17 @@ struct CompressFilesIntent: AppIntent {
 
     @Parameter(title: "Files", supportedTypeIdentifiers: ["public.image", "public.movie", "com.adobe.pdf"]) var files: [IntentFile]
     @Parameter(title: "Strength", default: .balanced) var strength: CompressionOption
+    @Parameter(title: "Size Limit (KB)", description: "Fit photos under this many kilobytes, as JPG. Leave empty for no limit.")
+    var limitKB: Int?
 
-    static var parameterSummary: some ParameterSummary { Summary("Compress \(\.$files) (\(\.$strength))") }
+    static var parameterSummary: some ParameterSummary {
+        Summary("Compress \(\.$files) (\(\.$strength))") { \.$limitKB }
+    }
 
     func perform() async throws -> some IntentResult & ReturnsValue<[IntentFile]> {
         var options = Prefs.options
         options.compression = strength.level
+        options.targetBytes = limitKB.map { $0 * 1000 } ?? options.targetBytes
         return .result(value: try await IntentJob.files(try IntentJob.action("tool.compress"), files, options: options))
     }
 }
