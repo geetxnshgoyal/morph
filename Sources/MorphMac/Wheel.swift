@@ -18,7 +18,7 @@ enum WheelMetrics {
     static let gapWidth: CGFloat = 7
     /// How far a highlighted petal grows outward.
     static let lift: CGFloat = 12
-    /// Square the ring is drawn in, with room for a lifted petal and its glow.
+    /// Square the ring is drawn in, with room for a lifted petal.
     static let side: CGFloat = (outerRadius + lift + 12) * 2
     static let labelRadius: CGFloat = (innerRadius + outerRadius) / 2 + 2
 }
@@ -308,7 +308,6 @@ struct WheelView: View {
         ZStack(alignment: .topLeading) {
             ZStack {
                 if case .choosing = model.phase {
-                    AuraHalo().opacity(present ? 1 : 0)
                     PetalRing(model: model, items: model.pageItems)
                         .id("\(model.group)-\(model.page)")
                         .transition(.opacity.combined(with: .scale(scale: 0.94)))
@@ -334,27 +333,6 @@ struct WheelView: View {
         .animation(reduceMotion ? nil : model.closing ? .easeIn(duration: 0.2) : .spring(response: 0.42, dampingFraction: 0.6),
                    value: present)
         .onAppear { appeared = true }
-    }
-}
-
-/// A soft ring of aura light turning slowly behind the petals, so the glass glows with Morph's colours.
-private struct AuraHalo: View {
-    @State private var turning = false
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Environment(\.colorScheme) private var colorScheme
-
-    var body: some View {
-        AngularGradient(colors: Theme.auraColors + [Theme.tangerine], center: .center)
-            .frame(width: WheelMetrics.side, height: WheelMetrics.side)
-            .mask(Circle().stroke(lineWidth: 64).frame(width: WheelMetrics.labelRadius * 2, height: WheelMetrics.labelRadius * 2))
-            .blur(radius: 28)
-            .opacity(colorScheme == .dark ? 0.55 : 0.4)
-            .rotationEffect(.degrees(turning ? 360 : 0))
-            .allowsHitTesting(false)
-            .onAppear {
-                guard !reduceMotion else { return }
-                withAnimation(.linear(duration: 14).repeatForever(autoreverses: false)) { turning = true }
-            }
     }
 }
 
@@ -425,8 +403,8 @@ private struct RingDropDelegate: DropDelegate {
     }
 }
 
-/// One action: a glass wedge tinted by a glow that deepens toward the rim, with a bright rim stroke and its
-/// icon and name. Highlighted, it lifts outward, fills with the aura and glows.
+/// One action: a glass wedge with a light rim, its icon and its name. Highlighted, it lifts outward and fills with
+/// Teal Ink.
 private struct PetalView: View {
     let action: Action
     let index: Int
@@ -445,13 +423,11 @@ private struct PetalView: View {
         let labelRadius = M.labelRadius + (highlighted ? M.lift / 2 : 0)
 
         ZStack {
-            Color.clear.wheelGlass(in: shape, tint: highlighted ? Theme.tangerine.opacity(0.35) : nil)
-            shape.fill(RadialGradient(colors: highlighted ? [Theme.tangerine, Theme.coral, Theme.rose] : [Theme.tangerine.opacity(0.04), Theme.coral.opacity(0.3)],
-                                      center: .center, startRadius: M.innerRadius, endRadius: M.outerRadius + M.lift))
-                .opacity(highlighted ? 0.94 : 1)
-                .shadow(color: Theme.rose.opacity(highlighted ? 0.55 : 0), radius: 18)
-            shape.stroke(LinearGradient(colors: [.white.opacity(highlighted ? 0.7 : 0.5), .white.opacity(0.06)],
-                                        startPoint: .top, endPoint: .bottom), lineWidth: 1)
+            Color.clear.wheelGlass(in: shape)
+            shape.fill(highlighted ? Theme.brand : Color.clear)
+            // The rim is brighter on the highlighted petal so it stands off dark backgrounds too.
+            shape.stroke(LinearGradient(colors: [.white.opacity(highlighted ? 0.55 : 0.5), .white.opacity(highlighted ? 0.25 : 0.06)],
+                                        startPoint: .top, endPoint: .bottom), lineWidth: highlighted ? 1.5 : 1)
                 .opacity(bloomed ? 1 : 0)
 
             VStack(spacing: 3) {
@@ -460,7 +436,7 @@ private struct PetalView: View {
                     .lineLimit(2).multilineTextAlignment(.center).minimumScaleFactor(0.75)
             }
             .frame(width: labelWidth)
-            .foregroundStyle(highlighted ? Color.white : Color.primary)
+            .foregroundStyle(highlighted ? Theme.onBrand : Color.primary)
             .offset(x: cos(radians) * labelRadius, y: sin(radians) * labelRadius)
             .opacity(bloomed ? 1 : 0)
         }
@@ -487,7 +463,7 @@ private struct WheelHub: View {
             Color.clear.wheelGlass(in: Circle())
                 .overlay(Circle().strokeBorder(LinearGradient(colors: [.white.opacity(0.5), .white.opacity(0.05)],
                                                               startPoint: .top, endPoint: .bottom), lineWidth: 1))
-                .shadow(color: Theme.coral.opacity(0.18), radius: 14)
+                .shadow(color: .black.opacity(0.12), radius: 14)
             content.frame(width: diameter - 26)
         }
         .frame(width: diameter, height: diameter)
@@ -507,7 +483,7 @@ private struct WheelHub: View {
                 if model.pages > 1 {
                     HStack(spacing: 4) {
                         ForEach(0..<model.pages, id: \.self) { i in
-                            Capsule().fill(i == model.page ? AnyShapeStyle(Theme.accent) : AnyShapeStyle(Color.secondary.opacity(0.3)))
+                            Capsule().fill(i == model.page ? AnyShapeStyle(Theme.brand) : AnyShapeStyle(Color.secondary.opacity(0.3)))
                                 .frame(width: i == model.page ? 12 : 5, height: 5)
                         }
                     }
@@ -528,7 +504,7 @@ private struct WheelHub: View {
                 Image(systemName: !result.failures.isEmpty ? "exclamationmark.triangle.fill"
                       : unchanged ? "equal.circle.fill" : "checkmark.circle.fill")
                     .font(.system(size: 26))
-                    .foregroundStyle(result.failures.isEmpty ? AnyShapeStyle(Theme.aura) : AnyShapeStyle(Theme.coral))
+                    .foregroundStyle(result.failures.isEmpty ? Theme.brandText : Color.red)
                 Text(!result.failures.isEmpty ? "\(result.failures.count) failed" : unchanged ? "Already small" : "Done")
                     .font(Theme.font(14, .semibold))
                 if action.reportsSize, let sizes = result.sizeSummary, let change = result.sizeChange {
@@ -581,9 +557,9 @@ private struct WheelBar: View {
                         Text(group.label).font(Theme.font(12, .semibold))
                     }
                     .padding(.horizontal, 13).padding(.vertical, 7)
-                    .foregroundStyle(selected ? Color.white : Color.primary)
+                    .foregroundStyle(selected ? Theme.onBrand : Color.primary)
                     .background {
-                        if selected { Capsule().fill(Theme.accent).matchedGeometryEffect(id: "pill", in: pill) }
+                        if selected { Capsule().fill(Theme.brand).matchedGeometryEffect(id: "pill", in: pill) }
                     }
                     .contentShape(Capsule())
                 }

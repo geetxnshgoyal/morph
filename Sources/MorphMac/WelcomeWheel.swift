@@ -81,12 +81,12 @@ struct Keycap: View {
     var body: some View {
         Text(text)
             .font(.system(size: 15, weight: .semibold, design: .rounded))
-            .foregroundStyle(pressed ? Color.white : Color.primary)
+            .foregroundStyle(pressed ? Theme.onBrand : Color.primary)
             .padding(.horizontal, 10)
             .frame(minWidth: 38, minHeight: 32)
             .background {
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(pressed ? AnyShapeStyle(Theme.accent) : AnyShapeStyle(Theme.surface))
+                    .fill(pressed ? AnyShapeStyle(Theme.brand) : AnyShapeStyle(Theme.surface))
                     .shadow(color: .black.opacity(pressed ? 0.05 : 0.18), radius: 0, y: pressed ? 1 : 3)
             }
             .offset(y: pressed ? 2 : 0)
@@ -120,13 +120,11 @@ private struct MiniWheel: View {
                 let shape = PetalShape(centerAngle: angle, sectorAngle: 360 / Double(count), gapWidth: 4,
                                        innerRadius: inner, outerRadius: on ? outer + 6 : outer, cornerRadius: 6)
                 ZStack {
-                    shape.fill(on ? AnyShapeStyle(Theme.accent) : AnyShapeStyle(Theme.surface))
-                    shape.fill(RadialGradient(colors: [Theme.tangerine.opacity(0.02), Theme.coral.opacity(on ? 0 : 0.18)],
-                                              center: .center, startRadius: inner, endRadius: outer))
+                    shape.fill(on ? AnyShapeStyle(Theme.brand) : AnyShapeStyle(Theme.surface))
                     shape.stroke(.white.opacity(0.35), lineWidth: 1)
                     Image(systemName: symbol)
                         .font(.system(size: 15, weight: .medium))
-                        .foregroundStyle(on ? Color.white : Color.primary.opacity(0.75))
+                        .foregroundStyle(on ? Theme.onBrand : Color.primary.opacity(0.75))
                         .offset(x: cos(angle * .pi / 180) * (inner + outer) / 2, y: sin(angle * .pi / 180) * (inner + outer) / 2)
                 }
             }
@@ -134,7 +132,7 @@ private struct MiniWheel: View {
                 .shadow(color: .black.opacity(0.06), radius: 4, y: 1)
             Text(group.label).font(Theme.font(12, .bold))
         }
-        .shadow(color: Theme.coral.opacity(0.18), radius: 12, y: 4)
+        .shadow(color: .black.opacity(0.1), radius: 12, y: 4)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("The \(group.label) wheel")
     }
