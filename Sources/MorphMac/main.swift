@@ -40,7 +40,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             },
             onSettings: { [weak self] in self?.popover.performClose(nil); self?.showSettings() },
             onWelcome: { [weak self] in self?.popover.performClose(nil); self?.showWelcome() }
-        ))
+        ).followsPalette())
 
         // Tap a wheel's keys while dragging files anywhere: that wheel appears under the cursor to drop on.
         dragShortcut.onTrigger = { [weak self] urls, group in self?.showWheel(for: urls, dropMode: true, group: group) }
@@ -249,13 +249,13 @@ struct ShelfView: View {
 
             RoundedRectangle(cornerRadius: Theme.radius, style: .continuous)
                 .strokeBorder(style: StrokeStyle(lineWidth: 2, dash: [7, 6]))
-                .foregroundStyle(targeted ? Theme.tangerine : .secondary.opacity(0.35))
+                .foregroundStyle(targeted ? Theme.brandText : .secondary.opacity(0.35))
                 .background(RoundedRectangle(cornerRadius: Theme.radius, style: .continuous)
                     .fill(targeted ? Theme.tint : Theme.surface))
                 .frame(height: 124)
                 .overlay {
                     VStack(spacing: 8) {
-                        Image(systemName: "arrow.down.circle.fill").font(.system(size: 28)).foregroundStyle(Theme.accent)
+                        Image(systemName: "arrow.down.circle.fill").font(.system(size: 28)).foregroundStyle(Theme.brandText)
                         Text("Drop files here").font(Theme.font(15, .semibold))
                         Button("Choose Files…", action: choose).buttonStyle(SoftButtonStyle())
                     }
@@ -279,7 +279,7 @@ struct ShelfView: View {
             if !tools.hasFFmpeg {
                 Button(action: onSettings) {
                     Label("Unlock MP3, WebM and more", systemImage: "sparkles")
-                        .font(Theme.font(11, .medium)).foregroundStyle(Theme.tangerine)
+                        .font(Theme.font(11, .medium)).foregroundStyle(Theme.brandText)
                 }
                 .buttonStyle(.plain)
             }
@@ -287,7 +287,7 @@ struct ShelfView: View {
         .padding(16)
         .frame(width: 310)
         .background(Theme.canvas)
-        .tint(Theme.tangerine)
+        .tint(Theme.brand)
         .onAppear {
             recent = Array(History.shared.entries.suffix(5).reversed())
             tools.refresh()
