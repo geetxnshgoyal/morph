@@ -15,6 +15,8 @@ final class Preferences: ObservableObject {
     @Published var playSounds: Bool { didSet { defaults.set(playSounds, forKey: "playSounds") } }
     @Published var revealWhenDone: Bool { didSet { defaults.set(revealWhenDone, forKey: "revealWhenDone") } }
     @Published var compression: CompressionLevel { didSet { defaults.set(compression.rawValue, forKey: "compression") } }
+    /// Bytes Compress must fit under, for upload forms; 0 is no limit.
+    @Published var sizeLimit: Int { didSet { defaults.set(sizeLimit, forKey: SizeLimit.key) } }
     @Published var convertKeys: DragKeys { didSet { defaults.set(convertKeys.rawValue, forKey: "convertKeys") } }
     @Published var toolsKeys: DragKeys { didSet { defaults.set(toolsKeys.rawValue, forKey: "toolsKeys") } }
     @Published var recipesKeys: DragKeys { didSet { defaults.set(recipesKeys.rawValue, forKey: "recipesKeys") } }
@@ -28,6 +30,7 @@ final class Preferences: ObservableObject {
         playSounds = defaults.bool(forKey: "playSounds")
         revealWhenDone = defaults.bool(forKey: "revealWhenDone")
         compression = defaults.string(forKey: "compression").flatMap(CompressionLevel.init) ?? .balanced
+        sizeLimit = defaults.integer(forKey: SizeLimit.key)
         outputFolder = defaults.string(forKey: "outputFolder").map { URL(fileURLWithPath: $0) }
         let convert = Self.storedKeys(defaults, "convertKeys", legacy: ["convertKey", "dragKey"]) ?? .shift
         let tools = Self.storedKeys(defaults, "toolsKeys", legacy: ["toolsKey"]) ?? .command
@@ -87,6 +90,7 @@ final class Preferences: ObservableObject {
     var options: Options {
         var options = Options()
         options.compression = compression
+        if sizeLimit > 0 { options.targetBytes = sizeLimit }
         if let outputFolder {
             try? FileManager.default.createDirectory(at: outputFolder, withIntermediateDirectories: true)
             options.outputDirectory = outputFolder

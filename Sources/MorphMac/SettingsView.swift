@@ -33,7 +33,7 @@ struct LoginItemRow: View {
             SetupRow(symbol: "power", title: "Open at login",
                      detail: "Keep Morph in the menu bar, ready whenever you need it.") {
                 Toggle("", isOn: Binding(get: { login.isOn }, set: { login.set($0) }))
-                    .toggleStyle(.switch).labelsHidden().tint(Theme.tangerine)
+                    .toggleStyle(.switch).labelsHidden().tint(Theme.brand)
             }
             if login.needsApproval {
                 notice("macOS is waiting for your OK in Login Items.", button: "Open Login Items") { login.openSystemSettings() }
@@ -47,7 +47,7 @@ struct LoginItemRow: View {
 
     private func notice(_ text: String, button: String?, action: @escaping () -> Void) -> some View {
         HStack {
-            Image(systemName: "exclamationmark.circle.fill").foregroundStyle(Theme.coral)
+            Image(systemName: "exclamationmark.circle.fill").foregroundStyle(.red)
             Text(text).font(Theme.font(12))
             Spacer()
             if let button { Button(button, action: action).buttonStyle(SoftButtonStyle()) }
@@ -147,7 +147,7 @@ struct FFmpegRow: View {
                     }
                 }
             } else {
-                Image(systemName: "checkmark.circle.fill").font(.system(size: 22)).foregroundStyle(Theme.accent)
+                Image(systemName: "checkmark.circle.fill").font(.system(size: 22)).foregroundStyle(Theme.brandText)
                     .transition(.scale.combined(with: .opacity))
             }
         }
@@ -180,31 +180,37 @@ struct SettingsView: View {
     enum Tab: String, CaseIterable { case general = "General", output = "Output", tools = "Tools" }
 
     var body: some View {
-        VStack(spacing: 18) {
-            PillPicker(options: Tab.allCases, selection: $tab) { $0.rawValue }
+        PaletteScope {
+            VStack(spacing: 18) {
+                PillPicker(options: Tab.allCases, selection: $tab) { $0.rawValue }
 
-            ScrollView {
-                VStack(spacing: 10) {
-                    switch tab {
-                    case .general: general
-                    case .output: output
-                    case .tools: tools
+                ScrollView {
+                    VStack(spacing: 10) {
+                        switch tab {
+                        case .general: general
+                        case .output: output
+                        case .tools: tools
+                        }
                     }
+                    .padding(.horizontal, 24).padding(.bottom, 24)
                 }
-                .padding(.horizontal, 24).padding(.bottom, 24)
             }
+            .padding(.top, 40)
+            .frame(width: 520, height: 440)
+            .background(Theme.canvas)
+            .tint(Theme.brand)
+            .animation(.spring(response: 0.3, dampingFraction: 0.85), value: tab)
         }
-        .padding(.top, 40)
-        .frame(width: 520, height: 440)
-        .background(Theme.canvas)
-        .tint(Theme.tangerine)
-        .animation(.spring(response: 0.3, dampingFraction: 0.85), value: tab)
     }
 
     @ViewBuilder private var general: some View {
         LoginItemRow()
         DragShortcutRow()
         if AppLocation.isBundled, !AppLocation.isInstalled { MoveToApplicationsRow() }
+        SetupRow(symbol: "paintpalette.fill", title: "Color",
+                 detail: "\(Palette.current.name) for highlights and buttons. The app icon stays Teal Ink.") {
+            PalettePicker(size: 20)
+        }
         SetupRow(symbol: "speaker.wave.2.fill", title: "Sounds & haptics",
                  detail: "A soft tick as you move around the wheel, and a chime when a job finishes.") {
             Toggle("", isOn: $prefs.playSounds).toggleStyle(.switch).labelsHidden()
@@ -242,6 +248,17 @@ struct SettingsView: View {
             Text(prefs.compression.detail).font(Theme.font(12)).foregroundStyle(.secondary)
         }
         .card()
+
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("Size limit").font(Theme.font(14, .semibold))
+                Spacer()
+                SizeLimitMenu(limit: $prefs.sizeLimit)
+            }
+            Text(SizeLimit.detail(prefs.sizeLimit)).font(Theme.font(12)).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .card()
     }
 
     @ViewBuilder private var tools: some View {
@@ -261,7 +278,7 @@ struct SettingsView: View {
         Button(action: action) {
             HStack(spacing: 10) {
                 Image(systemName: selected ? "largecircle.fill.circle" : "circle")
-                    .foregroundStyle(selected ? Theme.tangerine : .secondary)
+                    .foregroundStyle(selected ? Theme.brandText : .secondary)
                 Text(title).font(Theme.font(13))
                 Spacer()
             }
