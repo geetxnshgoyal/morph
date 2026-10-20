@@ -1,7 +1,6 @@
 <resources>
     <!-- Mirrors Theme.kt and the Apple apps' Theme.swift. -->
-    <color name="tangerine">#FF8F38</color>
-    <color name="coral">#FF6661</color>
-    <color name="canvas">#FFF7F0</color>
-    <color name="canvas_dark">#1F1C1A</color>
+    <color name="brand">#0B6E69</color>
+    <color name="canvas">#F1F4F3</color>
+    <color name="canvas_dark">#0E1414</color>
 </resources>
