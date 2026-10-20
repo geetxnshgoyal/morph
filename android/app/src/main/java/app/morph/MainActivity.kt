@@ -19,7 +19,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         if (savedInstanceState == null) handle(intent)
-        setContent { MorphTheme { MorphApp(model) } }
+        setContent { MorphTheme(model.palette) { MorphApp(model) } }
     }
 
     override fun onNewIntent(intent: Intent) {

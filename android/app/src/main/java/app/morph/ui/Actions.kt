@@ -157,7 +157,7 @@ private fun ActionBubble(action: Action, modifier: Modifier, onClick: () -> Unit
         Box(
             Modifier.size(68.dp).shadow(6.dp, CircleShape, ambientColor = Color.Black.copy(alpha = 0.1f)).clip(CircleShape).background(colors.surface),
             contentAlignment = Alignment.Center,
-        ) { Icon(iconFor(action.icon), null, tint = Tangerine, modifier = Modifier.size(28.dp)) }
+        ) { Icon(iconFor(action.icon), null, tint = colors.brandText, modifier = Modifier.size(28.dp)) }
         Text(action.title, style = rounded(13, FontWeight.Bold), color = colors.text, textAlign = TextAlign.Center, maxLines = 2)
     }
 }
@@ -171,12 +171,14 @@ private fun Running(phase: Phase.Running) {
     Column(Modifier.fillMaxWidth().padding(vertical = 40.dp), horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(22.dp)) {
         Box(Modifier.size(130.dp), contentAlignment = Alignment.Center) {
+            val brand = colors.brand
+            val tint = colors.tint
             Canvas(Modifier.size(130.dp).rotate(if (phase.total > 1) 0f else spin)) {
                 val stroke = Stroke(12.dp.toPx(), cap = StrokeCap.Round)
-                drawArc(Tint, 0f, 360f, false, style = stroke)
-                drawArc(Accent, -90f, 360f * fraction, false, style = stroke)
+                drawArc(tint, 0f, 360f, false, style = stroke)
+                drawArc(brand, -90f, 360f * fraction, false, style = stroke)
             }
-            Icon(iconFor(phase.action.icon), null, tint = Tangerine, modifier = Modifier.size(38.dp))
+            Icon(iconFor(phase.action.icon), null, tint = colors.brandText, modifier = Modifier.size(38.dp))
         }
         Text(if (phase.action.group == Group.CONVERT) "Making ${phase.action.title}…" else "${phase.action.title}…",
             style = rounded(20, FontWeight.ExtraBold), color = colors.text)
@@ -195,10 +197,9 @@ private fun Finished(phase: Phase.Finished, model: MorphModel) {
     Column(Modifier.fillMaxWidth().padding(top = 18.dp), horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(18.dp)) {
         Box(
-            Modifier.size(96.dp).scale(pop).shadow(16.dp, CircleShape, ambientColor = Coral, spotColor = Coral).clip(CircleShape)
-                .then(if (ok) Modifier.background(Accent) else Modifier.background(Coral)),
+            Modifier.size(96.dp).scale(pop).clip(CircleShape).background(if (ok) colors.brand else Danger),
             contentAlignment = Alignment.Center,
-        ) { Icon(if (ok) Icons.Rounded.Check else Icons.Rounded.PriorityHigh, null, tint = Color.White, modifier = Modifier.size(46.dp)) }
+        ) { Icon(if (ok) Icons.Rounded.Check else Icons.Rounded.PriorityHigh, null, tint = if (ok) colors.onBrand else Color.White, modifier = Modifier.size(46.dp)) }
 
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(if (ok) "All done!" else if (phase.outputs.isEmpty()) "That didn't work" else "Partly done",

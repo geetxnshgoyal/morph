@@ -1,5 +1,6 @@
 package app.morph
 
+import app.morph.ui.Palette
 import android.app.Application
 import android.net.Uri
 import androidx.compose.runtime.getValue
@@ -57,6 +58,10 @@ class MorphModel(app: Application) : AndroidViewModel(app) {
         private set
     var compression by mutableStateOf(prefs.compression)
         private set
+    var sizeLimit by mutableStateOf(prefs.sizeLimit)
+        private set
+    var palette by mutableStateOf(prefs.palette)
+        private set
     var recent by mutableStateOf<List<HistoryEntry>>(emptyList())
         private set
     var job by mutableStateOf<Job?>(null)
@@ -83,6 +88,8 @@ class MorphModel(app: Application) : AndroidViewModel(app) {
     fun replayWelcome() { hasSeenWelcome = false; prefs.hasSeenWelcome = false }
     fun updateHaptics(on: Boolean) { haptics = on; prefs.haptics = on }
     fun updateCompression(level: Compression) { compression = level; prefs.compression = level }
+    fun updateSizeLimit(bytes: Int) { sizeLimit = bytes; prefs.sizeLimit = bytes }
+    fun updatePalette(choice: Palette) { palette = choice; prefs.palette = choice }
 
     /** Shared, picked or "Open with" content: copy it in, then show the actions sheet. */
     fun open(uris: List<Uri>, autoRun: String? = null) {
@@ -113,7 +120,7 @@ class MorphModel(app: Application) : AndroidViewModel(app) {
         current.phase = Phase.Running(action, 0, current.files.size)
         viewModelScope.launch {
             val work = File(app.cacheDir, "work/${UUID.randomUUID()}")
-            val result = Runner.run(app, action, current.files, Options(compression, work)) { done, total ->
+            val result = Runner.run(app, action, current.files, Options(compression, work, sizeLimit.takeIf { it > 0 })) { done, total ->
                 viewModelScope.launch { if (current.phase is Phase.Running) current.phase = Phase.Running(action, done, total) }
             }
             val failures = result.failures.toMutableList()

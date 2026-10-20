@@ -4,6 +4,7 @@ import android.content.ContentValues
 import android.content.Context
 import android.net.Uri
 import android.provider.MediaStore
+import app.morph.ui.Palette
 import android.provider.OpenableColumns
 import android.webkit.MimeTypeMap
 import org.json.JSONArray
@@ -164,4 +165,13 @@ class Prefs(context: Context) {
     var compression: Compression
         get() = runCatching { Compression.valueOf(prefs.getString("compression", null) ?: "") }.getOrDefault(Compression.BALANCED)
         set(value) = prefs.edit().putString("compression", value.name).apply()
+
+    /** Bytes Compress must fit under; 0 is no limit. */
+    var sizeLimit: Int
+        get() = prefs.getInt("sizeLimit", 0)
+        set(value) = prefs.edit().putInt("sizeLimit", value).apply()
+
+    var palette: Palette
+        get() = runCatching { Palette.valueOf(prefs.getString("palette", null) ?: "") }.getOrDefault(Palette.TEAL)
+        set(value) = prefs.edit().putString("palette", value.name).apply()
 }

@@ -1,5 +1,15 @@
 package app.morph.ui
 
+import androidx.compose.material.icons.automirrored.rounded.HelpOutline
+import androidx.compose.material.icons.rounded.PrivacyTip
+import android.net.Uri
+import app.morph.core.SizeLimit
+import androidx.compose.runtime.remember
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.AlertDialog
 import android.app.DownloadManager
 import android.content.Context
 import android.content.Intent
@@ -123,7 +133,7 @@ fun MorphApp(model: MorphModel) {
         model.job?.let { ActionsSheet(it, model) }
 
         AnimatedVisibility(!model.hasSeenWelcome, enter = fadeIn(), exit = fadeOut() + slideOutVertically { it / 4 }) {
-            Onboarding(onFinish = model::finishWelcome)
+            Onboarding(model, onFinish = model::finishWelcome)
         }
 
         model.error?.let { message ->
@@ -161,16 +171,16 @@ fun HomeScreen(model: MorphModel, openSettings: () -> Unit) {
         Box(
             Modifier
                 .fillMaxWidth()
-                .shadow(18.dp, RoundedCornerShape(32.dp), ambientColor = Coral, spotColor = Coral)
+                .shadow(12.dp, RoundedCornerShape(32.dp), ambientColor = Color.Black.copy(alpha = 0.1f), spotColor = Color.Black.copy(alpha = 0.15f))
                 .clip(RoundedCornerShape(32.dp))
-                .background(Accent),
+                .background(colors.brand),
         ) {
             Box(Modifier.size(160.dp).align(Alignment.TopEnd).offset(50.dp, (-50).dp).clip(CircleShape).background(Color.White.copy(alpha = 0.12f)))
             Box(Modifier.size(90.dp).align(Alignment.BottomEnd).offset((-30).dp, 30.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.10f)))
             Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text("What are we\nmaking today?", style = rounded(28, FontWeight.ExtraBold), color = Color.White)
-                    Text("Convert, shrink and clean up any file.", style = rounded(15, FontWeight.SemiBold), color = Color.White.copy(alpha = 0.85f))
+                    Text("What are we\nmaking today?", style = rounded(28, FontWeight.ExtraBold), color = colors.onBrand)
+                    Text("Convert, shrink and clean up any file.", style = rounded(15, FontWeight.SemiBold), color = colors.onBrand.copy(alpha = 0.85f))
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     HeroButton("Photos", Icons.Rounded.PhotoLibrary, Modifier.weight(1f)) {
@@ -183,7 +193,7 @@ fun HomeScreen(model: MorphModel, openSettings: () -> Unit) {
 
         if (model.importing) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                CircularProgressIndicator(Modifier.size(18.dp), color = Tangerine, strokeWidth = 2.5.dp)
+                CircularProgressIndicator(Modifier.size(18.dp), color = colors.brand, strokeWidth = 2.5.dp)
                 Text("Bringing your files in…", style = rounded(14), color = colors.secondary)
             }
         }
@@ -213,9 +223,9 @@ private fun HeroButton(title: String, icon: ImageVector, modifier: Modifier, onC
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(icon, null, tint = Tangerine, modifier = Modifier.size(20.dp))
+        Icon(icon, null, tint = colors.brandOnWhite, modifier = Modifier.size(20.dp))
         Spacer(Modifier.width(8.dp))
-        Text(title, style = rounded(16, FontWeight.Bold), color = Tangerine)
+        Text(title, style = rounded(16, FontWeight.Bold), color = colors.brandOnWhite)
     }
 }
 
@@ -243,8 +253,8 @@ private fun RecentRow(entry: HistoryEntry, model: MorphModel) {
 
 @Composable
 fun RoundIcon(icon: ImageVector, label: String, onClick: () -> Unit) {
-    Box(Modifier.size(38.dp).clip(CircleShape).background(Tint).tap(onClick), contentAlignment = Alignment.Center) {
-        Icon(icon, label, tint = Tangerine, modifier = Modifier.size(18.dp))
+    Box(Modifier.size(38.dp).clip(CircleShape).background(colors.tint).tap(onClick), contentAlignment = Alignment.Center) {
+        Icon(icon, label, tint = colors.brandText, modifier = Modifier.size(18.dp))
     }
 }
 
@@ -277,10 +287,28 @@ fun SettingsScreen(model: MorphModel, back: () -> Unit) {
             PillPicker(app.morph.core.Compression.entries, model.compression, { it.label }, model::updateCompression)
             Spacer(Modifier.height(10.dp))
             Text(model.compression.detail, style = rounded(14), color = colors.secondary)
+            Spacer(Modifier.height(16.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Size limit", style = rounded(17, FontWeight.Bold), color = colors.text, modifier = Modifier.weight(1f))
+                SizeLimitPicker(model.sizeLimit, model::updateSizeLimit)
+            }
+            Spacer(Modifier.height(8.dp))
+            Text(SizeLimit.detail(model.sizeLimit), style = rounded(14), color = colors.secondary)
+        }
+
+        MorphCard {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Color", style = rounded(17, FontWeight.Bold), color = colors.text, modifier = Modifier.weight(1f))
+                Text(model.palette.label, style = rounded(15, FontWeight.Bold), color = colors.brandText)
+            }
+            Spacer(Modifier.height(12.dp))
+            PalettePicker(model.palette, model::updatePalette)
+            Spacer(Modifier.height(10.dp))
+            Text("For highlights and buttons. The app icon stays Teal Ink.", style = rounded(14), color = colors.secondary)
         }
 
         SettingRow(Icons.Rounded.Vibration, "Haptics", "A gentle buzz when a job finishes.") {
-            Switch(model.haptics, model::updateHaptics, colors = SwitchDefaults.colors(checkedTrackColor = Tangerine))
+            Switch(model.haptics, model::updateHaptics, colors = SwitchDefaults.colors(checkedTrackColor = colors.brand))
         }
         SettingRow(Icons.Rounded.Folder, "Your results", "Saved in Downloads › Morph, visible in any file manager.") {
             SoftButton("Open") { openDownloads(context) }
@@ -288,6 +316,12 @@ fun SettingsScreen(model: MorphModel, back: () -> Unit) {
         SettingRow(Icons.Rounded.IosShare, "Share to Morph", "In any app, tap Share, then Morph.") {}
         SettingRow(Icons.Rounded.AutoAwesome, "Welcome guide", "See the introduction again.") {
             SoftButton("Show") { back(); model.replayWelcome() }
+        }
+        SettingRow(Icons.Rounded.PrivacyTip, "Privacy", "Morph collects nothing. Your files never leave this phone.") {
+            SoftButton("Read") { openLink(context, "https://morph.geetanshgoyal.in/privacy.html") }
+        }
+        SettingRow(Icons.AutoMirrored.Rounded.HelpOutline, "Help and feedback", "Questions, ideas or a file that didn't convert.") {
+            SoftButton("Open") { openLink(context, "https://morph.geetanshgoyal.in/support.html") }
         }
 
         val version = runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }.getOrNull().orEmpty()
@@ -316,7 +350,7 @@ private fun Toast(message: String, dismiss: () -> Unit) {
     Box(Modifier.fillMaxSize().navigationBarsPadding().padding(20.dp), contentAlignment = Alignment.BottomCenter) {
         AnimatedVisibility(true, enter = slideInVertically { it } + fadeIn()) {
             Text(message, style = rounded(15, FontWeight.SemiBold), color = Color.White,
-                modifier = Modifier.clip(CircleShape).background(Coral).padding(horizontal = 20.dp, vertical = 12.dp))
+                modifier = Modifier.clip(CircleShape).background(Danger).padding(horizontal = 20.dp, vertical = 12.dp))
         }
     }
 }
@@ -356,4 +390,46 @@ fun view(context: Context, output: Published) {
 
 fun openDownloads(context: Context) {
     runCatching { context.startActivity(Intent(DownloadManager.ACTION_VIEW_DOWNLOADS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
+}
+
+/** Compress's size limit: none, a common upload-form size, or any size typed in ("300 KB", "1.5 MB"). */
+@Composable
+internal fun SizeLimitPicker(limit: Int, onChange: (Int) -> Unit) {
+    var open by remember { mutableStateOf(false) }
+    var typing by remember { mutableStateOf(false) }
+    Box {
+        SoftButton(SizeLimit.label(limit) + "  ▾") { open = true }
+        DropdownMenu(open, onDismissRequest = { open = false }) {
+            (listOf(0) + SizeLimit.presets).forEach { bytes ->
+                DropdownMenuItem(
+                    text = { Text(SizeLimit.label(bytes), style = rounded(15, if (bytes == limit) FontWeight.Bold else FontWeight.Medium)) },
+                    trailingIcon = { if (bytes == limit) Icon(Icons.Rounded.Check, null, tint = colors.brandText) },
+                    onClick = { onChange(bytes); open = false },
+                )
+            }
+            DropdownMenuItem(text = { Text("Custom size…", style = rounded(15, FontWeight.Medium)) }, onClick = { open = false; typing = true })
+        }
+    }
+    if (typing) {
+        var text by remember { mutableStateOf(if (limit > 0) SizeLimit.label(limit) else "") }
+        AlertDialog(
+            onDismissRequest = { typing = false },
+            title = { Text("Custom size limit", style = rounded(20, FontWeight.Bold)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("Type a size such as 300 KB or 1.5 MB.", style = rounded(15))
+                    OutlinedTextField(text, { text = it }, singleLine = true, placeholder = { Text("200 KB") })
+                }
+            },
+            confirmButton = {
+                TextButton({ SizeLimit.parse(text)?.takeIf { it >= 5_000 }?.let(onChange); typing = false }) { Text("Set") }
+            },
+            dismissButton = { TextButton({ typing = false }) { Text("Cancel") } },
+        )
+    }
+}
+
+/** Opens a web page in the browser. Morph itself never goes online; the browser does. */
+private fun openLink(context: Context, url: String) {
+    runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
 }
