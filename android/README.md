@@ -6,7 +6,11 @@ Needs Android 10 (API 29) or later.
 
 ## Install
 
-Download `Morph-0.1.0.apk` from [Releases](../../../releases/latest), open it on your phone, and allow installs from that source when Android asks.
+Morph is coming to Google Play. Until then, download `Morph-1.0.0.apk` from [Releases](../../../releases/latest), open it on your phone, and allow installs from that source when Android asks.
+
+The Play bundle is built with `./gradlew bundleRelease` (signed with the upload key in `keystore.properties`); the listing, graphics and policy answers are in [`marketing/play-store.md`](../marketing/play-store.md).
+
+Morph has no internet access: the network permissions ML Kit would add are removed in the manifest, and text recognition uses the model bundled in the app.
 
 ## What it can do
 
