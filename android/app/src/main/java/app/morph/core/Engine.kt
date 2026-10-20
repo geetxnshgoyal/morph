@@ -67,8 +67,35 @@ enum class Compression(val label: String, val detail: String, val quality: Int, 
     STRONG("Strong", "Smallest files, visible softening.", 50, 480, 1_200_000),
 }
 
-/** Knobs shared by every action. Results are written under [outDir], then published to Downloads/Morph. */
-class Options(val compression: Compression, val outDir: File)
+/**
+ * Knobs shared by every action. Results are written under [outDir], then published to Downloads/Morph.
+ * [targetBytes] makes Compress fit under a size, for upload forms.
+ */
+class Options(val compression: Compression, val outDir: File, val targetBytes: Int? = null)
+
+/** Size limits offered for Compress, for upload forms that cap file size; 0 is no limit. Sizes are decimal. */
+object SizeLimit {
+    val presets = listOf(20_000, 50_000, 100_000, 200_000, 500_000, 1_000_000, 2_000_000, 5_000_000)
+
+    fun label(bytes: Int): String = when {
+        bytes <= 0 -> "No limit"
+        bytes < 1_000_000 -> "${(bytes + 500) / 1000} KB"
+        bytes % 1_000_000 == 0 -> "${bytes / 1_000_000} MB"
+        else -> "%.1f MB".format(bytes / 1e6)
+    }
+
+    fun detail(bytes: Int) =
+        if (bytes <= 0) "Compress makes the file smaller at the level above. Set a limit for upload forms that cap file size."
+        else "Compress fits photos under ${label(bytes)} as JPG, at the best quality that fits, ready for upload forms."
+
+    /** "300 KB", "1.5mb", "200k" or plain bytes. */
+    fun parse(text: String): Int? {
+        val s = text.trim().lowercase().replace(" ", "")
+        val units = listOf("gb" to 1e9, "g" to 1e9, "mb" to 1e6, "m" to 1e6, "kb" to 1e3, "k" to 1e3, "b" to 1.0)
+        for ((suffix, mult) in units) if (s.endsWith(suffix)) return s.dropLast(suffix.length).toDoubleOrNull()?.let { (it * mult).toInt() }
+        return s.toIntOrNull()
+    }
+}
 
 /** [icon] is a key the UI maps to a Material symbol, keeping the engine free of UI types. */
 class Action(
@@ -118,7 +145,12 @@ object Library {
         },
         // Tools
         one("tool.compress", "Compress", "compress", Group.TOOL, setOf(FileKind.IMAGE, FileKind.VIDEO)) { ctx, f, o ->
-            if (FileKind.of(f) == FileKind.VIDEO) MediaOps.compress(ctx, f, o) else ImageOps.compress(f, o)
+            val target = o.targetBytes
+            when {
+                FileKind.of(f) == FileKind.VIDEO -> MediaOps.compress(ctx, f, o)
+                target != null -> ImageOps.underSize(f, target, o)
+                else -> ImageOps.compress(f, o)
+            }
         },
         one("tool.resize", "Resize", "resize", Group.TOOL, setOf(FileKind.IMAGE)) { _, f, o -> ImageOps.resize(f, 2048, o) },
         one("tool.strip-metadata", "Remove Metadata", "strip", Group.TOOL, setOf(FileKind.IMAGE)) { _, f, o -> ImageOps.stripMetadata(f, o) },
@@ -259,24 +291,24 @@ object ImageOps {
         return write(decode(file), format, 95, Output.file(file, format.ext, "clean", o))
     }
 
-    /** Searches JPEG quality, then downscales until the file fits. */
+    /** A JPEG (what upload forms accept) under [target]: searches quality, then downscales until the file fits. */
     fun underSize(file: File, target: Int, o: Options): File {
-        val out = Output.file(file, "jpg", "small", o)
+        val out = Output.file(file, "jpg", "compressed", o)
         var longest: Int? = null
-        repeat(10) {
-            val bitmap = decode(file, longest)
+        while (true) {
+            val bitmap = flatten(decode(file, longest))
             var lo = 5; var hi = 95; var best: ByteArray? = null
             while (lo <= hi) {
                 val mid = (lo + hi) / 2
-                val bytes = java.io.ByteArrayOutputStream().also { flatten(bitmap).compress(Bitmap.CompressFormat.JPEG, mid, it) }.toByteArray()
+                val bytes = java.io.ByteArrayOutputStream().also { bitmap.compress(Bitmap.CompressFormat.JPEG, mid, it) }.toByteArray()
                 if (bytes.size <= target) { best = bytes; lo = mid + 1 } else hi = mid - 1
             }
             best?.let { out.writeBytes(it); return out }
             longest = (max(bitmap.width, bitmap.height) * 0.8).toInt()
-            if (longest!! < 64) return@repeat
+            if (longest < 64) break
         }
         out.delete()
-        throw MorphError("Couldn't get ${file.name} under ${target / 1_000_000} MB")
+        throw MorphError("Couldn't get ${file.name} under ${SizeLimit.label(target)}")
     }
 }
 
@@ -325,11 +357,28 @@ object PdfOps {
 // MARK: - Video & audio
 
 object MediaOps {
-    /** Downscales only videos taller than the level's height; never upscales. */
+    /**
+     * Downscales only videos taller than the level's height; never upscales. With a size limit, picks the bitrate
+     * (and a height to suit it) from the video's length so the file lands under the limit.
+     */
     suspend fun compress(context: Context, file: File, o: Options): File {
         val height = videoHeight(file)
+        o.targetBytes?.let { target ->
+            val seconds = durationSeconds(file) ?: throw MorphError("Couldn't read how long ${file.name} is")
+            // Leave room for 128 kbps audio and the container.
+            val bitrate = (target * 8 / seconds * 0.9 - 128_000).toInt().coerceAtLeast(150_000)
+            val maxHeight = (if (bitrate < 600_000) 480 else if (bitrate < 1_500_000) 720 else 1080).takeIf { height == null || height > it }
+            val out = transform(context, file, Output.file(file, "mp4", "compressed", o), maxHeight = maxHeight, bitrate = bitrate)
+            if (out.length() > target) { out.delete(); throw MorphError("Couldn't get ${file.name} under ${SizeLimit.label(target)}") }
+            return out
+        }
         val target = o.compression.videoHeight.takeIf { height == null || height > it }
         return transform(context, file, Output.file(file, "mp4", "compressed", o), maxHeight = target, bitrate = o.compression.videoBitrate)
+    }
+
+    private fun durationSeconds(file: File): Double? = MediaMetadataRetriever().use { r ->
+        r.setDataSource(file.absolutePath)
+        r.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull()?.takeIf { it > 0 }?.div(1000.0)
     }
 
     private fun videoHeight(file: File): Int? = MediaMetadataRetriever().use { r ->
