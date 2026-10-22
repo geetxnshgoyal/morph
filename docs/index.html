@@ -7,23 +7,25 @@
 <meta name="description" content="Morph converts, shrinks and cleans up files right where they are, on Mac, iPhone and Android. Drag a file, tap a key, drop it on the wheel. Free, and nothing is ever uploaded.">
 <meta property="og:title" content="Morph">
 <meta property="og:description" content="Drag a file, tap a key, drop it on the wheel. Free, local file conversion for Mac, iPhone and Android.">
-<meta property="og:image" content="images/mac-wheel-convert.png">
-<meta name="theme-color" content="#8C6BFF">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23FF8F38'/%3E%3Cstop offset='.5' stop-color='%23F0508C'/%3E%3Cstop offset='1' stop-color='%238C6BFF'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='16' fill='url(%23g)'/%3E%3Cg fill='white'%3E%3Ccircle cx='32' cy='32' r='6'/%3E%3Ccircle cx='32' cy='17' r='6'/%3E%3Ccircle cx='32' cy='47' r='6'/%3E%3Ccircle cx='19' cy='24.5' r='6'/%3E%3Ccircle cx='45' cy='24.5' r='6'/%3E%3Ccircle cx='19' cy='39.5' r='6'/%3E%3Ccircle cx='45' cy='39.5' r='6'/%3E%3C/g%3E%3C/svg%3E">
+<meta property="og:image" content="https://morph.geetanshgoyal.in/images/mac-wheel-convert.png">
+<meta property="og:url" content="https://morph.geetanshgoyal.in/">
+<link rel="canonical" href="https://morph.geetanshgoyal.in/">
+<meta name="theme-color" content="#0B6E69">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230B6E69'/%3E%3Cg fill='white'%3E%3Ccircle cx='32' cy='32' r='6'/%3E%3Ccircle cx='32' cy='17' r='6'/%3E%3Ccircle cx='32' cy='47' r='6'/%3E%3Ccircle cx='19' cy='24.5' r='6'/%3E%3Ccircle cx='45' cy='24.5' r='6'/%3E%3Ccircle cx='19' cy='39.5' r='6'/%3E%3Ccircle cx='45' cy='39.5' r='6'/%3E%3C/g%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,400..800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --ink: #1C1533;
-    --ink-soft: #5B5274;
-    --paper: #FAF8FF;
-    --lilac: #EEE8FF;
-    --tangerine: #FF8F38;
-    --coral: #FF6661;
-    --rose: #F0508C;
-    --violet: #8C6BFF;
-    --aura: linear-gradient(120deg, var(--tangerine), var(--coral) 35%, var(--rose) 68%, var(--violet));
+    /* Teal Ink on cool paper, the same tokens as the apps' Theme. */
+    --ink: #121A19;
+    --ink-soft: #4F5957;
+    --paper: #F1F4F3;
+    --line: #DCE3E1;
+    --brand: #0B6E69;
+    --brand-deep: #08524E;
+    --brand-light: #4FC1B9;
+    --night: #0E1414;
     --display: "Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
     --body: "Figtree", system-ui, -apple-system, sans-serif;
     --measure: 34rem;
@@ -40,7 +42,7 @@
   }
   img { max-width: 100%; display: block; }
   a { color: inherit; }
-  :focus-visible { outline: 3px solid var(--violet); outline-offset: 3px; border-radius: 8px; }
+  :focus-visible { outline: 3px solid var(--brand); outline-offset: 3px; border-radius: 8px; }
 
   .wrap { width: min(1160px, 100% - 2.5rem); margin-inline: auto; }
 
@@ -75,40 +77,28 @@
     font: 650 1rem/1 var(--body); text-decoration: none;
     transition: transform .2s ease, box-shadow .2s ease;
   }
-  .button.primary { color: white; background: var(--aura); box-shadow: 0 12px 30px -10px rgba(240, 80, 140, .6); }
-  .button.primary:hover { transform: translateY(-2px); box-shadow: 0 16px 34px -10px rgba(240, 80, 140, .7); }
-  .button.quiet { color: var(--ink); background: white; border: 1px solid #E3DCF5; }
-  .button.quiet:hover { border-color: var(--violet); }
+  .button.primary { color: white; background: var(--brand); }
+  .button.primary:hover { background: var(--brand-deep); transform: translateY(-2px); }
+  .button.quiet { color: var(--ink); background: white; border: 1px solid var(--line); }
+  .button.quiet:hover { border-color: var(--brand); }
   .fineprint { font-size: .88rem; color: var(--ink-soft); margin-top: 1rem; }
 
   /* The live wheel */
   .stage { position: relative; display: grid; justify-items: center; gap: 1.4rem; }
-  /* The wheel and its glow share one square, so the glow stays centred on the ring at any width. */
   .dial { position: relative; width: min(100%, 470px); aspect-ratio: 1; }
-  .halo {
-    position: absolute; inset: 6%;
-    border-radius: 50%;
-    background: conic-gradient(from 0deg, var(--tangerine), var(--coral), var(--rose), var(--violet), var(--tangerine));
-    /* closest-side makes the stops fractions of the ring's radius: light only under the outer half of the petals. */
-    -webkit-mask: radial-gradient(circle closest-side, transparent 50%, black 68%, black 92%, transparent 100%);
-            mask: radial-gradient(circle closest-side, transparent 50%, black 68%, black 92%, transparent 100%);
-    filter: blur(20px); opacity: .6;
-    animation: turn 16s linear infinite;
-  }
-  @keyframes turn { to { transform: rotate(360deg); } }
   #wheel { position: relative; display: block; width: 100%; height: 100%; overflow: visible; touch-action: manipulation; }
   .petal { cursor: pointer; transform-box: view-box; transform-origin: 220px 220px; }
   .petal .face { transition: transform .32s cubic-bezier(.3, 1.6, .5, 1); }
-  .petal path { fill: url(#petalFill); stroke: rgba(255, 255, 255, .95); stroke-width: 1.2; transition: fill .2s; }
+  .petal path { fill: white; stroke: var(--line); stroke-width: 1.2; transition: fill .2s; }
   .petal text { font: 650 12.5px/1 var(--body); fill: var(--ink); text-anchor: middle; dominant-baseline: middle; pointer-events: none; }
-  .petal.on path { fill: url(#auraFill); filter: drop-shadow(0 8px 16px rgba(240, 80, 140, .45)); }
+  .petal.on path { fill: var(--brand); stroke: var(--brand); }
   .petal.on text { fill: white; }
   .bloom { animation: bloom .7s cubic-bezier(.25, 1.5, .45, 1) both; }
   @keyframes bloom { from { transform: scale(.35); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-  .hub circle { fill: rgba(255, 255, 255, .92); stroke: white; }
+  .hub circle { fill: white; stroke: var(--line); }
   .hub .title { font: 700 17px/1 var(--display); fill: var(--ink); text-anchor: middle; }
   .hub .caption { font: 500 12px/1 var(--body); fill: var(--ink-soft); text-anchor: middle; }
-  .keys { display: flex; flex-wrap: wrap; justify-content: center; gap: .5rem; padding: .4rem; border-radius: 999px; background: rgba(255, 255, 255, .7); border: 1px solid #ECE6FA; backdrop-filter: blur(14px); }
+  .keys { display: flex; flex-wrap: wrap; justify-content: center; gap: .5rem; padding: .4rem; border-radius: 999px; background: rgba(255, 255, 255, .7); border: 1px solid var(--line); backdrop-filter: blur(14px); }
   .key {
     display: inline-flex; align-items: center; gap: .45rem;
     border: 0; background: transparent; color: var(--ink);
@@ -116,7 +106,7 @@
     font: 600 .95rem/1 var(--body);
   }
   .key kbd { font: 700 1rem/1 var(--body); opacity: .55; }
-  .key[aria-pressed="true"] { background: var(--aura); color: white; }
+  .key[aria-pressed="true"] { background: var(--brand); color: white; }
   .key[aria-pressed="true"] kbd { opacity: .9; }
   .hint { font-size: .9rem; color: var(--ink-soft); text-align: center; margin: 0; }
 
@@ -130,35 +120,31 @@
   }
   .lead { color: var(--ink-soft); font-size: 1.15rem; max-width: var(--measure); margin: 0; }
   .split { display: grid; grid-template-columns: 0.9fr 1.1fr; gap: 3.5rem; align-items: center; }
-  .shot { border-radius: 28px; overflow: hidden; box-shadow: 0 30px 70px -30px rgba(60, 30, 110, .45); }
+  .shot { border-radius: 28px; overflow: hidden; box-shadow: 0 30px 70px -30px rgba(10, 40, 38, .4); }
   .mac-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; align-items: start; }
   .mac-pair .shot:last-child { margin-top: 3.5rem; }
   .points { list-style: none; padding: 0; margin: 2rem 0 0; display: grid; gap: 1.1rem; max-width: var(--measure); }
   .points li { display: grid; grid-template-columns: auto 1fr; gap: .9rem; align-items: baseline; }
   .points kbd {
     min-width: 2.4rem; text-align: center; padding: .35rem .5rem; border-radius: 9px;
-    background: white; border: 1px solid #E3DCF5; box-shadow: 0 3px 0 #E3DCF5;
+    background: white; border: 1px solid var(--line); box-shadow: 0 3px 0 var(--line);
     font: 700 1rem/1 var(--body);
   }
   .points strong { font-weight: 650; }
 
-  .phone-band { background: var(--ink); color: white; border-radius: 44px; padding: 5rem 0; margin: 2rem auto; width: min(1240px, 100% - 1.5rem); position: relative; overflow: hidden; }
-  .phone-band::before {
-    content: ""; position: absolute; inset: -40% -10% auto auto; width: 70%; aspect-ratio: 1; border-radius: 50%;
-    background: radial-gradient(circle, rgba(140, 107, 255, .45), transparent 60%);
-  }
-  .phone-band .lead { color: #CFC6EA; }
+  .phone-band { background: var(--night); color: white; border-radius: 44px; padding: 5rem 0; margin: 2rem auto; width: min(1240px, 100% - 1.5rem); position: relative; overflow: hidden; }
+  .phone-band .lead { color: #B9C6C3; }
   .phones { display: flex; gap: 1.2rem; justify-content: center; align-items: flex-end; position: relative; }
   .phones img { width: 31%; border-radius: 34px; box-shadow: 0 30px 60px -20px rgba(0, 0, 0, .6); }
   .phones img:nth-child(2) { width: 34%; transform: translateY(-1.5rem); }
   .shortcuts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .6rem 1.4rem; margin: 2rem 0 0; padding: 0; list-style: none; max-width: var(--measure); }
-  .shortcuts li { padding-left: 1.1rem; position: relative; color: #EDE8FF; }
-  .shortcuts li::before { content: ""; position: absolute; left: 0; top: .62em; width: .45rem; height: .45rem; border-radius: 50%; background: var(--aura); }
+  .shortcuts li { padding-left: 1.1rem; position: relative; color: #E6EEEC; }
+  .shortcuts li::before { content: ""; position: absolute; left: 0; top: .62em; width: .45rem; height: .45rem; border-radius: 50%; background: var(--brand-light); }
   .siri { margin-top: 1.8rem; font-family: var(--display); font-size: 1.35rem; font-variation-settings: "wdth" 90; color: white; max-width: var(--measure); }
 
   .wheels { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 2.4rem; margin-top: 3rem; }
   .wheels h3 { font: 700 1.3rem/1.2 var(--display); margin: 0 0 .9rem; display: flex; align-items: center; gap: .6rem; }
-  .wheels h3 kbd { font: 700 .95rem/1 var(--body); color: white; background: var(--aura); border-radius: 8px; padding: .3rem .5rem; }
+  .wheels h3 kbd { font: 700 .95rem/1 var(--body); color: white; background: var(--brand); border-radius: 8px; padding: .3rem .5rem; }
   .wheels ul { margin: 0; padding: 0; list-style: none; color: var(--ink-soft); display: grid; gap: .45rem; }
 
   .promise { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 2.5rem; margin-top: 2.5rem; }
@@ -167,8 +153,8 @@
 
   .download { text-align: left; }
   .platforms { display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 1.2rem; margin-top: 2.5rem; }
-  .platform { border-radius: 26px; padding: 1.8rem; background: white; border: 1px solid #ECE6FA; display: grid; gap: .6rem; align-content: start; }
-  .platform.mac { background: var(--aura); color: white; border: 0; }
+  .platform { border-radius: 26px; padding: 1.8rem; background: white; border: 1px solid var(--line); display: grid; gap: .6rem; align-content: start; }
+  .platform.mac { background: var(--brand); color: white; border: 0; }
   .platform h3 { font: 720 1.6rem/1.1 var(--display); margin: 0; }
   .platform p { margin: 0; }
   .platform.mac p { color: rgba(255, 255, 255, .9); }
@@ -177,11 +163,12 @@
   .platform.mac .button { background: white; color: var(--ink); }
   pre {
     margin: 2.8rem 0 0; padding: 1.5rem 1.7rem; border-radius: 22px; overflow-x: auto;
-    background: var(--ink); color: #EDE8FF; font: 500 .92rem/1.7 ui-monospace, "SF Mono", Menlo, monospace;
+    background: var(--night); color: #E6EEEC; font: 500 .92rem/1.7 ui-monospace, "SF Mono", Menlo, monospace;
   }
-  pre .c { color: #9C91C2; }
+  pre .c { color: #8FA19D; }
 
   footer { padding: 3rem 0 4rem; color: var(--ink-soft); font-size: .92rem; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 1rem; }
+  footer nav { display: flex; gap: 1.4rem; flex-wrap: wrap; }
 
   @media (max-width: 900px) {
     .hero, .split { grid-template-columns: 1fr; }
@@ -201,7 +188,7 @@
     .mac-pair .shot:last-child { margin-top: 0; }
   }
   @media (prefers-reduced-motion: reduce) {
-    h1, .bloom, .halo { animation: none; }
+    h1, .bloom { animation: none; }
     .petal .face { transition: none; }
   }
 </style>
@@ -211,7 +198,7 @@
 <div class="wrap">
   <header class="bar">
     <a class="brand" href="#">
-      <svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="logo" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FF8F38"/><stop offset=".5" stop-color="#F0508C"/><stop offset="1" stop-color="#8C6BFF"/></linearGradient></defs><rect width="64" height="64" rx="16" fill="url(#logo)"/><g fill="#fff"><circle cx="32" cy="32" r="6"/><circle cx="32" cy="17" r="6"/><circle cx="32" cy="47" r="6"/><circle cx="19" cy="24.5" r="6"/><circle cx="45" cy="24.5" r="6"/><circle cx="19" cy="39.5" r="6"/><circle cx="45" cy="39.5" r="6"/></g></svg>
+      <svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="16" fill="#0B6E69"/><g fill="#fff"><circle cx="32" cy="32" r="6"/><circle cx="32" cy="17" r="6"/><circle cx="32" cy="47" r="6"/><circle cx="19" cy="24.5" r="6"/><circle cx="45" cy="24.5" r="6"/><circle cx="19" cy="39.5" r="6"/><circle cx="45" cy="39.5" r="6"/></g></svg>
       Morph
     </a>
     <nav aria-label="Sections">
@@ -236,19 +223,7 @@
 
       <div class="stage">
         <div class="dial">
-          <div class="halo" aria-hidden="true"></div>
           <svg id="wheel" viewBox="0 0 440 440" role="group" aria-label="Interactive preview of the Morph wheel">
-            <defs>
-              <radialGradient id="petalFill" gradientUnits="userSpaceOnUse" cx="220" cy="220" r="200">
-                <stop offset=".45" stop-color="#FFFFFF" stop-opacity=".88"/>
-                <stop offset="1" stop-color="#FFE3EE" stop-opacity=".82"/>
-              </radialGradient>
-              <linearGradient id="auraFill" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0" stop-color="#FF8F38"/>
-                <stop offset=".55" stop-color="#FF6661"/>
-                <stop offset="1" stop-color="#F0508C"/>
-              </linearGradient>
-            </defs>
             <g id="petals"></g>
             <g class="hub" aria-live="polite">
               <circle cx="220" cy="220" r="78"/>
@@ -334,7 +309,7 @@
       <div>
         <h3><kbd>⌘</kbd>Tools</h3>
         <ul>
-          <li>Compress images, video and PDFs</li>
+          <li>Compress images, video and PDFs, or fit them under a size limit like 200 KB</li>
           <li>Resize</li>
           <li>Remove metadata and location</li>
           <li>Blur faces, hide personal info</li>
@@ -372,6 +347,9 @@
       <div><h3>Nothing leaves your device</h3><p>Every conversion runs locally. There are no accounts, no uploads and no tracking.</p></div>
       <div><h3>Originals stay untouched</h3><p>Results are saved beside the original with a new name, never on top of it.</p></div>
       <div><h3>Any job can be undone</h3><p>Morph keeps a history; undo moves that job's results to the Trash.</p></div>
+      <div><h3>Fits any upload limit</h3><p>Set a size like 200 KB and Compress makes a JPG that fits, for exam forms and job portals.</p></div>
+      <div><h3>Your color</h3><p>Teal Ink is Morph's own. Pick Ultramarine, Green, Magenta or Yellow in Settings instead.</p></div>
+      <div><h3>Free, for good</h3><p>No ads, no subscription and no account. Morph is open source.</p></div>
     </div>
   </div>
 </section>
@@ -388,12 +366,12 @@
       </div>
       <div class="platform">
         <h3>Android</h3>
-        <p>Share files to Morph from any app. Android 10 or later.</p>
+        <p>Coming to Google Play. Share files to Morph from any app. Android 10 or later.</p>
         <a class="button quiet" href="https://github.com/geetxnshgoyal/morph/releases/latest">Download the APK</a>
       </div>
       <div class="platform">
         <h3>iPhone and iPad</h3>
-        <p>Build it with Xcode from the source code. iOS 17 or later.</p>
+        <p>Coming to the App Store. Until then you can build it with Xcode from the source code. iOS 17 or later.</p>
         <a class="button quiet" href="https://github.com/geetxnshgoyal/morph/tree/main/ios">Build instructions</a>
       </div>
     </div>
@@ -408,7 +386,11 @@ morph watch ~/Downloads tool.strip-metadata</pre>
 <div class="wrap">
   <footer>
     <span>Morph is free and open source.</span>
-    <a href="https://github.com/geetxnshgoyal/morph">Source on GitHub</a>
+    <nav aria-label="More">
+      <a href="privacy.html">Privacy</a>
+      <a href="support.html">Support</a>
+      <a href="https://github.com/geetxnshgoyal/morph">Source on GitHub</a>
+    </nav>
   </footer>
 </div>
 
