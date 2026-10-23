@@ -1,5 +1,25 @@
 # Changelog
 
+## 1.0.0 (2026-10-22)
+
+### Everywhere
+- **Teal Ink.** A new look: one flat brand color on cool neutrals, in place of the tangerine aura gradients and glows. The app icon is redrawn with Morph's own seven-drop mark; the old icon used an SF Symbol, which Apple's license doesn't allow in app icons.
+- **Pick your color.** Settings offers Teal Ink, Ultramarine, Green, Magenta and Yellow, and the whole app recolors at once. Every option keeps labels readable (WCAG AA) in light and dark mode. The app icon stays Teal Ink.
+- **A fuller first-launch guide.** New pages show where Morph works (on iPhone: the share sheet, Shortcuts and Siri, the icon's quick actions; on Android: the share sheet and photo picker) and let you choose a color, a size limit and a compression level before you start. The guide recolors as you pick.
+- **Faster Compress.** Qualities are now tried on a 1024-pixel sample of full-resolution patches from across the photo, several at once, and the photo is encoded once at the winner. Same results as before, about 3× faster: a 2.3 MB photo takes 0.4 s instead of 1.5 s.
+- **Size limit for Compress.** Choose no limit, a size from 20 KB to 5 MB, or type any size. With a limit, photos come out as JPG under it at the best quality that fits, ready for exam forms and job portals; a JPG that's already small enough is left alone. Videos fit too: the Mac uses ffmpeg when it's installed, iPhone steps down through export sizes, and Android picks a bitrate from the video's length.
+
+### iPhone and iPad
+- **Ready for the App Store:** a privacy manifest, the export-compliance flag, an opaque 1024 px icon, and Privacy and Help links in Settings.
+- Compress Files in Shortcuts takes an optional size limit in KB.
+
+### Android
+- **Ready for Google Play:** a signed release bundle, the listing, graphics and policy answers. Morph has no internet access at all; the network permissions ML Kit would bring in are removed, and text recognition still works offline.
+- Privacy and Help links in Settings, and menus and dialogs in Morph's colors instead of Material's default tones.
+
+### Website
+- Privacy policy and support pages, linked from the footer and from the iPhone app.
+
 ## 0.2.0 (2026-10-14)
 
 ### Mac
