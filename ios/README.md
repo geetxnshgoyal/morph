@@ -11,7 +11,7 @@ Every action is an App Intent, so it shows up in the Shortcuts app, Spotlight an
 | Action | Takes | Gives back |
 | --- | --- | --- |
 | Convert Images | images, a format (JPG, PNG, HEIC, WEBP, AVIF, TIFF, GIF, BMP or PDF) | files |
-| Compress Files | images, videos or PDFs, a strength | files |
+| Compress Files | images, videos or PDFs, a strength, an optional size limit in KB | files |
 | Remove Metadata | photos, videos or audio | files |
 | Extract Text | images or PDFs | text |
 | Read QR Codes and Barcodes | images or PDFs | text |
@@ -22,6 +22,16 @@ Every action is an App Intent, so it shows up in the Shortcuts app, Spotlight an
 Results are also saved in Morph's folder, like jobs started in the app. Siri phrases include "Convert images with Morph", "Remove location from photos with Morph" and "Extract text with Morph".
 
 Press and hold the app icon for **Convert Photos** and **Choose Files**.
+
+## Settings
+
+- **Compression:** Light, Balanced or Strong.
+- **Size limit:** no limit, 20 KB to 5 MB, or any size typed in. With a limit, Compress makes JPGs under it, for upload forms.
+- **Color:** Teal Ink (Morph's own), Ultramarine, Green, Magenta or Yellow. The app icon stays Teal Ink.
+
+## App Store
+
+The app is set up for App Store review: a privacy manifest (`Morph/PrivacyInfo.xcprivacy`, no data collected), `ITSAppUsesNonExemptEncryption` set to `NO`, an opaque 1024 px icon, and Privacy and Help links in Settings. The listing text, screenshots and review notes are in [`marketing/app-store.md`](../marketing/app-store.md).
 
 ## Build
 

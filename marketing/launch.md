@@ -1,12 +1,12 @@
 # Morph launch kit
 
-Copy for the 0.2.0 launch. Screenshots are in [`docs/images`](../docs/images) and the site is [`docs/index.html`](../docs/index.html) (GitHub Pages, served from `/docs`).
+Copy for the 1.0.0 launch. App Store Connect fields, screenshots and review notes are in [`app-store.md`](app-store.md). Screenshots are in [`docs/images`](../docs/images) and the site is [`docs/index.html`](../docs/index.html), served at https://morph.geetanshgoyal.in.
 
 Facts to keep straight in every post:
 - Free and open source. No accounts, no uploads, no tracking.
 - Mac: menu bar app, macOS 14 or later, Apple Silicon and Intel. The DMG is ad-hoc signed, so the first launch needs System Settings → Privacy & Security → Open Anyway.
-- iPhone and iPad: iOS 17 or later, built from source with Xcode (not on the App Store yet).
-- Android: Android 10 or later, APK from GitHub releases.
+- iPhone and iPad: iOS 17 or later, coming to the App Store.
+- Android: Android 10 or later, coming to Google Play (APK on GitHub releases until then). Google Play listing and policy answers are in [`play-store.md`](play-store.md).
 
 ## Positioning
 
@@ -14,7 +14,7 @@ Facts to keep straight in every post:
 
 **What it is:** Morph converts, shrinks and cleans up files right where they are, on Mac, iPhone and Android, without uploading anything.
 
-**Who it's for:** people who convert files every week and are tired of upload-and-wait websites: designers sending exports, students turning photos into PDFs, anyone who has to get a video under an email limit or strip location data before posting.
+**Who it's for:** people who convert files every week and are tired of upload-and-wait websites: designers sending exports, students turning photos into PDFs or fitting a photo under an exam form's 200 KB limit, anyone who has to get a video under an email limit or strip location data before posting.
 
 **Why it's different:**
 1. On the Mac, the tool comes to the file. While dragging anything, a tap of ⇧, ⌘, ⌃ or ⌥ opens a wheel of actions under the cursor. No app to open first.

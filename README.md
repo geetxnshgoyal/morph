@@ -1,6 +1,6 @@
 # Morph
 
-**Drag a file, tap a key, drop it on the wheel.**
+**Drag a file, tap a key, drop it on the wheel.** [morph.geetanshgoyal.in](https://morph.geetanshgoyal.in)
 
 Morph is a free file converter and toolbox for macOS, iOS and Android. It shows only the actions that make sense for the files you give it: convert them, compress them, strip their metadata, pull the text out of them and more. Everything runs on your device; nothing is uploaded.
 
@@ -15,9 +15,9 @@ Grab the latest build from [Releases](../../releases/latest):
 
 | Platform | File | Needs |
 | --- | --- | --- |
-| macOS | `Morph-0.2.0.dmg` | macOS 14 or later, Apple Silicon or Intel |
-| Android | `Morph-0.1.0.apk` | Android 10 or later |
-| iOS | build from source, see [ios/README.md](ios/README.md) | iOS 17 or later |
+| macOS | `Morph-1.0.0.dmg` | macOS 14 or later, Apple Silicon or Intel |
+| Android | coming to Google Play; until then `Morph-1.0.0.apk` | Android 10 or later |
+| iOS | coming to the App Store; until then build from source, see [ios/README.md](ios/README.md) | iOS 17 or later |
 
 **macOS:** open the DMG and drag Morph into Applications. The build is ad-hoc signed, so the first launch is blocked: open System Settings → Privacy & Security and click **Open Anyway**.
 
@@ -70,7 +70,7 @@ Every action also works in **Shortcuts**, **Siri**, **Spotlight** and the **Acti
 - Data: CSV, TSV, JSON
 
 **Tools**
-- Compress images, videos and PDFs (light, balanced or strong), resize images
+- Compress images, videos and PDFs (light, balanced or strong), or to a size limit such as 200 KB for upload forms; resize images
 - Remove metadata such as location and camera info
 - Blur faces, hide personal info (emails, phone and card numbers, IBANs, ID numbers, IP addresses) in screenshots
 - Extract text (OCR), read QR codes and barcodes
@@ -85,6 +85,10 @@ Every action also works in **Shortcuts**, **Siri**, **Spotlight** and the **Acti
 Formats marked as needing ffmpeg (WEBM, MKV, MP3, FLAC, OGG, OPUS and the loudness tools) show up on the Mac once `ffmpeg` is installed, for example with `brew install ffmpeg`.
 
 Originals are never touched: results get a new name beside them, and every job can be undone from the menu bar (or `morph undo`).
+
+Every app lets you pick an accent color in Settings: Teal Ink (Morph's own), Ultramarine, Green, Magenta or Yellow.
+
+Morph collects no data and makes no network requests; see the [privacy policy](docs/privacy.html).
 
 ## Command line
 
@@ -119,7 +123,7 @@ scripts/bundle.sh --dmg
 
 `bundle.sh` builds a universal `dist/Morph.app`; `--dmg` also makes `dist/Morph-<version>.dmg`, and `--install` copies the app to /Applications and launches it. To sign with a Developer ID and notarize, see the comments at the top of the script.
 
-The iOS and Android apps have their own instructions in [ios/README.md](ios/README.md) and [android/README.md](android/README.md). The website lives in [`docs/`](docs) (GitHub Pages) and launch copy in [`marketing/`](marketing). Changes are listed in [CHANGELOG.md](CHANGELOG.md).
+The iOS and Android apps have their own instructions in [ios/README.md](ios/README.md) and [android/README.md](android/README.md). The website lives in [`docs/`](docs) and is served at [morph.geetanshgoyal.in](https://morph.geetanshgoyal.in) and launch copy in [`marketing/`](marketing). Changes are listed in [CHANGELOG.md](CHANGELOG.md).
 
 ## Project layout
 
@@ -129,6 +133,7 @@ Sources/MorphMac    macOS menu bar app: the wheel, drag shortcuts, Actions, sett
 Sources/morph       command-line tool
 ios/                iOS app (SwiftUI, uses MorphCore; App Intents for Shortcuts)
 android/            Android app (Kotlin + Jetpack Compose)
+windows/            Windows port in progress: the engine in C# (.NET 10) with tests, no app UI yet
 docs/               website and screenshots
 marketing/          launch copy
 scripts/            app bundle, icon and DMG build scripts
