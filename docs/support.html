@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Morph Support</title>
+<meta name="description" content="Help with Morph: common questions and how to get in touch.">
+<meta name="theme-color" content="#0B6E69">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230B6E69'/%3E%3Cg fill='white'%3E%3Ccircle cx='32' cy='32' r='6'/%3E%3Ccircle cx='32' cy='17' r='6'/%3E%3Ccircle cx='32' cy='47' r='6'/%3E%3Ccircle cx='19' cy='24.5' r='6'/%3E%3Ccircle cx='45' cy='24.5' r='6'/%3E%3Ccircle cx='19' cy='39.5' r='6'/%3E%3Ccircle cx='45' cy='39.5' r='6'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,400..800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --ink: #121A19; --ink-soft: #4F5957; --paper: #F1F4F3; --line: #DCE3E1; --brand: #0B6E69;
+          --display: "Bricolage Grotesque", "Avenir Next", system-ui, sans-serif; --body: "Figtree", system-ui, -apple-system, sans-serif; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font: 400 1.0625rem/1.65 var(--body); -webkit-font-smoothing: antialiased; }
+  a { color: var(--brand); }
+  :focus-visible { outline: 3px solid var(--brand); outline-offset: 3px; border-radius: 6px; }
+  .wrap { width: min(720px, 100% - 2.5rem); margin-inline: auto; }
+  .bar { display: flex; align-items: center; justify-content: space-between; padding: 1.4rem 0; }
+  .brand { display: flex; align-items: center; gap: .6rem; font: 700 1.25rem/1 var(--display); text-decoration: none; color: var(--ink); }
+  .brand svg { width: 30px; height: 30px; }
+  h1 { font: 750 clamp(2.2rem, 6vw, 3.2rem)/1.02 var(--display); font-variation-settings: "wdth" 84; letter-spacing: -0.02em; margin: 2rem 0 .8rem; text-wrap: balance; }
+  h2 { font: 700 1.35rem/1.25 var(--display); margin: 2.4rem 0 .5rem; }
+  p, li { max-width: 64ch; }
+  .lede { font-size: 1.2rem; color: var(--ink-soft); margin: 0 0 1rem; }
+  .updated { color: var(--ink-soft); font-size: .92rem; }
+  ul { padding-left: 1.2rem; }
+  li { margin: .35rem 0; }
+  .card { background: white; border: 1px solid var(--line); border-radius: 22px; padding: 1.4rem 1.6rem; margin-top: 1.6rem; }
+  .card h2 { margin-top: 0; }
+  footer { padding: 3rem 0 4rem; color: var(--ink-soft); font-size: .92rem; display: flex; gap: 1.4rem; flex-wrap: wrap; }
+  footer a { color: inherit; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="bar">
+    <a class="brand" href="./"><svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="16" fill="#0B6E69"/><g fill="#fff"><circle cx="32" cy="32" r="6"/><circle cx="32" cy="17" r="6"/><circle cx="32" cy="47" r="6"/><circle cx="19" cy="24.5" r="6"/><circle cx="45" cy="24.5" r="6"/><circle cx="19" cy="39.5" r="6"/><circle cx="45" cy="39.5" r="6"/></g></svg>Morph</a>
+  </header>
+  <main>
+    <h1>Support</h1>
+    <p class="lede">Help with Morph on iPhone, iPad, Mac and Android.</p>
+
+    <div class="card">
+      <h2>Get in touch</h2>
+      <p>Found a file that won't convert, or have an idea? <a href="https://github.com/geetxnshgoyal/morph/issues/new">Open an issue on GitHub</a> and include the file type, your device and what you expected to happen. Please don't attach private files.</p>
+    </div>
+
+    <h2>Where are my results?</h2>
+    <p>On iPhone and iPad, open the Files app and go to On My iPhone (or On My iPad), then Morph. You can also share a result straight from the screen that appears when a job finishes. On the Mac, results are saved beside the original file.</p>
+
+    <h2>Why didn't compressing make my file smaller?</h2>
+    <p>Morph only keeps a compressed copy if it's at least 5% smaller and still looks the same as the original. If a file is already as small as it can get without losing quality, Morph says so and leaves it alone.</p>
+
+    <h2>How do I use Morph with Shortcuts?</h2>
+    <p>Open the Shortcuts app and search for Morph. Convert Images, Compress Files, Remove Metadata, Extract Text, Read QR Codes and Barcodes, Merge PDFs, Run Morph Action and Open in Morph are all available, and each one passes its results to the next step. You can also ask Siri, for example "Remove location from photos with Morph".</p>
+
+    <h2>How do I send a file to Morph from another app?</h2>
+    <p>Tap Share in any app, then choose Morph from the row of apps. If Morph isn't there, scroll to the end of the row, tap More and turn Morph on.</p>
+
+    <h2>Does Morph upload my files?</h2>
+    <p>No. Everything runs on your device and the app makes no network requests. See the <a href="privacy.html">privacy policy</a>.</p>
+
+    <h2>The Mac wheel doesn't open while I drag</h2>
+    <p>Check which keys each wheel uses in Morph's Settings, then tap that key once while you're dragging, without holding it. Each wheel opens only for its exact keys.</p>
+  </main>
+  <footer>
+    <a href="./">Morph</a>
+    <a href="privacy.html">Privacy</a>
+    <a href="support.html">Support</a>
+    <a href="https://github.com/geetxnshgoyal/morph">Source on GitHub</a>
+  </footer>
+</div>
+</body>
+</html>
