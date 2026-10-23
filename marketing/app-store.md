@@ -1,0 +1,106 @@
+# App Store submission (iPhone and iPad)
+
+Everything App Store Connect asks for, field by field, for Morph 1.0.0 (build 3). Character limits are noted and every field fits.
+
+## App information
+
+| Field | Value |
+| --- | --- |
+| Name (30) | Morph: File Converter |
+| Subtitle (30) | Convert & compress any file |
+| Bundle ID | app.morph.Morph |
+| SKU | morph-ios |
+| Primary category | Utilities |
+| Secondary category | Productivity |
+| Content rights | Contains no third-party content |
+| Age rating | 4+ (answer "None" to every question) |
+| Copyright | 2026 Geetansh Goyal |
+| Price | Free |
+
+If "Morph: File Converter" is taken, use "Morph – Convert & Compress". The name under the icon on the Home Screen stays "Morph".
+
+## URLs
+
+| Field | URL |
+| --- | --- |
+| Privacy policy | https://morph.geetanshgoyal.in/privacy.html |
+| Support | https://morph.geetanshgoyal.in/support.html |
+| Marketing | https://morph.geetanshgoyal.in/ |
+
+The site in `docs/` is deployed on Vercel at morph.geetanshgoyal.in. The privacy link is also in the app under Settings → Privacy, as Apple requires.
+
+## App privacy
+
+Choose **Data Not Collected**. Morph has no accounts, analytics, ads or network requests; files are processed on the device. The bundled privacy manifest (`ios/Morph/PrivacyInfo.xcprivacy`) says the same and declares the one required-reason API it uses, UserDefaults (reason CA92.1), for its own settings.
+
+## Export compliance
+
+Morph uses no encryption of its own. `ITSAppUsesNonExemptEncryption` is `NO` in Info.plist, so App Store Connect won't ask.
+
+## Version 1.0.0
+
+**Promotional text (170):**
+
+New: fit any upload limit. Set 200 KB or 50 KB and Morph makes a JPG that fits, ready for exam forms and job portals. And pick the accent color you like.
+
+**Keywords (100):**
+
+converter,heic,jpg,pdf,compress,resize,kb,size,photo,image,exif,metadata,ocr,qr,webp,video,shortcuts
+
+**Description (4000):**
+
+Morph turns any file into the one you need, right on your iPhone or iPad. Pick photos or files, or send them to Morph from any share sheet, and only the actions that fit show up.
+
+Fit any upload limit
+Exam forms, job portals and government sites often want a photo under 200 KB, 100 KB or even 20 KB. Set a size limit once and Compress makes a JPG that fits, at the best quality that fits.
+
+Convert
+- Photos to JPG, PNG, HEIC, WEBP, AVIF, TIFF, GIF or BMP, or several into one PDF
+- Video to MP4 or MOV, or pull out the soundtrack
+- Documents, subtitles and data files between common formats
+
+Compress and clean up
+- Shrink photos, videos and PDFs without a visible change. Morph checks every result against the original and tells you when a file is already as small as it can get
+- Remove location and camera details before you share
+- Blur faces and hide emails, phone and card numbers in screenshots
+- Read the text in an image, or what a QR code or barcode says
+- Merge PDFs
+
+Works with Shortcuts
+Convert Images, Compress Files (with an optional size limit), Remove Metadata, Extract Text, Read QR Codes and Barcodes, Merge PDFs, or run any Morph action or recipe. Results flow into the next step. Ask Siri, find actions in Spotlight, or put one on the Action button. Press and hold the app icon to convert photos straight away.
+
+Yours to tune
+Choose how strongly to compress, set a size limit, and pick an accent color: Teal Ink, Ultramarine, Green, Magenta or Yellow.
+
+Private by design
+Everything happens on your device. Nothing is uploaded, there's no account, and your originals are never changed. Results are kept in the Files app under On My iPhone → Morph.
+
+**What's New:** First release on the App Store.
+
+## Screenshots
+
+Upload in this order. Files are in `marketing/app-store/`.
+
+| # | iPhone 6.9" (1320 × 2868) | iPad 13" (2064 × 2752) | Caption |
+| --- | --- | --- | --- |
+| 1 | iphone-1-home.png | ipad-1-home.png | Convert, shrink and clean up any file |
+| 2 | iphone-2-actions.png | ipad-2-actions.png | Pick what you need, it runs on your device |
+| 3 | iphone-3-result.png | ipad-3-result.png | Fit any upload limit, like 200 KB |
+| 4 | iphone-4-settings.png | ipad-4-settings.png | Set a size limit and your own color |
+| 5 | iphone-5-dark.png | ipad-5-dark.png | Nothing is uploaded. Ever. |
+
+## Notes for App Review
+
+No account or sign-in is needed, and the app works offline.
+
+To try it: tap Photos, pick any photo, then choose a format such as JPG, or Tools → Compress. Results appear in the Files app under On My iPhone → Morph. To try the size limit, open Settings (the gear), set Size limit to 200 KB, then compress a photo.
+
+Shortcuts: open the Shortcuts app, tap +, search for "Morph" and add Convert Images or Compress Files.
+
+## Before submitting
+
+1. Wait for Apple to approve the developer membership, then in Xcode → Settings → Apple Accounts check that the team no longer says "Personal Team".
+2. In Xcode, open `ios/Morph.xcodeproj`, select the Morph target → Signing & Capabilities, and choose the team. Xcode registers `app.morph.Morph`; if that ID is taken, change `PRODUCT_BUNDLE_IDENTIFIER` in `ios/project.yml` and run `xcodegen`.
+3. In App Store Connect, create the app with the name, bundle ID and SKU above.
+4. In Xcode: Product → Archive, then Distribute App → App Store Connect → Upload.
+5. Fill in this page's fields, add the screenshots, pick the build and submit for review.
