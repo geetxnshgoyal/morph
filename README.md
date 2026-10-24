@@ -109,6 +109,10 @@ flags: --quality 0.8  --max 1600  --target 500KB  --level light|balanced|strong
 
 For example: `morph run convert.webp --max 1600 photo.heic`.
 
+## Sponsor
+
+Morph is free, with no ads, no accounts and no tracking. If it saves you time, [sponsor it on GitHub](https://github.com/sponsors/geetxnshgoyal): it pays for the Apple and Google developer accounts and the time to keep improving it. More on the [sponsor page](https://morph.geetanshgoyal.in/sponsor.html).
+
 ## Building from source
 
 The shared engine (`MorphCore`), the CLI and the Mac app are one Swift package.

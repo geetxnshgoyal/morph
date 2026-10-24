@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sponsor Morph</title>
+<meta name="description" content="Morph is free, with no ads and no tracking. Sponsoring keeps it that way.">
+<meta name="theme-color" content="#0B6E69">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230B6E69'/%3E%3Cg fill='white'%3E%3Ccircle cx='32' cy='32' r='6'/%3E%3Ccircle cx='32' cy='17' r='6'/%3E%3Ccircle cx='32' cy='47' r='6'/%3E%3Ccircle cx='19' cy='24.5' r='6'/%3E%3Ccircle cx='45' cy='24.5' r='6'/%3E%3Ccircle cx='19' cy='39.5' r='6'/%3E%3Ccircle cx='45' cy='39.5' r='6'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,400..800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --ink: #121A19; --ink-soft: #4F5957; --paper: #F1F4F3; --line: #DCE3E1; --brand: #0B6E69; --brand-deep: #08524E;
+          --display: "Bricolage Grotesque", "Avenir Next", system-ui, sans-serif; --body: "Figtree", system-ui, -apple-system, sans-serif; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font: 400 1.0625rem/1.65 var(--body); -webkit-font-smoothing: antialiased; }
+  a { color: var(--brand); }
+  :focus-visible { outline: 3px solid var(--brand); outline-offset: 3px; border-radius: 6px; }
+  .wrap { width: min(720px, 100% - 2.5rem); margin-inline: auto; }
+  .bar { display: flex; align-items: center; justify-content: space-between; padding: 1.4rem 0; }
+  .brand { display: flex; align-items: center; gap: .6rem; font: 700 1.25rem/1 var(--display); text-decoration: none; color: var(--ink); }
+  .brand svg { width: 30px; height: 30px; }
+  h1 { font: 750 clamp(2.2rem, 6vw, 3.2rem)/1.02 var(--display); font-variation-settings: "wdth" 84; letter-spacing: -0.02em; margin: 2rem 0 .8rem; text-wrap: balance; }
+  h2 { font: 700 1.35rem/1.25 var(--display); margin: 2.4rem 0 .5rem; }
+  p, li { max-width: 64ch; }
+  .lede { font-size: 1.2rem; color: var(--ink-soft); margin: 0 0 1.6rem; }
+  ul { padding-left: 1.2rem; }
+  li { margin: .35rem 0; }
+  .button { display: inline-flex; align-items: center; gap: .55rem; padding: .95rem 1.5rem; border-radius: 999px;
+            font: 650 1rem/1 var(--body); text-decoration: none; transition: transform .2s ease, background .2s ease; }
+  .button.primary { color: white; background: var(--brand); }
+  .button.primary:hover { background: var(--brand-deep); transform: translateY(-2px); }
+  .button svg { width: 18px; height: 18px; }
+  .fineprint { font-size: .9rem; color: var(--ink-soft); margin: .9rem 0 0; }
+  .card { background: white; border: 1px solid var(--line); border-radius: 22px; padding: 1.4rem 1.6rem; margin-top: 1.6rem; }
+  .card h2 { margin-top: 0; }
+  .costs { list-style: none; padding: 0; margin: 1rem 0 0; }
+  .costs li { display: flex; justify-content: space-between; gap: 1rem; padding: .7rem 0; border-top: 1px solid var(--line); max-width: none; margin: 0; }
+  .costs li:first-child { border-top: 0; }
+  .costs span:last-child { color: var(--ink-soft); white-space: nowrap; }
+  footer { padding: 3rem 0 4rem; color: var(--ink-soft); font-size: .92rem; display: flex; gap: 1.4rem; flex-wrap: wrap; }
+  footer a { color: inherit; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="bar">
+    <a class="brand" href="./"><svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="16" fill="#0B6E69"/><g fill="#fff"><circle cx="32" cy="32" r="6"/><circle cx="32" cy="17" r="6"/><circle cx="32" cy="47" r="6"/><circle cx="19" cy="24.5" r="6"/><circle cx="45" cy="24.5" r="6"/><circle cx="19" cy="39.5" r="6"/><circle cx="45" cy="39.5" r="6"/></g></svg>Morph</a>
+  </header>
+  <main>
+    <h1>Sponsor Morph</h1>
+    <p class="lede">Morph is free on every platform, with no ads, no accounts and no tracking. It's built by one person, and sponsors are how it stays that way.</p>
+
+    <a class="button primary" href="https://github.com/sponsors/geetxnshgoyal">
+      <svg viewBox="0 0 16 16" aria-hidden="true" fill="currentColor"><path d="M4.25 2.5c-1.336 0-2.75 1.164-2.75 3 0 2.15 1.58 4.144 3.365 5.682A20.6 20.6 0 0 0 8 13.393a20.6 20.6 0 0 0 3.135-2.211C12.92 9.644 14.5 7.65 14.5 5.5c0-1.836-1.414-3-2.75-3-1.373 0-2.609.986-3.029 2.456a.75.75 0 0 1-1.442 0C6.859 3.486 5.623 2.5 4.25 2.5Z"/></svg>
+      Sponsor on GitHub
+    </a>
+    <p class="fineprint">Monthly or one-time, any amount.</p>
+
+    <div class="card">
+      <h2>What it pays for</h2>
+      <p>Free apps still cost money to ship. Sponsorships cover the running costs first:</p>
+      <ul class="costs">
+        <li><span>Apple Developer Program, for the App Store and a notarized Mac app that opens without warnings</span><span>$99 a year</span></li>
+        <li><span>Google Play developer account</span><span>$25 once</span></li>
+        <li><span>The morph.geetanshgoyal.in domain</span><span>yearly</span></li>
+        <li><span>Test devices for iPhone, iPad and Android</span><span>as needed</span></li>
+      </ul>
+      <p>Anything beyond that buys time: new formats, the Windows app, and fixes for the files people send in.</p>
+    </div>
+
+    <h2>Other ways to help</h2>
+    <ul>
+      <li><a href="https://github.com/geetxnshgoyal/morph">Star the project on GitHub</a> so more people find it.</li>
+      <li>Rate Morph on the App Store or Google Play once it's there. Reviews matter more than you'd think.</li>
+      <li><a href="https://github.com/geetxnshgoyal/morph/issues/new">Report a file that won't convert</a>, or suggest a format.</li>
+      <li>Tell a friend who's still uploading files to converter websites.</li>
+    </ul>
+
+    <h2>Will Morph stay free?</h2>
+    <p>Yes. Every feature is free and the source is open on GitHub. Sponsoring doesn't unlock anything; it just keeps the lights on.</p>
+  </main>
+  <footer>
+    <a href="./">Morph</a>
+    <a href="privacy.html">Privacy</a>
+    <a href="support.html">Support</a>
+    <a href="sponsor.html">Sponsor</a>
+    <a href="https://github.com/geetxnshgoyal/morph">Source on GitHub</a>
+  </footer>
+</div>
+</body>
+</html>
