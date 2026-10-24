@@ -1,11 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- Runs on any OS against the portable engine; the Windows-only pieces (OCR, faces, PDF rendering,
-       Media Foundation) are covered by the CI build, not by these tests. -->
+  <!-- The portable build runs on any OS; on Windows the tests also run against the Windows build of the engine,
+       which adds OCR, face detection, PDF rendering and Media Foundation. -->
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFrameworks>net10.0</TargetFrameworks>
+    <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('Windows'))">net10.0;$(WindowsTargetFramework)</TargetFrameworks>
     <OutputType>Exe</OutputType>
     <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="$(TargetFramework.Contains('-windows'))">
+    <SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>
   </PropertyGroup>
 
   <ItemGroup>

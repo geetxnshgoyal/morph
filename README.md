@@ -2,7 +2,7 @@
 
 **Drag a file, tap a key, drop it on the wheel.** [morph.geetanshgoyal.in](https://morph.geetanshgoyal.in)
 
-Morph is a free file converter and toolbox for macOS, iOS and Android. It shows only the actions that make sense for the files you give it: convert them, compress them, strip their metadata, pull the text out of them and more. Everything runs on your device; nothing is uploaded.
+Morph is a free file converter and toolbox for macOS, Windows, iOS and Android. It shows only the actions that make sense for the files you give it: convert them, compress them, strip their metadata, pull the text out of them and more. Everything runs on your device; nothing is uploaded.
 
 <p>
   <img src="docs/images/mac-wheel-convert.png" width="49%" alt="The Convert wheel open over a file, with HEIC highlighted">
@@ -16,10 +16,13 @@ Grab the latest build from [Releases](../../releases/latest):
 | Platform | File | Needs |
 | --- | --- | --- |
 | macOS | `Morph-1.0.0.dmg` | macOS 14 or later, Apple Silicon or Intel |
+| Windows (beta) | `Morph-1.0.0-x64-setup.exe`, or `Morph-1.0.0-arm64-setup.exe` for Arm PCs; coming to the Microsoft Store | Windows 10 version 1809 or later, or Windows 11 |
 | Android | coming to Google Play; until then `Morph-1.0.0.apk` | Android 10 or later |
 | iOS | coming to the App Store; until then build from source, see [ios/README.md](ios/README.md) | iOS 17 or later |
 
 **macOS:** open the DMG and drag Morph into Applications. The build is ad-hoc signed, so the first launch is blocked: open System Settings → Privacy & Security and click **Open Anyway**.
+
+**Windows (beta):** run the setup file. This first build hasn't been tried on many PCs yet, so please [report](https://github.com/geetxnshgoyal/morph/issues/new) anything that breaks. It installs for your user only, with no admin prompt. The installer isn't code-signed yet, so SmartScreen may say it doesn't recognise the app: click **More info**, then **Run anyway**. Morph then sits in the taskbar corner; see [windows/README.md](windows/README.md).
 
 **Android:** open the APK on your phone and allow installs from that source when asked. See [android/README.md](android/README.md).
 
@@ -46,6 +49,19 @@ Other ways in: drop files on the menu bar icon, or right-click in Finder → Ser
   <img src="docs/images/mac-welcome.png" width="49%" alt="The welcome guide showing each wheel and its key">
 </p>
 
+## The Windows app
+
+Morph sits in the taskbar corner (the notification area). While you drag files from File Explorer or the desktop, tap a wheel's keys and that wheel opens under the cursor. Drop the files on an action and the result appears next to the original.
+
+| Keys | Wheel | What's on it |
+| --- | --- | --- |
+| Shift | Convert | Every format the files can become |
+| Ctrl | Tools | Compress, resize, remove metadata, blur faces, extract text, read QR codes, merge PDFs, zip |
+| Ctrl+Shift | Recipes | Several steps in one drop |
+| Alt | Actions | Share, Copy, Copy Path, Move To…, Copy To…, open Terminal there |
+
+The keys are taps, as on the Mac, and every wheel's keys can be changed in Settings. Other ways in: click the tray icon and drop files on its panel or choose them, or right-click files in File Explorer → **Open in Morph**. Settings, the welcome guide, the size limit, compression levels and colors match the Mac app.
+
 ## The iPhone app
 
 Pick photos or files, or send them to Morph from any share sheet, then choose an action. Results are saved in the Files app under **On My iPhone → Morph**, and converted photos and videos can go straight to your library.
@@ -65,7 +81,7 @@ Every action also works in **Shortcuts**, **Siri**, **Spotlight** and the **Acti
 - Video: MP4, MOV, WEBM, MKV, GIF
 - Audio: M4A, WAV, AIFF, MP3, FLAC, OGG, OPUS (or pull the soundtrack out of a video)
 - PDF: to images or plain text
-- Documents: DOCX, ODT, RTF, HTML, Markdown, TXT, PDF (DOCX and ODT on the Mac only)
+- Documents: DOCX, ODT, RTF, HTML, Markdown, TXT, PDF (DOCX and ODT on the Mac and Windows only)
 - Subtitles: SRT ↔ VTT
 - Data: CSV, TSV, JSON
 
@@ -80,11 +96,11 @@ Every action also works in **Shortcuts**, **Siri**, **Spotlight** and the **Acti
 
 **Recipes** chain several actions into one, like "Web Image" (resize + WEBP) or "Under 1 MB".
 
-**Actions** (Mac) do everyday things with the files themselves: send, copy, move, or open a Terminal in their folder.
+**Actions** (Mac and Windows) do everyday things with the files themselves: send, copy, move, or open a Terminal in their folder.
 
-Formats marked as needing ffmpeg (WEBM, MKV, MP3, FLAC, OGG, OPUS and the loudness tools) show up on the Mac once `ffmpeg` is installed, for example with `brew install ffmpeg`.
+Formats marked as needing ffmpeg (WEBM, MKV, MP3, FLAC, OGG, OPUS and the loudness tools) show up on the Mac once `ffmpeg` is installed, for example with `brew install ffmpeg`. On Windows, `winget install Gyan.FFmpeg` does the same; without it, Windows' own encoders still cover MP4, M4A, WAV, MP3 and FLAC.
 
-Originals are never touched: results get a new name beside them, and every job can be undone from the menu bar (or `morph undo`).
+Originals are never touched: results get a new name beside them, and every job can be undone from the menu bar or the Windows tray panel (or `morph undo`).
 
 Every app lets you pick an accent color in Settings: Teal Ink (Morph's own), Ultramarine, Green, Magenta or Yellow.
 
@@ -127,7 +143,7 @@ scripts/bundle.sh --dmg
 
 `bundle.sh` builds a universal `dist/Morph.app`; `--dmg` also makes `dist/Morph-<version>.dmg`, and `--install` copies the app to /Applications and launches it. To sign with a Developer ID and notarize, see the comments at the top of the script.
 
-The iOS and Android apps have their own instructions in [ios/README.md](ios/README.md) and [android/README.md](android/README.md). The website lives in [`docs/`](docs) and is served at [morph.geetanshgoyal.in](https://morph.geetanshgoyal.in) and launch copy in [`marketing/`](marketing). Changes are listed in [CHANGELOG.md](CHANGELOG.md).
+The iOS, Android and Windows apps have their own instructions in [ios/README.md](ios/README.md), [android/README.md](android/README.md) and [windows/README.md](windows/README.md). The website lives in [`docs/`](docs) and is served at [morph.geetanshgoyal.in](https://morph.geetanshgoyal.in) and launch copy in [`marketing/`](marketing). Changes are listed in [CHANGELOG.md](CHANGELOG.md).
 
 ## Project layout
 
@@ -137,7 +153,7 @@ Sources/MorphMac    macOS menu bar app: the wheel, drag shortcuts, Actions, sett
 Sources/morph       command-line tool
 ios/                iOS app (SwiftUI, uses MorphCore; App Intents for Shortcuts)
 android/            Android app (Kotlin + Jetpack Compose)
-windows/            Windows port in progress: the engine in C# (.NET 10) with tests, no app UI yet
+windows/            Windows app (WPF on .NET 10) and the engine ported to C#, with tests, MSIX and installer packaging
 docs/               website and screenshots
 marketing/          launch copy
 scripts/            app bundle, icon and DMG build scripts

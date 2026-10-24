@@ -17,6 +17,11 @@
 - **Ready for Google Play:** a signed release bundle, the listing, graphics and policy answers. Morph has no internet access at all; the network permissions ML Kit would bring in are removed, and text recognition still works offline.
 - Privacy and Help links in Settings, and menus and dialogs in Morph's colors instead of Material's default tones.
 
+### Windows
+- **First Windows app.** Morph sits in the taskbar corner. While dragging files from File Explorer or the desktop, tap Shift, Ctrl, Ctrl+Shift or Alt to open the Convert, Tools, Recipes or Actions wheel under the cursor, then drop on an action. The tray panel takes files too, and File Explorer's right-click menu gets **Open in Morph**.
+- Settings, the welcome guide, colors, the size limit and compression levels match the Mac. The Actions wheel shares through Windows' share sheet, copies files or paths, moves or copies them, and opens Windows Terminal there.
+- Ships as an installer for GitHub releases (x64 and Arm64, no admin prompt) and an MSIX bundle for the Microsoft Store. Windows 10 1809 or later.
+
 ### Website
 - Privacy policy and support pages, linked from the footer and from the iPhone app.
 

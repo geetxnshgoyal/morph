@@ -53,6 +53,8 @@ public static class MediaOps
 
     public static async Task<string> CompressVideo(string path, Options options, CancellationToken cancel)
     {
+        if (options.TargetBytes is long limit && Bytes.Of(path) <= limit)
+            throw new MorphNote($"{Path.GetFileName(path)} is already under {SizeLimit.Label(limit)}");
         var output = Output.For(path, "mp4", options, "compressed");
         if (HasFFmpeg)
         {

@@ -7,6 +7,28 @@ public sealed class RunResult
 {
     public List<string> Outputs { get; } = [];
     public List<string> Failures { get; } = [];
+    /// Files left alone on purpose, with why (say, already as small as they can get).
+    public List<string> Notes { get; } = [];
+    /// Combined size of the inputs that produced something, and of what they produced.
+    public long InputBytes { get; set; }
+    public long OutputBytes { get; set; }
+
+    /// "171 KB → 139 KB", when there's a before and after to compare.
+    public string? SizeSummary => InputBytes > 0 && OutputBytes > 0 ? $"{Bytes.Format(InputBytes)} → {Bytes.Format(OutputBytes)}" : null;
+
+    /// "19% smaller", "12% larger" or "Same size".
+    public string? SizeChange
+    {
+        get
+        {
+            if (InputBytes <= 0 || OutputBytes <= 0) return null;
+            var percent = (int)Math.Round((double)(InputBytes - OutputBytes) / InputBytes * 100, MidpointRounding.AwayFromZero);
+            return percent > 0 ? $"{percent}% smaller" : percent < 0 ? $"{-percent}% larger" : "Same size";
+        }
+    }
+
+    /// Nothing made and nothing failed: every file was already as small as it can usefully get.
+    public bool Unchanged => Outputs.Count == 0 && Failures.Count == 0 && Notes.Count > 0;
 }
 
 public static class Runner
@@ -19,7 +41,16 @@ public static class Runner
         var result = new RunResult();
         if (action.CombinesInputs)
         {
-            try { result.Outputs.AddRange(await action.Run(inputs, options, cancel)); }
+            try
+            {
+                result.Outputs.AddRange(await action.Run(inputs, options, cancel));
+                if (result.Outputs.Count > 0)
+                {
+                    result.InputBytes = inputs.Sum(Bytes.Of);
+                    result.OutputBytes = result.Outputs.Sum(Bytes.Of);
+                }
+            }
+            catch (MorphNote note) { result.Notes.Add(note.Message); }
             catch (Exception e) when (e is not OperationCanceledException) { result.Failures.Add(Describe(e)); }
             progress?.Invoke(1, 1);
         }
@@ -27,12 +58,14 @@ public static class Runner
         {
             var ordered = new IReadOnlyList<string>?[inputs.Count];
             var failures = new string?[inputs.Count];
+            var notes = new string?[inputs.Count];
             var done = 0;
             using var limit = new SemaphoreSlim(Math.Max(Environment.ProcessorCount / 2, 2));
             await Task.WhenAll(inputs.Select(async (input, index) =>
             {
                 await limit.WaitAsync(cancel);
                 try { ordered[index] = await action.Run([input], options, cancel); }
+                catch (MorphNote note) { notes[index] = note.Message; }
                 catch (Exception e) when (e is not OperationCanceledException) { failures[index] = $"{Path.GetFileName(input)}: {Describe(e)}"; }
                 finally
                 {
@@ -40,8 +73,15 @@ public static class Runner
                     progress?.Invoke(Interlocked.Increment(ref done), inputs.Count);
                 }
             }));
-            result.Outputs.AddRange(ordered.Where(o => o is not null).SelectMany(o => o!));
+            for (var i = 0; i < inputs.Count; i++)
+            {
+                if (ordered[i] is not { Count: > 0 } made) continue;
+                result.Outputs.AddRange(made);
+                result.InputBytes += Bytes.Of(inputs[i]);
+                result.OutputBytes += made.Sum(Bytes.Of);
+            }
             result.Failures.AddRange(failures.Where(f => f is not null)!);
+            result.Notes.AddRange(notes.Where(n => n is not null)!);
         }
         if (record && (result.Outputs.Count > 0 || result.Failures.Count > 0))
             History.Shared.Append(new HistoryEntry { Title = action.Title, Inputs = [.. inputs], Outputs = [.. result.Outputs], Failures = [.. result.Failures] });

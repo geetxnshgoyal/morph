@@ -26,6 +26,11 @@ public sealed class MorphAction
 
     public bool IsAvailable => Platform.Satisfies(Requires);
 
+    /// Whether "171 KB → 139 KB" is worth showing after this action: true for actions that remake the same
+    /// content, false for ones that extract something else (text, codes, snapshots).
+    public bool ReportsSize => Group == ActionGroup.Recipe || Id is "tool.compress" or "tool.resize" or "tool.strip-metadata"
+        || (Group == ActionGroup.Convert && Id is not ("convert.pdf-text" or "convert.pdf-images"));
+
     public bool Accepts(IReadOnlyList<string> paths)
     {
         if (paths.Count < MinimumInputs || !IsAvailable) return false;

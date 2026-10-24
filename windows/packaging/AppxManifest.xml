@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Morph's MSIX manifest. scripts/package.ps1 fills in the {Tokens}; for the Microsoft Store, IdentityName,
+     Publisher and PublisherDisplayName must be the values Partner Center shows under Product identity. -->
+<Package
+  xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+  xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+  xmlns:uap2="http://schemas.microsoft.com/appx/manifest/uap/windows10/2"
+  xmlns:uap3="http://schemas.microsoft.com/appx/manifest/uap/windows10/3"
+  xmlns:desktop="http://schemas.microsoft.com/appx/manifest/desktop/windows10"
+  xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+  IgnorableNamespaces="uap uap2 uap3 desktop rescap">
+
+  <Identity Name="{IdentityName}" Publisher="{Publisher}" Version="{Version}" ProcessorArchitecture="{Arch}" />
+
+  <Properties>
+    <!-- Must match the name reserved in Partner Center. -->
+    <DisplayName>Morph: File Converter</DisplayName>
+    <PublisherDisplayName>{PublisherDisplayName}</PublisherDisplayName>
+    <Logo>Assets\StoreLogo.png</Logo>
+    <Description>Convert, compress and clean up files right where they are. Nothing is uploaded.</Description>
+  </Properties>
+
+  <Dependencies>
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.17763.0" MaxVersionTested="10.0.26100.0" />
+  </Dependencies>
+
+  <Resources>
+    <Resource Language="en-us" />
+  </Resources>
+
+  <Applications>
+    <Application Id="Morph" Executable="Morph.exe" EntryPoint="Windows.FullTrustApplication">
+      <uap:VisualElements
+        DisplayName="Morph: File Converter"
+        Description="Convert, compress and clean up files right where they are."
+        BackgroundColor="transparent"
+        Square150x150Logo="Assets\Square150x150Logo.png"
+        Square44x44Logo="Assets\Square44x44Logo.png">
+        <uap:DefaultTile Wide310x150Logo="Assets\Wide310x150Logo.png" Square71x71Logo="Assets\SmallTile.png" Square310x310Logo="Assets\LargeTile.png" ShortName="Morph" />
+      </uap:VisualElements>
+
+      <Extensions>
+        <!-- "Open at login" in Settings turns this on; it starts off. -->
+        <desktop:Extension Category="windows.startupTask" Executable="Morph.exe" EntryPoint="Windows.FullTrustApplication">
+          <desktop:StartupTask TaskId="MorphStartup" Enabled="false" DisplayName="Morph" />
+        </desktop:Extension>
+
+        <!-- "Open in Morph" on the right-click menu, and Morph under Open with, for the files it handles. Never the
+             default app. Selecting several files starts Morph once per file; the running copy gathers them. -->
+        <uap3:Extension Category="windows.fileTypeAssociation">
+          <uap3:FileTypeAssociation Name="morph" Parameters="&quot;%1&quot;" MultiSelectModel="Player">
+            <uap:DisplayName>Morph</uap:DisplayName>
+            <uap:SupportedFileTypes>
+            <uap:FileType>.jpg</uap:FileType>
+            <uap:FileType>.jpeg</uap:FileType>
+            <uap:FileType>.jfif</uap:FileType>
+            <uap:FileType>.png</uap:FileType>
+            <uap:FileType>.heic</uap:FileType>
+            <uap:FileType>.heif</uap:FileType>
+            <uap:FileType>.webp</uap:FileType>
+            <uap:FileType>.avif</uap:FileType>
+            <uap:FileType>.tif</uap:FileType>
+            <uap:FileType>.tiff</uap:FileType>
+            <uap:FileType>.gif</uap:FileType>
+            <uap:FileType>.bmp</uap:FileType>
+            <uap:FileType>.ico</uap:FileType>
+            <uap:FileType>.jxl</uap:FileType>
+            <uap:FileType>.dng</uap:FileType>
+            <uap:FileType>.cr2</uap:FileType>
+            <uap:FileType>.cr3</uap:FileType>
+            <uap:FileType>.nef</uap:FileType>
+            <uap:FileType>.arw</uap:FileType>
+            <uap:FileType>.mp4</uap:FileType>
+            <uap:FileType>.m4v</uap:FileType>
+            <uap:FileType>.mov</uap:FileType>
+            <uap:FileType>.avi</uap:FileType>
+            <uap:FileType>.mkv</uap:FileType>
+            <uap:FileType>.webm</uap:FileType>
+            <uap:FileType>.wmv</uap:FileType>
+            <uap:FileType>.mpg</uap:FileType>
+            <uap:FileType>.mpeg</uap:FileType>
+            <uap:FileType>.3gp</uap:FileType>
+            <uap:FileType>.mts</uap:FileType>
+            <uap:FileType>.mp3</uap:FileType>
+            <uap:FileType>.m4a</uap:FileType>
+            <uap:FileType>.aac</uap:FileType>
+            <uap:FileType>.wav</uap:FileType>
+            <uap:FileType>.aif</uap:FileType>
+            <uap:FileType>.aiff</uap:FileType>
+            <uap:FileType>.flac</uap:FileType>
+            <uap:FileType>.ogg</uap:FileType>
+            <uap:FileType>.opus</uap:FileType>
+            <uap:FileType>.wma</uap:FileType>
+            <uap:FileType>.pdf</uap:FileType>
+            <uap:FileType>.srt</uap:FileType>
+            <uap:FileType>.vtt</uap:FileType>
+            <uap:FileType>.csv</uap:FileType>
+            <uap:FileType>.tsv</uap:FileType>
+            <uap:FileType>.json</uap:FileType>
+            <uap:FileType>.md</uap:FileType>
+            <uap:FileType>.markdown</uap:FileType>
+            <uap:FileType>.docx</uap:FileType>
+            <uap:FileType>.odt</uap:FileType>
+            <uap:FileType>.rtf</uap:FileType>
+            <uap:FileType>.html</uap:FileType>
+            <uap:FileType>.htm</uap:FileType>
+            <uap:FileType>.txt</uap:FileType>
+            <uap:FileType>.zip</uap:FileType>
+            <uap:FileType>.tar</uap:FileType>
+            <uap:FileType>.gz</uap:FileType>
+            <uap:FileType>.tgz</uap:FileType>
+            <uap:FileType>.7z</uap:FileType>
+            <uap:FileType>.rar</uap:FileType>
+            </uap:SupportedFileTypes>
+            <uap2:SupportedVerbs>
+              <uap3:Verb Id="OpenInMorph" Parameters="&quot;%1&quot;" MultiSelectModel="Player">Open in Morph</uap3:Verb>
+            </uap2:SupportedVerbs>
+          </uap3:FileTypeAssociation>
+        </uap3:Extension>
+      </Extensions>
+    </Application>
+  </Applications>
+
+  <Capabilities>
+    <rescap:Capability Name="runFullTrust" />
+  </Capabilities>
+</Package>

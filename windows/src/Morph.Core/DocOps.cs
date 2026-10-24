@@ -139,7 +139,8 @@ public static partial class DocOps
         return text.ToString();
     }
 
-    static readonly Regex htmlToken = new(@"<(/?)([a-zA-Z][a-zA-Z0-9]*)[^>]*>|<!--.*?-->|([^<]+)", RegexOptions.Singleline);
+    /// Tags, comments, doctypes and processing instructions, or the text between them.
+    static readonly Regex htmlToken = new(@"<(/?)([a-zA-Z][a-zA-Z0-9]*)[^>]*>|<!--.*?-->|<[!?][^>]*>|([^<]+)", RegexOptions.Singleline);
     static readonly Regex htmlSkipped = new(@"<(script|style|head|template)\b.*?</\1\s*>", RegexOptions.Singleline | RegexOptions.IgnoreCase);
 
     /// A forgiving reading of HTML's block structure: headings, paragraphs, list items, pre and blockquote.
@@ -232,13 +233,26 @@ public static partial class DocOps
                 _ when style.StartsWith("heading") && int.TryParse(style[7..], out var n) => new Block(BlockKind.Heading, text.ToString(), Math.Clamp(n, 1, 6)),
                 _ when style.Contains("quote") => new Block(BlockKind.Quote, text.ToString()),
                 _ when style.Contains("code") || style.Contains("htmlpreformatted") => new Block(BlockKind.Code, text.ToString()),
-                _ when numbering is not null => new Block(BlockKind.Bullet, text.ToString(), (numbering.NumberingLevelReference?.Val?.Value ?? 0) + 1),
+                _ when numbering is not null => ListItem(text.ToString(), (numbering.NumberingLevelReference?.Val?.Value ?? 0) + 1),
+                "listparagraph" => ListItem(text.ToString(), IndentLevel(paragraph)),
                 _ => new Block(BlockKind.Paragraph, text.ToString()),
             };
             blocks.Add(block);
         }
         return blocks;
     }
+
+    /// A list item, with the "•" or "3." that Morph's own DOCX writes before the tab taken off.
+    static Block ListItem(string text, int level)
+    {
+        if (text.StartsWith("•\t")) return new Block(BlockKind.Bullet, text[2..], level);
+        var numbered = Regex.Match(text, @"^\d+[.)]\t");
+        return numbered.Success ? new Block(BlockKind.Numbered, text[numbered.Length..], level) : new Block(BlockKind.Bullet, text, level);
+    }
+
+    /// List depth from the left indent, which Morph's DOCX writer sets at a quarter inch per level.
+    static int IndentLevel(Paragraph paragraph) =>
+        int.TryParse(paragraph.ParagraphProperties?.Indentation?.Left?.Value, out var twips) ? Math.Max(twips / 360, 1) : 1;
 
     static readonly XNamespace odfText = "urn:oasis:names:tc:opendocument:xmlns:text:1.0";
     static readonly XNamespace odfOffice = "urn:oasis:names:tc:opendocument:xmlns:office:1.0";

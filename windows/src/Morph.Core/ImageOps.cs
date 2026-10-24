@@ -115,22 +115,38 @@ public static class ImageOps
         return output;
     }
 
-    /// Lossy re-encode. With a target size, binary-searches quality, then downscales until it fits.
+    /// Makes the file smaller without a visible change: re-encodes at a range of qualities, compares each with
+    /// the original and keeps the smallest that still looks the same at the chosen compression level. Throws
+    /// `MorphNote` when that saves under 5%, rather than writing a near-identical copy. With a target size, makes
+    /// a JPEG (what upload forms accept), binary-searching quality and then downscaling until the file fits.
     public static string Compress(string path, Options options)
     {
         var image = Load(path, options.MaxPixel);
         try
         {
             var source = ImageFormats.Of(path);
-            var format = source is { } s && s.IsLossy() && s.IsAvailable() ? s
-                : image.HasAlpha ? (ImageFormat.Webp.IsAvailable() ? ImageFormat.Webp : ImageFormat.Png)
-                : ImageFormat.Jpg;
-            var output = Output.For(path, format.Extension(), options, "compressed");
+            var originalBytes = Bytes.Of(path);
             if (options.TargetBytes is not long target)
             {
-                Write(image, format, options.Quality ?? options.Compression.ImageQuality(), output);
+                var format = source is { } s && s.IsLossy() && s.IsAvailable() ? s
+                    : image.HasAlpha ? (ImageFormat.Webp.IsAvailable() ? ImageFormat.Webp : ImageFormat.Png)
+                    : ImageFormat.Jpg;
+                byte[] data;
+                if (options.Quality is double quality) data = Encode(image, format, quality);
+                else
+                {
+                    var best = format.IsLossy() ? SmallestLookalike(image, format, options.Compression.MinimumSimilarity()) : Encode(image, format, 1);
+                    if (best is null || best.Length >= originalBytes * 0.95)
+                        throw new MorphNote($"{Path.GetFileName(path)} is already as small as it can get without losing quality");
+                    data = best;
+                }
+                var output = Output.For(path, format.Extension(), options, "compressed");
+                File.WriteAllBytes(output, data);
                 return output;
             }
+            if (source == ImageFormat.Jpg && originalBytes <= target)
+                throw new MorphNote($"{Path.GetFileName(path)} is already under {SizeLimit.Label(target)}");
+            var jpg = Output.For(path, ImageFormat.Jpg.Extension(), options, "compressed");
             var longest = Math.Max(image.Width, image.Height);
             for (var round = 0; round < 10; round++)
             {
@@ -139,27 +155,83 @@ public static class ImageOps
                 for (var i = 0; i < 7; i++)
                 {
                     var mid = (lo + hi) / 2;
-                    var data = Encode(image, format, mid);
+                    var data = Encode(image, ImageFormat.Jpg, mid);
                     if (data.Length <= target) { best = data; lo = mid; } else hi = mid;
                 }
-                if (best is not null) { File.WriteAllBytes(output, best); return output; }
+                if (best is not null) { File.WriteAllBytes(jpg, best); return jpg; }
                 longest = (uint)(longest * 0.8);
                 if (longest <= 64) break;
                 image.Dispose();
                 image = Load(path, (int)longest);
             }
-            throw new MorphException($"Couldn't get {Path.GetFileName(path)} under {FormatBytes(target)}");
+            throw new MorphException($"Couldn't get {Path.GetFileName(path)} under {SizeLimit.Label(target)}");
         }
         finally { image.Dispose(); }
     }
 
-    public static string FormatBytes(long bytes) => bytes switch
+    /// The smallest encoding that still scores at least `similarity` against `image`. Qualities are tried from
+    /// high to low, stopping once quality clearly falls short: size and similarity aren't perfectly monotonic
+    /// (encoders change chroma subsampling at some steps), so every passing step is kept and the smallest wins.
+    static byte[]? SmallestLookalike(MagickImage image, ImageFormat format, double similarity)
     {
-        >= 1_000_000_000 => $"{bytes / 1e9:0.#} GB",
-        >= 1_000_000 => $"{bytes / 1e6:0.#} MB",
-        >= 1_000 => $"{bytes / 1e3:0} KB",
-        _ => $"{bytes} bytes",
-    };
+        using var sample = Sample(image);
+        Prepare(sample, format, 1);
+        var reference = new Similarity(sample);
+        var qualities = Enumerable.Range(0, 14).Select(i => 0.95 - i * 0.05).ToArray();
+        // The sample is small, so every quality is tried at once, one per core.
+        var results = new (int Size, bool Passes)?[qualities.Length];
+        Parallel.For(0, qualities.Length, i =>
+        {
+            try
+            {
+                using var copy = (MagickImage)sample.Clone();
+                var data = Encode(copy, format, qualities[i]);
+                using var decoded = new MagickImage(data);
+                results[i] = (data.Length, reference.Score(decoded) >= similarity);
+            }
+            catch (MagickException) { }
+            catch (MorphException) { }
+        });
+        // Read back from high quality to low, exactly as if they had been tried one by one.
+        double? chosen = null;
+        var chosenSize = int.MaxValue;
+        var misses = 0;
+        for (var i = 0; i < qualities.Length; i++)
+        {
+            if (results[i] is not { } result) continue;
+            if (result.Passes)
+            {
+                misses = 0;
+                if (result.Size < chosenSize) (chosen, chosenSize) = (qualities[i], result.Size);
+            }
+            // One step can dip and the next recover; two in a row means it only gets worse from here.
+            else if (++misses == 2) break;
+        }
+        return chosen is double q ? Encode(image, format, q) : null;
+    }
+
+    /// Full-resolution patches from across the image, the 4×4 grid of 256-pixel squares that `Similarity` checks,
+    /// packed into one 1024-pixel image. Patches sit on the 16-pixel grid JPEG blocks use, so each one compresses
+    /// just as it does inside the whole image, and trying a quality on this costs a fraction of trying it on a big
+    /// photo. Small images are used whole.
+    static MagickImage Sample(MagickImage image)
+    {
+        const int side = 256;
+        if (image.Width <= side * 2 && image.Height <= side * 2) return (MagickImage)image.Clone();
+        int width = (int)image.Width, height = (int)image.Height;
+        int w = Math.Min(side, width), h = Math.Min(side, height);
+        var sample = new MagickImage(image.HasAlpha ? MagickColors.Transparent : MagickColors.White, (uint)w * 4, (uint)h * 4);
+        for (var row = 0; row < 4; row++)
+        {
+            for (var column = 0; column < 4; column++)
+            {
+                int x = (width - w) * column / 3 / 16 * 16, y = (height - h) * row / 3 / 16 * 16;
+                using var patch = image.CloneArea(x, y, (uint)w, (uint)h);
+                sample.Composite(patch, column * w, row * h, CompositeOperator.Copy);
+            }
+        }
+        return sample;
+    }
 
     // MARK: Privacy
 
@@ -326,7 +398,7 @@ static class Chunks
         using var output = new MemoryStream(data.Length);
         output.Write(data, 0, 2);
         // The orientation goes right after SOI (after JFIF when there is one), where readers look for EXIF.
-        var placed = orientation == 1;
+        var placed = orientation is < 2 or > 8;
         foreach (var (marker, start, length) in Segments(data))
         {
             if (!placed && marker != 0xE0) { output.Write(Exif.OrientationOnlyApp1(orientation)); placed = true; }

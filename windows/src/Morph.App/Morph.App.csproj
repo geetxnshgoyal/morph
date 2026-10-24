@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The Windows app: a tray icon, the drop wheel, drag shortcuts, settings and the welcome guide, on WPF. -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>$(WindowsTargetFramework)</TargetFramework>
+    <SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>
+    <UseWPF>true</UseWPF>
+    <!-- Only for the tray icon (NotifyIcon) and its menu. -->
+    <UseWindowsForms>true</UseWindowsForms>
+    <AssemblyName>Morph</AssemblyName>
+    <RootNamespace>Morph.App</RootNamespace>
+    <ApplicationIcon>Assets\Morph.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
+    <!-- Self-contained, so nobody has to install .NET first. -->
+    <SelfContained Condition="'$(RuntimeIdentifier)' != ''">true</SelfContained>
+    <PublishReadyToRun Condition="'$(RuntimeIdentifier)' != ''">true</PublishReadyToRun>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- WinForms is here for NotifyIcon alone; keep its names out of the way of WPF's. -->
+    <Using Remove="System.Windows.Forms" />
+    <Using Remove="System.Drawing" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\Morph.png" />
+    <Content Include="Assets\Morph.ico" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Morph.Core/Morph.Core.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,107 @@
+name: Windows
+
+on:
+  push:
+    branches: [main]
+    paths: ["windows/**", ".github/workflows/windows.yml"]
+  pull_request:
+    paths: ["windows/**", ".github/workflows/windows.yml"]
+  workflow_dispatch:
+    inputs:
+      release:
+        description: "Attach the x64 and Arm64 installers to this release tag (for example v1.0.0); leave empty to only build"
+        required: false
+        default: ""
+      store_draft:
+        description: "Attach the Store bundle to this draft release (for example store-1.0.0), to download it quickly"
+        required: false
+        default: ""
+
+jobs:
+  build:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    env:
+      DOTNET_NOLOGO: "1"
+      DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Test the engine
+        run: dotnet test windows/tests/Morph.Core.Tests -c Release
+
+      # Draws every screen in light and dark from a build of the app, to check the UI without a Windows PC.
+      - name: Snapshots
+        shell: pwsh
+        run: |
+          dotnet build windows/src/Morph.App -c Release
+          $process = Start-Process windows/src/Morph.App/bin/Release/net10.0-windows10.0.19041.0/Morph.exe -ArgumentList "--snapshots", "$PWD/snapshots" -Wait -PassThru
+          if (Test-Path snapshots/error.txt) { Get-Content snapshots/error.txt }
+          if ($process.ExitCode -ne 0) { throw "Snapshots failed with exit code $($process.ExitCode)" }
+          Get-ChildItem snapshots | Measure-Object | ForEach-Object { "$($_.Count) snapshots" }
+
+      - name: Version
+        id: version
+        shell: pwsh
+        run: |
+          $version = ([xml](Get-Content windows/Directory.Build.props)).Project.PropertyGroup.Version
+          "version=$version" >> $env:GITHUB_OUTPUT
+
+      # Store builds pick up the Partner Center identity from repository variables once they are set.
+      - name: Package
+        shell: pwsh
+        env:
+          MSIX_IDENTITY_NAME: ${{ vars.MSIX_IDENTITY_NAME }}
+          MSIX_PUBLISHER: ${{ vars.MSIX_PUBLISHER }}
+          MSIX_PUBLISHER_DISPLAY_NAME: ${{ vars.MSIX_PUBLISHER_DISPLAY_NAME }}
+        run: windows/scripts/package.ps1 -Version ${{ steps.version.outputs.version }}
+
+      # Only the installers go on GitHub releases; the MSIX bundle is for the Microsoft Store.
+      - name: Attach installers to the release
+        if: github.event_name == 'workflow_dispatch' && inputs.release != ''
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.release }}
+        run: |
+          $installers = Get-ChildItem windows/dist/*-setup.exe | ForEach-Object FullName
+          gh release upload $env:TAG @installers --clobber --repo ${{ github.repository }}
+          if ($LASTEXITCODE -ne 0) { throw "Upload failed" }
+
+      # Release downloads are much faster than artifact downloads; the draft is deleted after the Store upload.
+      - name: Attach the Store bundle to a draft release
+        if: github.event_name == 'workflow_dispatch' && inputs.store_draft != ''
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.store_draft }}
+        run: |
+          $draft = gh release view $env:TAG --repo ${{ github.repository }} --json isDraft --jq .isDraft
+          if ($draft -ne "true") { throw "$env:TAG must be a draft release" }
+          gh release upload $env:TAG (Get-ChildItem windows/dist/*.msixbundle).FullName --clobber --repo ${{ github.repository }}
+          if ($LASTEXITCODE -ne 0) { throw "Upload failed" }
+
+      # The Store bundle on its own, so it can be downloaded without the installers.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Morph-${{ steps.version.outputs.version }}-store
+          path: windows/dist/*.msixbundle
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Morph-${{ steps.version.outputs.version }}-windows
+          path: windows/dist/*
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: snapshots
+          path: snapshots/*
+          if-no-files-found: warn

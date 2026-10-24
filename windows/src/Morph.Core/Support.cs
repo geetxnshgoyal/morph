@@ -6,6 +6,10 @@ namespace Morph;
 
 public sealed class MorphException(string message) : Exception(message);
 
+/// Not a failure: the file was left alone on purpose (say, it's already as small as it can get without losing
+/// quality). Runner reports it as a note rather than an error.
+public sealed class MorphNote(string message) : Exception(message);
+
 public enum FileKind { Image, Video, Audio, Pdf, Document, Subtitle, Data, Archive, Folder, Other }
 
 public static class FileKinds
@@ -51,14 +55,59 @@ public static class CompressionLevels
         _ => 0.5,
     };
 
+    /// How close a compressed image must stay to the original (SSIM on luminance, 1 = identical). Light is
+    /// indistinguishable, balanced looks the same side by side, strong may soften on a close look.
+    public static double MinimumSimilarity(this CompressionLevel level) => level switch
+    {
+        CompressionLevel.Light => 0.995,
+        CompressionLevel.Balanced => 0.985,
+        _ => 0.97,
+    };
+
     public static string Label(this CompressionLevel level) => level.ToString();
 
     public static string Detail(this CompressionLevel level) => level switch
     {
-        CompressionLevel.Light => "Barely noticeable, modest savings.",
-        CompressionLevel.Balanced => "Good quality, much smaller files.",
-        _ => "Smallest files, visible softening.",
+        CompressionLevel.Light => "Looks identical, smaller savings.",
+        CompressionLevel.Balanced => "Looks the same side by side, much smaller.",
+        _ => "Smallest files; a close look may show softening.",
     };
+}
+
+/// Size limits the apps offer for Compress, for upload forms that cap a file's size (often 20 KB to 2 MB).
+/// 0 means no limit. Sizes are decimal, so "200 KB" also fits a 200 KiB cap.
+public static class SizeLimit
+{
+    public static readonly IReadOnlyList<long> Presets = [20_000, 50_000, 100_000, 200_000, 500_000, 1_000_000, 2_000_000, 5_000_000];
+
+    /// The smallest custom limit Settings accepts; below this even a thumbnail won't fit.
+    public const long Minimum = 5_000;
+
+    public static string Label(long bytes) => bytes <= 0 ? "No limit" : Bytes.Format(bytes);
+
+    /// What Compress does with this limit, for the Settings screens.
+    public static string Detail(long bytes) => bytes <= 0
+        ? "Compress makes the smallest file that still looks the same. Set a limit for upload forms that cap file size."
+        : $"Compress fits photos under {Label(bytes)} as JPG, at the best quality that fits, ready for upload forms.";
+}
+
+public static class Bytes
+{
+    /// "171 KB", "1.5 MB": decimal units, as Explorer's size column and upload forms count them.
+    public static string Format(long bytes) => bytes switch
+    {
+        >= 1_000_000_000 => $"{bytes / 1e9:0.#} GB",
+        >= 1_000_000 => $"{bytes / 1e6:0.#} MB",
+        >= 1_000 => $"{bytes / 1e3:0} KB",
+        _ => $"{bytes} bytes",
+    };
+
+    public static long Of(string path)
+    {
+        try { return File.Exists(path) ? new FileInfo(path).Length : 0; }
+        catch (IOException) { return 0; }
+        catch (UnauthorizedAccessException) { return 0; }
+    }
 }
 
 public enum RedactStyle { Pixelate, Solid }

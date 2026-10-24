@@ -48,8 +48,24 @@ public class SupportTests : Scratch
         Assert.Contains("tool.compress", ids);
         Assert.Contains("recipe.Web Image", ids);
         Assert.DoesNotContain("tool.merge-pdf", ids);
+#if WINDOWS
+        Assert.Contains("tool.ocr", ids);
+#else
         // Windows-only actions stay hidden off Windows.
         Assert.DoesNotContain("tool.ocr", ids);
+#endif
+    }
+
+    [Fact]
+    public void SizeLimits()
+    {
+        Assert.Equal("No limit", SizeLimit.Label(0));
+        Assert.Equal("200 KB", SizeLimit.Label(200_000));
+        Assert.Equal("1 MB", SizeLimit.Label(1_000_000));
+        Assert.Equal("1.5 MB", SizeLimit.Label(1_500_000));
+        Assert.Equal([20_000, 50_000, 100_000, 200_000, 500_000, 1_000_000, 2_000_000, 5_000_000], SizeLimit.Presets);
+        Assert.StartsWith("Compress makes the smallest file", SizeLimit.Detail(0));
+        Assert.Contains("under 100 KB as JPG", SizeLimit.Detail(100_000));
     }
 }
 
@@ -94,6 +110,36 @@ public class ImageTests : Scratch
     }
 
     [Fact]
+    public void SizeLimitMakesAJpgAndSkipsWhatAlreadyFits()
+    {
+        var png = Picture("screen.png", 1600, 1200, edit: i => i.AddNoise(NoiseType.Gaussian));
+        var output = ImageOps.Compress(png, new Options { TargetBytes = 100_000 });
+        Assert.Equal(PathOf("screen compressed.jpg"), output);
+        Assert.True(new FileInfo(output).Length <= 100_000);
+
+        var small = Picture("small.jpg", 200, 150);
+        var note = Assert.Throws<MorphNote>(() => ImageOps.Compress(small, new Options { TargetBytes = 200_000 }));
+        Assert.Equal("small.jpg is already under 200 KB", note.Message);
+    }
+
+    [Fact]
+    public async Task CompressKeepsTheLookAndSaysWhenAFileCantShrink()
+    {
+        var best = Picture("best.jpg", 1600, 1200, edit: i => i.Quality = 100);
+        var compress = Library.Action("tool.compress")!;
+        var result = await Runner.Run(compress, [best], new Options { Compression = CompressionLevel.Balanced });
+        var output = Assert.Single(result.Outputs);
+        Assert.True(new FileInfo(output).Length < new FileInfo(best).Length * 0.95);
+        Assert.NotNull(result.SizeSummary);
+        Assert.EndsWith("% smaller", result.SizeChange);
+
+        var squeezed = Picture("squeezed.jpg", 1600, 1200, edit: i => i.Quality = 30);
+        var again = await Runner.Run(compress, [squeezed], new Options { Compression = CompressionLevel.Light });
+        Assert.True(again.Unchanged);
+        Assert.Equal("squeezed.jpg is already as small as it can get without losing quality", Assert.Single(again.Notes));
+    }
+
+    [Fact]
     public void StripsJpegMetadataLosslesslyAndKeepsOrientation()
     {
         var jpg = Picture("camera.jpg", edit: image =>
@@ -105,6 +151,8 @@ public class ImageTests : Scratch
             exif.SetValue(ExifTag.GPSLatitudeRef, "N");
             exif.SetValue(ExifTag.Orientation, (ushort)6);
             image.SetProfile(exif);
+            // ImageMagick writes the orientation it holds, not the profile's.
+            image.Orientation = OrientationType.RightTop;
             image.Comment = "secret";
         });
         var removed = ImageOps.PrivateFields(jpg);
@@ -246,7 +294,7 @@ public class DocumentTests : Scratch
     [Fact]
     public void ReadsRtf()
     {
-        var rtf = Write("note.rtf", @"{\rtf1\ansi{\fonttbl{\f0 Arial;}}\f0 Hello \b world\b0 .\par Caf\'e9 荤? done\par}");
+        var rtf = Write("note.rtf", @"{\rtf1\ansi{\fonttbl{\f0 Arial;}}\f0 Hello \b world\b0 .\par Caf\'e9 \u8364? done\par}");
         Assert.Equal("Hello world.\n\nCafé € done", DocOps.RtfText(File.ReadAllText(rtf)));
     }
 
@@ -394,3 +442,31 @@ public class MediaTests : Scratch
         Assert.DoesNotContain("Secret", tags);
     }
 }
+
+#if WINDOWS
+/// Windows' own PDF renderer and text recognition, which only exist in the Windows build of the engine.
+public class WindowsTests : Scratch
+{
+    [Fact]
+    public async Task RendersPdfPagesToImages()
+    {
+        var pdf = DocOps.Convert(Write("doc.md", "# Pages\n\nOne page of text."), "pdf", new Options());
+        var folder = await PdfOps.ToImages(pdf, new Options(), TestContext.Current.CancellationToken);
+        var page = Assert.Single(Directory.GetFiles(folder));
+        Assert.True(new MagickImageInfo(page).Width > 600);
+    }
+
+    [Fact]
+    public async Task ReadsTextInPictures()
+    {
+        Assert.SkipUnless(Windows.Media.Ocr.OcrEngine.TryCreateFromUserProfileLanguages() is not null, "no OCR language is installed");
+        var picture = Picture("sign.png", 900, 240, edit: image =>
+        {
+            image.Draw(new ImageMagick.Drawing.Drawables().FillColor(MagickColors.White).Rectangle(0, 0, 900, 240));
+            image.Draw(new ImageMagick.Drawing.Drawables().FontPointSize(72).FillColor(MagickColors.Black).Text(40, 150, "Hello Morph"));
+        });
+        var text = await VisionOps.RecognizeText(new MagickImage(picture), TestContext.Current.CancellationToken);
+        Assert.Contains("Morph", text);
+    }
+}
+#endif
