@@ -142,3 +142,7 @@ docs/               website and screenshots
 marketing/          launch copy
 scripts/            app bundle, icon and DMG build scripts
 ```
+
+## License
+
+Morph is open source under the [MIT License](LICENSE).
