@@ -123,6 +123,38 @@ Source and builds: https://github.com/geetxnshgoyal/morph
 4. On iPhone, every action is in Shortcuts: convert to JPG, remove location, extract text, read QR codes, merge PDFs. "Remove location from photos with Morph" works with Siri. [ios-home.png]
 5. All on device. Results land next to the original, and any job can be undone. Free and open source: https://github.com/geetxnshgoyal/morph
 
+## LinkedIn
+
+Attach `linkedin/linkedin-carousel.pdf` as a document (a swipeable carousel), or the four `linkedin/linkedin-*.png` slides (1080 × 1350) as images. `linkedin/preview.html` shows the whole post with the slides. LinkedIn shows fewer people posts with links in them, so the links can go in the first comment instead.
+
+> I got tired of uploading my files to random converter websites. So I built my own. 🌀
+>
+> You know the drill: a HEIC photo that won't open, a form that wants your photo under 200 KB, a video too big to email. You search "converter", upload the file to a site you've never heard of, wait, download it, and hope they didn't keep a copy.
+>
+> Morph does all of that on your own device.
+>
+> On the Mac, you don't even open an app. Start dragging any file, tap ⇧, and a wheel of actions opens right under your cursor. Drop it on JPG, PDF, Compress or Remove Metadata, and the result lands next to the original.
+>
+> What it can do:
+> → Convert images, video, audio, PDFs, documents, subtitles and CSV/JSON
+> → Fit a photo under any upload limit: 200 KB for the exam form, 50 KB for the job portal
+> → Strip location data, blur faces, and hide phone and card numbers in screenshots
+> → Pull text out of images, read QR codes, merge and split PDFs
+>
+> It runs on Mac, iPhone, iPad and Android. On iPhone, every action also works in Shortcuts, so it plugs into Siri and the Action button.
+>
+> The part I care about most: nothing is ever uploaded. The Android app doesn't even ask for internet access.
+>
+> It's free and open source. No ads, no account, no tracking.
+>
+> 🖥 Mac and Android: download now at morph.geetanshgoyal.in
+> 📱 App Store and Google Play: coming soon
+> 💻 Source: github.com/geetxnshgoyal/morph
+>
+> If you try it, tell me which file it choked on. That's the most useful feedback I can get.
+>
+> #BuildInPublic #OpenSource #macOS #iOS #Android #Privacy
+
 ## r/macapps
 
 **Title:** I made a free, open-source converter that opens under your cursor while you drag a file

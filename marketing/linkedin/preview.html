@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Morph post preview</title>
+<style>
+  :root { --bg: #F4F2EE; --card: #FFFFFF; --ink: #1D2226; --soft: #666666; --line: #E0DFDC; --link: #0A66C2; --brand: #0B6E69; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 400 14px/1.43 -apple-system, system-ui, "Segoe UI", Roboto, sans-serif; }
+  .note { max-width: 555px; margin: 24px auto 12px; padding: 0 16px; color: var(--soft); font-size: 13px; }
+  .post { max-width: 555px; margin: 0 auto 48px; background: var(--card); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .head { display: flex; gap: 10px; padding: 12px 16px 0; }
+  .avatar { width: 48px; height: 48px; border-radius: 50%; background: var(--brand); color: white; display: grid; place-items: center; font-weight: 600; font-size: 17px; flex: none; }
+  .name { font-weight: 600; }
+  .meta { color: var(--soft); font-size: 12px; line-height: 1.35; }
+  .body { padding: 12px 16px 8px; white-space: pre-wrap; word-wrap: break-word; }
+  .body .tag { color: var(--link); font-weight: 600; }
+  .body a { color: var(--link); text-decoration: none; font-weight: 600; }
+  .doc { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .doc-title { display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; background: #1D2226; color: white; font-size: 13px; }
+  .doc-title b { font-weight: 600; }
+  .stage { position: relative; aspect-ratio: 1080 / 1350; background: #EEE; overflow: hidden; }
+  .track { display: flex; height: 100%; transition: transform .35s ease; }
+  .track img { width: 100%; height: 100%; flex: none; display: block; object-fit: cover; }
+  .nav { position: absolute; top: 50%; transform: translateY(-50%); width: 40px; height: 40px; border-radius: 50%; border: 0;
+         background: rgba(0,0,0,.6); color: white; font-size: 20px; cursor: pointer; display: grid; place-items: center; }
+  .nav:disabled { opacity: 0; pointer-events: none; }
+  .prev { left: 12px; } .next { right: 12px; }
+  .dots { display: flex; justify-content: center; gap: 6px; padding: 10px 0; }
+  .dots span { width: 7px; height: 7px; border-radius: 50%; background: #C7C7C7; }
+  .dots span.on { background: var(--ink); }
+  .actions { display: grid; grid-template-columns: repeat(4, 1fr); padding: 4px 8px; }
+  .actions span { text-align: center; padding: 12px 0; color: var(--soft); font-weight: 600; }
+</style>
+</head>
+<body>
+<p class="note">Preview only, not posted. Upload <b>linkedin-carousel.pdf</b> as a document to get the swipeable slides below, or the four PNGs as images.</p>
+<article class="post">
+  <div class="head">
+    <div class="avatar">GG</div>
+    <div>
+      <div class="name">Geetansh Goyal</div>
+      <div class="meta">Building Morph<br>Now · 🌐</div>
+    </div>
+  </div>
+  <div class="body">I got tired of uploading my files to random converter websites. So I built my own. 🌀
+
+You know the drill: a HEIC photo that won't open, a form that wants your photo under 200 KB, a video too big to email. You search "converter", upload the file to a site you've never heard of, wait, download it, and hope they didn't keep a copy.
+
+Morph does all of that on your own device.
+
+On the Mac, you don't even open an app. Start dragging any file, tap ⇧, and a wheel of actions opens right under your cursor. Drop it on JPG, PDF, Compress or Remove Metadata, and the result lands next to the original.
+
+What it can do:
+→ Convert images, video, audio, PDFs, documents, subtitles and CSV/JSON
+→ Fit a photo under any upload limit: 200 KB for the exam form, 50 KB for the job portal
+→ Strip location data, blur faces, and hide phone and card numbers in screenshots
+→ Pull text out of images, read QR codes, merge and split PDFs
+
+It runs on Mac, iPhone, iPad and Android. On iPhone, every action also works in Shortcuts, so it plugs into Siri and the Action button.
+
+The part I care about most: nothing is ever uploaded. The Android app doesn't even ask for internet access.
+
+It's free and open source. No ads, no account, no tracking.
+
+🖥 Mac and Android: download now at <a href="https://morph.geetanshgoyal.in">morph.geetanshgoyal.in</a>
+📱 App Store and Google Play: coming soon
+💻 Source: <a href="https://github.com/geetxnshgoyal/morph">github.com/geetxnshgoyal/morph</a>
+
+If you try it, tell me which file it choked on. That's the most useful feedback I can get.
+
+<span class="tag">#BuildInPublic</span> <span class="tag">#OpenSource</span> <span class="tag">#macOS</span> <span class="tag">#iOS</span> <span class="tag">#Android</span> <span class="tag">#Privacy</span></div>
+  <div class="doc">
+    <div class="doc-title"><b>Morph: convert any file without uploading it</b><span id="count">1 / 4</span></div>
+    <div class="stage">
+      <div class="track" id="track">
+        <img src="linkedin-1-wheel.png" alt="Drag a file, tap a key, drop it on the wheel: the Mac convert wheel">
+        <img src="linkedin-2-size-limit.png" alt="2.3 MB in, 200 KB out: the iPhone result screen">
+        <img src="linkedin-3-tools.png" alt="Compress, clean up, extract text: the Mac tools wheel">
+        <img src="linkedin-4-private.png" alt="Nothing is uploaded. Ever: the iPhone home screen">
+      </div>
+      <button class="nav prev" id="prev" aria-label="Previous slide">‹</button>
+      <button class="nav next" id="next" aria-label="Next slide">›</button>
+    </div>
+    <div class="dots" id="dots"><span class="on"></span><span></span><span></span><span></span></div>
+  </div>
+  <div class="actions"><span>Like</span><span>Comment</span><span>Repost</span><span>Send</span></div>
+</article>
+<script>
+  const track = document.getElementById("track"), dots = [...document.querySelectorAll("#dots span")];
+  const prev = document.getElementById("prev"), next = document.getElementById("next"), count = document.getElementById("count");
+  let i = 0;
+  function go(n) {
+    i = Math.max(0, Math.min(dots.length - 1, n));
+    track.style.transform = `translateX(-${i * 100}%)`;
+    dots.forEach((d, k) => d.classList.toggle("on", k === i));
+    prev.disabled = i === 0; next.disabled = i === dots.length - 1;
+    count.textContent = `${i + 1} / ${dots.length}`;
+  }
+  prev.onclick = () => go(i - 1); next.onclick = () => go(i + 1);
+  go(0);
+</script>
+</body>
+</html>
