@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Morph: convert any file with a tap of a key</title>
-<meta name="description" content="Morph converts, shrinks and cleans up files right where they are, on Mac, iPhone and Android. Drag a file, tap a key, drop it on the wheel. Free, and nothing is ever uploaded.">
+<meta name="description" content="Morph converts, shrinks and cleans up files right where they are, on Mac, Windows, iPhone and Android. Drag a file, tap a key, drop it on the wheel. Free, and nothing is ever uploaded.">
 <meta property="og:title" content="Morph">
-<meta property="og:description" content="Drag a file, tap a key, drop it on the wheel. Free, local file conversion for Mac, iPhone and Android.">
+<meta property="og:description" content="Drag a file, tap a key, drop it on the wheel. Free, local file conversion for Mac, Windows, iPhone and Android.">
 <meta property="og:image" content="https://morph.geetanshgoyal.in/images/mac-wheel-convert.png">
 <meta property="og:url" content="https://morph.geetanshgoyal.in/">
 <link rel="canonical" href="https://morph.geetanshgoyal.in/">
@@ -153,7 +153,7 @@
   .promise h3 { font: 700 1.25rem/1.2 var(--display); margin: 0; }
 
   .download { text-align: left; }
-  .platforms { display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 1.2rem; margin-top: 2.5rem; }
+  .platforms { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.2rem; margin-top: 2.5rem; }
   .platform { border-radius: 26px; padding: 1.8rem; background: white; border: 1px solid var(--line); display: grid; gap: .6rem; align-content: start; }
   .platform.mac { background: var(--brand); color: white; border: 0; }
   .platform h3 { font: 720 1.6rem/1.1 var(--display); margin: 0; }
@@ -161,6 +161,7 @@
   .platform.mac p { color: rgba(255, 255, 255, .9); }
   .platform:not(.mac) p { color: var(--ink-soft); }
   .platform .button { justify-self: start; margin-top: .6rem; }
+  .platform .fine { font-size: .88rem; }
   .platform.mac .button { background: white; color: var(--ink); }
   pre {
     margin: 2.8rem 0 0; padding: 1.5rem 1.7rem; border-radius: 22px; overflow-x: auto;
@@ -204,6 +205,7 @@
     </a>
     <nav aria-label="Sections">
       <a href="#mac">Mac</a>
+      <a href="#windows">Windows</a>
       <a href="#iphone">iPhone</a>
       <a href="#wheels">What it does</a>
       <a href="#download">Download</a>
@@ -214,10 +216,10 @@
     <div class="hero">
       <div>
         <h1>Drag a file, tap a key, drop it on the wheel.</h1>
-        <p class="lede">Morph converts, shrinks and cleans up files right where they are, on your Mac, iPhone and Android. It's free, and nothing is ever uploaded.</p>
+        <p class="lede">Morph converts, shrinks and cleans up files right where they are, on your Mac, Windows PC, iPhone and Android. It's free, and nothing is ever uploaded.</p>
         <div class="cta">
           <a class="button primary" href="https://github.com/geetxnshgoyal/morph/releases/latest">Download for Mac</a>
-          <a class="button quiet" href="#download">iPhone and Android</a>
+          <a class="button quiet" href="#download">Windows, iPhone and Android</a>
         </div>
         <p class="fineprint">macOS 14 or later, Apple Silicon and Intel.</p>
       </div>
@@ -261,6 +263,25 @@
     <div class="mac-pair shots-first">
       <img class="shot" src="images/mac-wheel-convert.png" alt="The Convert wheel open over a file, with HEIC highlighted and the wheel bar showing each wheel's key" loading="lazy">
       <img class="shot" src="images/mac-wheel-tools-dark.png" alt="The Tools wheel in dark mode with Compress highlighted" loading="lazy">
+    </div>
+  </div>
+</section>
+
+<section id="windows">
+  <div class="wrap split">
+    <div class="mac-pair">
+      <img class="shot" src="images/win-wheel.png" alt="The Convert wheel on Windows with AVIF highlighted and the wheel bar showing Shift, Ctrl, Ctrl+Shift and Alt" loading="lazy">
+      <img class="shot" src="images/win-welcome.png" alt="Morph's welcome guide on Windows explaining each wheel's key" loading="lazy">
+    </div>
+    <div>
+      <h2>On Windows, the same wheel.</h2>
+      <p class="lead">Drag files from File Explorer or the desktop and tap a key. The wheel opens under the cursor, and the result lands beside the original.</p>
+      <ul class="points">
+        <li><kbd>Shift</kbd><span><strong>Convert</strong> to the format you need.</span></li>
+        <li><kbd>Ctrl</kbd><span><strong>Tools</strong> compress, clean up, read text and codes.</span></li>
+        <li><kbd>Alt</kbd><span><strong>Actions</strong> share, copy, move, or open Terminal there.</span></li>
+      </ul>
+      <p class="lead" style="margin-top:1.6rem">Ctrl+Shift opens Recipes. Morph also sits in the taskbar corner, where you can drop files on its panel and undo any job, and it adds Open in Morph to File Explorer's right-click menu.</p>
     </div>
   </div>
 </section>
@@ -358,12 +379,18 @@
 <section id="download" class="download">
   <div class="wrap">
     <h2>Get Morph</h2>
-    <p class="lead">Morph is open source. Builds are on the GitHub releases page.</p>
+    <p class="lead">Morph is open source. The Mac, Windows and Android builds are on the GitHub releases page.</p>
     <div class="platforms">
       <div class="platform mac">
         <h3>Mac</h3>
         <p>Menu bar app with the drag wheel and the <code>morph</code> command-line tool. macOS 14 or later.</p>
         <a class="button" href="https://github.com/geetxnshgoyal/morph/releases/latest">Download the DMG</a>
+      </div>
+      <div class="platform">
+        <h3>Windows</h3>
+        <p>The same drag wheel, plus a tray panel and Open in Morph in File Explorer. Windows 10 (1809) or later and Windows 11, on x64 and Arm. This first build is a beta that hasn't been tried on many PCs yet; it's also coming to the Microsoft Store.</p>
+        <a class="button quiet" href="https://github.com/geetxnshgoyal/morph/releases/latest">Download the installer</a>
+        <p class="fine">Not code-signed yet: if SmartScreen warns, click More info, then Run anyway.</p>
       </div>
       <div class="platform">
         <h3>Android</h3>
