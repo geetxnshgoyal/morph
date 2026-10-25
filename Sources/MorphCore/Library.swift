@@ -28,6 +28,9 @@ public struct Action: Identifiable, Sendable {
 
     public var isAvailable: Bool { !needsFFmpeg || ExternalTool.ffmpeg != nil }
 
+    /// Edits that keep an image in its own format and work on its pixels, which an SVG doesn't have.
+    var editsPixels: Bool { ["tool.compress", "tool.strip-metadata", "tool.redact-faces", "tool.redact-pii"].contains(id) }
+
     /// Whether "171 KB → 139 KB" is worth showing after this action: true for actions that remake the same
     /// content, false for ones that extract something else (text, codes, snapshots).
     public var reportsSize: Bool {
@@ -38,6 +41,7 @@ public struct Action: Identifiable, Sendable {
     public func accepts(_ urls: [URL]) -> Bool {
         guard urls.count >= minimumInputs, isAvailable else { return false }
         guard urls.allSatisfy({ kinds.contains(FileKind(url: $0)) }) else { return false }
+        if editsPixels, urls.contains(where: VectorOps.isSVG) { return false }
         if let ext = targetExtension, urls.allSatisfy({ $0.pathExtension.lowercased() == ext }) { return false }
         return true
     }
@@ -70,6 +74,7 @@ public enum Library {
                 try ImageOps.convert($0, to: fmt, options: $1)
             })
         }
+        list.append(one("convert.svg", "SVG", "scribble.variable", .convert, [.image], target: "svg") { try VectorOps.trace($0, options: $1) })
         list.append(all("convert.images-pdf", "PDF", "doc.richtext", .convert, [.image]) { try PDFOps.fromImages($0, options: $1) })
 
         // Video

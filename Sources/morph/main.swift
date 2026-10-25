@@ -15,7 +15,7 @@ morph — free file converter & toolbox
   morph undo                             move the last job's outputs to the Trash
 
 flags: --quality 0.8  --max 1600  --target 500KB  --level light|balanced|strong
-       --out <dir>    --style pixelate|solid
+       --out <dir>    --style pixelate|solid  --colors 8 (palette when tracing to SVG)
 """
 
 func fail(_ message: String) -> Never {
@@ -37,6 +37,7 @@ func parseRun(_ args: ArraySlice<String>) -> (Options, [URL]) {
         case "--max", "-m": options.maxPixel = Int(value()) ?? fail("bad --max")
         case "--target", "-t": options.targetBytes = Options.parseSize(value()) ?? fail("bad --target")
         case "--level": options.compression = CompressionLevel(rawValue: value()) ?? fail("level is light|balanced|strong")
+        case "--colors": options.colors = Int(value()) ?? fail("bad --colors")
         case "--style": options.redactStyle = RedactStyle(rawValue: value()) ?? fail("style is pixelate|solid")
         case "--out", "-o":
             let dir = URL(fileURLWithPath: (value() as NSString).expandingTildeInPath)

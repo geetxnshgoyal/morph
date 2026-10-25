@@ -9,8 +9,12 @@ let package = Package(
         .executable(name: "morph", targets: ["morph"]),
         .executable(name: "MorphMac", targets: ["MorphMac"]),
     ],
+    dependencies: [
+        // Draws SVGs: ImageIO can't read them. Pure Swift, no network, zlib license.
+        .package(url: "https://github.com/swhitty/SwiftDraw", from: "0.29.0"),
+    ],
     targets: [
-        .target(name: "MorphCore"),
+        .target(name: "MorphCore", dependencies: [.product(name: "SwiftDraw", package: "SwiftDraw")]),
         .executableTarget(name: "morph", dependencies: ["MorphCore"]),
         .executableTarget(name: "MorphMac", dependencies: ["MorphCore"]),
     ],

@@ -67,12 +67,12 @@ struct RunActionIntent: AppIntent {
 // MARK: - Everyday jobs
 
 enum ImageFormatOption: String, AppEnum {
-    case jpg, png, heic, webp, avif, tiff, gif, bmp, pdf
+    case jpg, png, heic, webp, avif, tiff, gif, bmp, svg, pdf
 
     static let typeDisplayRepresentation: TypeDisplayRepresentation = "Image Format"
     static let caseDisplayRepresentations: [ImageFormatOption: DisplayRepresentation] = [
         .jpg: "JPG", .png: "PNG", .heic: "HEIC", .webp: "WEBP", .avif: "AVIF",
-        .tiff: "TIFF", .gif: "GIF", .bmp: "BMP", .pdf: "PDF",
+        .tiff: "TIFF", .gif: "GIF", .bmp: "BMP", .svg: "SVG", .pdf: "PDF",
     ]
 
     var actionID: String { self == .pdf ? "convert.images-pdf" : "convert.\(rawValue)" }
@@ -81,7 +81,7 @@ enum ImageFormatOption: String, AppEnum {
 struct ConvertImagesIntent: AppIntent {
     static let title: LocalizedStringResource = "Convert Images"
     static let description = IntentDescription(
-        "Converts photos and images to JPG, PNG, HEIC, WEBP and more, or combines them into one PDF.",
+        "Converts photos and images to JPG, PNG, HEIC, WEBP, SVG and more, or combines them into one PDF.",
         categoryName: "Images")
 
     @Parameter(title: "Images", supportedTypeIdentifiers: ["public.image"]) var images: [IntentFile]

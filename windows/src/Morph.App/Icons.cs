@@ -11,6 +11,7 @@ public static class Icons
 
     static readonly Dictionary<string, string> symbols = new()
     {
+        ["scribble.variable"] = "",
         ["photo"] = "",
         ["photo.on.rectangle"] = "",
         ["doc.richtext"] = "",

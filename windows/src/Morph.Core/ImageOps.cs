@@ -49,9 +49,11 @@ public static class ImageFormats
 
 public static class ImageOps
 {
-    /// Decodes the first frame with its EXIF orientation applied; downscales (never upscales) to `maxPixel`.
+    /// Decodes the first frame with its EXIF orientation applied; downscales (never upscales) to `maxPixel`. SVGs are
+    /// drawn at that size.
     public static MagickImage Load(string path, int? maxPixel = null)
     {
+        if (VectorOps.IsSvg(path)) return VectorOps.Render(path, maxPixel);
         MagickImage image;
         try { image = new MagickImage(path); }
         catch (MagickException) { throw new MorphException($"{Path.GetFileName(path)} isn't a readable image"); }

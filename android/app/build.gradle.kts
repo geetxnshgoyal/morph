@@ -64,6 +64,8 @@ dependencies {
     implementation("androidx.media3:media3-effect:1.8.0")
     implementation("androidx.media3:media3-common:1.8.0")
     implementation("com.google.mlkit:text-recognition:16.0.1")
+    // Draws SVGs, offline.
+    implementation("com.caverock:androidsvg-aar:1.4")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.10.2")
     debugImplementation("androidx.compose.ui:ui-tooling")
 }

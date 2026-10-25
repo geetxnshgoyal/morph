@@ -78,6 +78,7 @@ Every action also works in **Shortcuts**, **Siri**, **Spotlight** and the **Acti
 
 **Convert**
 - Images: JPG, PNG, HEIC, WEBP, AVIF, TIFF, GIF, BMP, or several images into one PDF
+- SVG: drop an SVG to get PNG, JPG, WEBP, PDF and the rest; any image traces into a real vector SVG (logos, icons, screenshots)
 - Video: MP4, MOV, WEBM, MKV, GIF
 - Audio: M4A, WAV, AIFF, MP3, FLAC, OGG, OPUS (or pull the soundtrack out of a video)
 - PDF: to images or plain text
@@ -120,10 +121,10 @@ morph history                          recent jobs
 morph undo                             move the last job's outputs to the Trash
 
 flags: --quality 0.8  --max 1600  --target 500KB  --level light|balanced|strong
-       --out <dir>    --style pixelate|solid
+       --out <dir>    --style pixelate|solid  --colors 8 (palette when tracing to SVG)
 ```
 
-For example: `morph run convert.webp --max 1600 photo.heic`.
+For example: `morph run convert.webp --max 1600 photo.heic`, or `morph run convert.svg --colors 6 logo.png`.
 
 ## Sponsor
 

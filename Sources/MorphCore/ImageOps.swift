@@ -36,6 +36,7 @@ public enum ImageFormat: String, CaseIterable, Codable, Sendable {
 
 public enum ImageOps {
     static func source(_ url: URL) throws -> CGImageSource {
+        if VectorOps.isSVG(url) { return try VectorOps.source(url) }
         guard let src = CGImageSourceCreateWithURL(url as CFURL, [kCGImageSourceShouldCache: false] as CFDictionary),
               CGImageSourceGetCount(src) > 0 else {
             throw MorphError("\(url.lastPathComponent) isn't a readable image")
@@ -65,7 +66,8 @@ public enum ImageOps {
     }
 
     public static func load(_ url: URL, maxPixel: Int? = nil) throws -> CGImage {
-        try image(from: source(url), maxPixel: maxPixel)
+        if VectorOps.isSVG(url) { return try VectorOps.render(url, maxPixel: maxPixel) }
+        return try image(from: source(url), maxPixel: maxPixel)
     }
 
     static func hasAlpha(_ img: CGImage) -> Bool {
@@ -146,6 +148,12 @@ public enum ImageOps {
     // MARK: Actions
 
     public static func convert(_ url: URL, to fmt: ImageFormat, options: Options) throws -> URL {
+        if VectorOps.isSVG(url) {
+            let img = try VectorOps.render(url, maxPixel: options.maxPixel)
+            let out = Output.url(for: url, ext: fmt.rawValue, options: options)
+            try write(img, as: fmt, quality: options.quality ?? 0.9, metadata: [:], to: out)
+            return out
+        }
         let src = try source(url)
         let out = Output.url(for: url, ext: fmt.rawValue, options: options)
         if fmt == .gif, CGImageSourceGetCount(src) > 1, options.maxPixel == nil {
@@ -173,9 +181,11 @@ public enum ImageOps {
     }
 
     public static func resize(_ url: URL, options: Options) throws -> URL {
-        let src = try source(url)
-        let fmt = outputFormat(for: src)
-        let img = try image(from: src, maxPixel: options.maxPixel ?? 2048)
+        // An SVG is drawn at the size asked for, larger or smaller, into a PNG: SVG has no pixel size to change.
+        let src = VectorOps.isSVG(url) ? nil : try source(url)
+        let fmt = src.map(outputFormat) ?? .png
+        let img = try src.map { try image(from: $0, maxPixel: options.maxPixel ?? 2048) }
+            ?? VectorOps.render(url, maxPixel: options.maxPixel ?? 2048)
         // Name by the size actually written: smaller images are never upscaled.
         let out = Output.url(for: url, ext: fmt.rawValue, suffix: "\(max(img.width, img.height))px", options: options)
         try write(img, as: fmt, quality: options.quality ?? 0.9, metadata: carriedMetadata(src), to: out)
@@ -401,6 +411,7 @@ public enum ImageOps {
     }
 
     public static func summary(_ url: URL) throws -> [String: String] {
+        if VectorOps.isSVG(url) { return try VectorOps.summary(url) }
         let src = try source(url)
         let p = properties(src)
         var info: [String: String] = [

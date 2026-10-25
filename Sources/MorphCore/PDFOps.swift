@@ -34,7 +34,7 @@ public enum PDFOps {
         return folder
     }
 
-    /// One A4-width page per image, in drop order.
+    /// One A4-width page per image, in drop order. SVGs stay vectors.
     public static func fromImages(_ urls: [URL], options: Options) throws -> URL {
         guard let first = urls.first else { throw MorphError("No images") }
         let base = urls.count == 1 ? first.deletingPathExtension().lastPathComponent : "Images"
@@ -42,6 +42,14 @@ public enum PDFOps {
         var box = CGRect(x: 0, y: 0, width: 595, height: 842)
         guard let ctx = CGContext(out as CFURL, mediaBox: &box, nil) else { throw MorphError("Couldn't create PDF") }
         for url in urls {
+            if VectorOps.isSVG(url) {
+                let svg = try VectorOps.document(url)
+                var page = CGRect(x: 0, y: 0, width: 595, height: 595 * svg.size.height / svg.size.width)
+                ctx.beginPDFPage([kCGPDFContextMediaBox: Data(bytes: &page, count: MemoryLayout<CGRect>.size)] as CFDictionary)
+                VectorOps.draw(svg, in: ctx, rect: page)
+                ctx.endPDFPage()
+                continue
+            }
             let img = try ImageOps.load(url, maxPixel: options.maxPixel ?? 3000)
             var page = CGRect(x: 0, y: 0, width: 595, height: 595 * CGFloat(img.height) / CGFloat(img.width))
             let pageInfo = [kCGPDFContextMediaBox: Data(bytes: &page, count: MemoryLayout<CGRect>.size)] as CFDictionary

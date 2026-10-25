@@ -10,7 +10,7 @@ Every action is an App Intent, so it shows up in the Shortcuts app, Spotlight an
 
 | Action | Takes | Gives back |
 | --- | --- | --- |
-| Convert Images | images, a format (JPG, PNG, HEIC, WEBP, AVIF, TIFF, GIF, BMP or PDF) | files |
+| Convert Images | images or SVGs, a format (JPG, PNG, HEIC, WEBP, AVIF, TIFF, GIF, BMP, SVG or PDF) | files |
 | Compress Files | images, videos or PDFs, a strength, an optional size limit in KB | files |
 | Remove Metadata | photos, videos or audio | files |
 | Extract Text | images or PDFs | text |

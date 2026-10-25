@@ -44,7 +44,7 @@ installer/               Inno Setup script for the GitHub release installer
 scripts/                 package.ps1 (builds everything) and make-icon.cs (draws the icons)
 ```
 
-Images go through Magick.NET, PDFs through PDFsharp and PdfPig, documents through Open XML and Markdig, and QR codes through ZXing.Net. ffmpeg handles every audio and video format when it is installed; without it, Windows' own Media Foundation covers the common ones.
+Images go through Magick.NET (SVGs too, with every reference outside the file stripped first), PDFs through PDFsharp and PdfPig, documents through Open XML and Markdig, and QR codes through ZXing.Net. ffmpeg handles every audio and video format when it is installed; without it, Windows' own Media Foundation covers the common ones.
 
 ### Why WPF
 

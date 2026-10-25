@@ -59,6 +59,7 @@ import androidx.compose.material.icons.rounded.Description
 import androidx.compose.material.icons.rounded.DocumentScanner
 import androidx.compose.material.icons.rounded.Folder
 import androidx.compose.material.icons.rounded.FolderZip
+import androidx.compose.material.icons.rounded.Gesture
 import androidx.compose.material.icons.rounded.Image
 import androidx.compose.material.icons.rounded.IosShare
 import androidx.compose.material.icons.rounded.Movie
@@ -359,6 +360,7 @@ private fun Toast(message: String, dismiss: () -> Unit) {
 
 fun iconFor(key: String): ImageVector = when (key) {
     "photo" -> Icons.Rounded.Image
+    "vector" -> Icons.Rounded.Gesture
     "pdf" -> Icons.Rounded.PictureAsPdf
     "pages" -> Icons.Rounded.Collections
     "video" -> Icons.Rounded.Movie

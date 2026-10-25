@@ -50,7 +50,7 @@ enum class FileKind {
 
     companion object {
         fun of(file: File): FileKind = when (file.extension.lowercase()) {
-            "jpg", "jpeg", "png", "webp", "heic", "heif", "gif", "bmp", "avif" -> IMAGE
+            "jpg", "jpeg", "png", "webp", "heic", "heif", "gif", "bmp", "avif", "svg" -> IMAGE
             "mp4", "mov", "m4v", "3gp", "webm", "mkv" -> VIDEO
             "mp3", "m4a", "aac", "wav", "ogg", "flac", "opus", "amr" -> AUDIO
             "pdf" -> PDF
@@ -69,9 +69,10 @@ enum class Compression(val label: String, val detail: String, val quality: Int, 
 
 /**
  * Knobs shared by every action. Results are written under [outDir], then published to Downloads/Morph.
- * [targetBytes] makes Compress fit under a size, for upload forms.
+ * [targetBytes] makes Compress fit under a size, for upload forms. [colors] is the palette size when tracing an
+ * image into an SVG; unset picks one from [compression].
  */
-class Options(val compression: Compression, val outDir: File, val targetBytes: Int? = null)
+class Options(val compression: Compression, val outDir: File, val targetBytes: Int? = null, val colors: Int? = null)
 
 /** Size limits offered for Compress, for upload forms that cap file size; 0 is no limit. Sizes are decimal. */
 object SizeLimit {
@@ -110,9 +111,13 @@ class Action(
     val targetExtension: String? = null,
     val run: suspend (Context, List<File>, Options) -> List<File>,
 ) {
+    /** Edits that keep an image in its own format and work on its pixels, which an SVG doesn't have. */
+    private val editsPixels get() = id in setOf("tool.compress", "tool.strip-metadata")
+
     fun accepts(files: List<File>): Boolean {
         if (files.size < minimumInputs) return false
         if (!files.all { FileKind.of(it) in kinds }) return false
+        if (editsPixels && files.any(VectorOps::isSvg)) return false
         val ext = targetExtension ?: return true
         return !files.all { it.extension.lowercase().let { e -> e == ext || (ext == "jpg" && e == "jpeg") } }
     }
@@ -129,6 +134,7 @@ object Library {
         one("convert.jpg", "JPG", "photo", Group.CONVERT, setOf(FileKind.IMAGE), "jpg") { _, f, o -> ImageOps.convert(f, ImageFormat.JPG, o) },
         one("convert.png", "PNG", "photo", Group.CONVERT, setOf(FileKind.IMAGE), "png") { _, f, o -> ImageOps.convert(f, ImageFormat.PNG, o) },
         one("convert.webp", "WEBP", "photo", Group.CONVERT, setOf(FileKind.IMAGE), "webp") { _, f, o -> ImageOps.convert(f, ImageFormat.WEBP, o) },
+        one("convert.svg", "SVG", "vector", Group.CONVERT, setOf(FileKind.IMAGE), "svg") { _, f, o -> VectorOps.trace(f, o) },
         Action("convert.images-pdf", "PDF", "pdf", Group.CONVERT, setOf(FileKind.IMAGE), combinesInputs = true) { _, files, o ->
             listOf(PdfOps.fromImages(files, o))
         },
@@ -226,9 +232,9 @@ object Output {
 enum class ImageFormat(val ext: String) { JPG("jpg"), PNG("png"), WEBP("webp") }
 
 object ImageOps {
-    /** Decodes with EXIF orientation applied; downscales (never upscales) to [maxPixel]. */
+    /** Decodes with EXIF orientation applied; downscales (never upscales) to [maxPixel]. SVGs are drawn at that size. */
     fun decode(file: File, maxPixel: Int? = null): Bitmap =
-        ImageDecoder.decodeBitmap(ImageDecoder.createSource(file)) { decoder, info, _ ->
+        if (VectorOps.isSvg(file)) VectorOps.render(file, maxPixel) else ImageDecoder.decodeBitmap(ImageDecoder.createSource(file)) { decoder, info, _ ->
             decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
             val longest = max(info.size.width, info.size.height)
             if (maxPixel != null && longest > maxPixel) {
@@ -315,11 +321,20 @@ object ImageOps {
 // MARK: - PDF
 
 object PdfOps {
-    /** One page per image, at most A4-ish size in points. */
+    /** One page per image, at most A4-ish size in points. SVGs stay vectors. */
     fun fromImages(files: List<File>, o: Options): File {
         val doc = PdfDocument()
         try {
             files.forEachIndexed { i, file ->
+                if (VectorOps.isSvg(file)) {
+                    val svg = VectorOps.document(file)
+                    val scale = 842.0 / max(svg.width, svg.height)
+                    val w = (svg.width * scale).roundToInt(); val h = (svg.height * scale).roundToInt()
+                    val page = doc.startPage(PdfDocument.PageInfo.Builder(w, h, i + 1).create())
+                    svg.draw(page.canvas, w, h)
+                    doc.finishPage(page)
+                    return@forEachIndexed
+                }
                 val bitmap = ImageOps.decode(file, 2400)
                 val scale = 842.0 / max(bitmap.width, bitmap.height)
                 val w = (bitmap.width * scale).roundToInt(); val h = (bitmap.height * scale).roundToInt()

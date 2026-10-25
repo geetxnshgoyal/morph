@@ -17,7 +17,7 @@ public static class FileKinds
     public static readonly IReadOnlySet<FileKind> All = Enum.GetValues<FileKind>().ToHashSet();
 
     static readonly Dictionary<string, FileKind> byExtension = Build(
-        (FileKind.Image, "jpg jpeg jpe jfif png heic heif webp avif tif tiff gif bmp dib ico jxl dng cr2 cr3 nef arw raf orf rw2"),
+        (FileKind.Image, "jpg jpeg jpe jfif png heic heif webp avif tif tiff gif bmp dib ico jxl svg dng cr2 cr3 nef arw raf orf rw2"),
         (FileKind.Video, "mp4 m4v mov avi mkv webm wmv flv mpg mpeg 3gp ts mts m2ts ogv"),
         (FileKind.Audio, "mp3 m4a aac wav aif aiff flac ogg oga opus wma caf amr"),
         (FileKind.Pdf, "pdf"),
@@ -122,6 +122,8 @@ public sealed record Options
     public RedactStyle RedactStyle { get; init; } = RedactStyle.Pixelate;
     /// null saves results next to each original.
     public string? OutputDirectory { get; init; }
+    /// Palette size when tracing an image into an SVG; null picks one from `Compression`.
+    public int? Colors { get; init; }
 
     /// Parses "500KB", "2.5mb", "1g", or plain bytes.
     public static long? ParseSize(string text)

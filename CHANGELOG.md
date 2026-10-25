@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Everywhere
+- **SVG in and out.** Drop an SVG to get PNG, JPG, WEBP, HEIC, PDF or any other image format. It renders at its own size (at least 1024 px on the long side, so icons come out usable), or exactly at Max size when one is set. PDFs from SVGs stay vectors on the Mac, iPhone and Android.
+- **Image to SVG.** The new SVG action traces a PNG, JPG or any other image into real vector shapes: a small palette, specks cleaned up, outlines smoothed into curves with sharp corners kept. Logos, icons and screenshots come out clean and usually smaller than the PNG. Compression level sets the detail (light keeps more colors and finer edges, strong makes the smallest files); the CLI's `--colors` picks the palette size.
+- Nothing goes online: images an SVG links to on the web are skipped.
+
 ## 1.0.0 (2026-10-22)
 
 ### Everywhere

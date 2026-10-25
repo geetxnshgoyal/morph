@@ -60,6 +60,8 @@ public struct Options: Codable, Sendable {
     public var targetBytes: Int?
     public var redactStyle: RedactStyle = .pixelate
     public var outputDirectory: URL?
+    /// Palette size when tracing an image into an SVG; unset picks one from `compression`.
+    public var colors: Int?
 
     public init() {}
 

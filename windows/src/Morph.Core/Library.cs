@@ -31,9 +31,13 @@ public sealed class MorphAction
     public bool ReportsSize => Group == ActionGroup.Recipe || Id is "tool.compress" or "tool.resize" or "tool.strip-metadata"
         || (Group == ActionGroup.Convert && Id is not ("convert.pdf-text" or "convert.pdf-images"));
 
+    /// Edits that keep an image in its own format and work on its pixels, which an SVG doesn't have.
+    bool EditsPixels => Id is "tool.compress" or "tool.strip-metadata" or "tool.redact-faces" or "tool.redact-pii";
+
     public bool Accepts(IReadOnlyList<string> paths)
     {
         if (paths.Count < MinimumInputs || !IsAvailable) return false;
+        if (EditsPixels && paths.Any(VectorOps.IsSvg)) return false;
         foreach (var path in paths)
         {
             var kind = FileKinds.Of(path);
@@ -93,6 +97,7 @@ public static class Library
             list.Add(One($"convert.{f.Extension()}", f.Extension().ToUpperInvariant(), "photo", convert, image,
                 Sync((p, o) => ImageOps.Convert(p, f, o)), target: f.Extension()));
         }
+        list.Add(One("convert.svg", "SVG", "scribble.variable", convert, image, Sync(VectorOps.Trace), target: "svg"));
         list.Add(All("convert.images-pdf", "PDF", "doc.richtext", convert, image, (p, o, c) => Task.Run(() => PdfOps.FromImages(p, o), c)));
 
         // Video

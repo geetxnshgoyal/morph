@@ -15,6 +15,7 @@ Morph has no internet access: the network permissions ML Kit would add are remov
 ## What it can do
 
 - Convert images to JPG, PNG or WEBP, images to one PDF, PDF to images
+- SVG to PNG, JPG, WEBP or PDF (drawn with AndroidSVG, offline), and any image traced into an SVG
 - Convert video to MP4, pull audio out to M4A
 - Compress images and videos, resize images, remove image metadata
 - Extract text from images (ML Kit, on device)
