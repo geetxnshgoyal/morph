@@ -1,5 +1,7 @@
 # Microsoft Store submission (Windows)
 
+Live at https://apps.microsoft.com/detail/9PHWJVRC85DW (Store ID 9PHWJVRC85DW, package `GeetanshGoyal.MorphFileConverter`).
+
 Everything Partner Center asks for, field by field, for Morph 1.0.0. Character limits are noted and every field fits.
 
 ## Before the first submission
@@ -72,7 +74,7 @@ Four wheels, one key each
 Change any of them in Settings.
 
 Convert
-• Images: JPG, PNG, HEIC, WEBP, AVIF, TIFF, GIF, BMP, or several images into one PDF
+• Images: JPG, PNG, WEBP, AVIF, TIFF, GIF, BMP, or several images into one PDF
 • Video: MP4, or a GIF
 • Audio: M4A, WAV, MP3, FLAC, or the soundtrack of a video
 • PDFs to images or text

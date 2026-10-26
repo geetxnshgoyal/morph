@@ -16,13 +16,13 @@ Grab the latest build from [Releases](../../releases/latest):
 | Platform | File | Needs |
 | --- | --- | --- |
 | macOS | `Morph-1.0.0.dmg` | macOS 14 or later, Apple Silicon or Intel |
-| Windows (beta) | `Morph-1.0.0-x64-setup.exe`, or `Morph-1.0.0-arm64-setup.exe` for Arm PCs; coming to the Microsoft Store | Windows 10 version 1809 or later, or Windows 11 |
+| Windows (beta) | [Microsoft Store](https://apps.microsoft.com/detail/9PHWJVRC85DW), or [`Morph-1.0.0-x64-setup.exe`](https://github.com/geetxnshgoyal/morph/releases/download/v1.0.0/Morph-1.0.0-x64-setup.exe) ([`arm64`](https://github.com/geetxnshgoyal/morph/releases/download/v1.0.0/Morph-1.0.0-arm64-setup.exe) for Arm PCs) | Windows 10 version 1809 or later, or Windows 11 |
 | Android | coming to Google Play; until then `Morph-1.0.0.apk` | Android 10 or later |
 | iOS | coming to the App Store; until then build from source, see [ios/README.md](ios/README.md) | iOS 17 or later |
 
 **macOS:** open the DMG and drag Morph into Applications. The build is ad-hoc signed, so the first launch is blocked: open System Settings → Privacy & Security and click **Open Anyway**.
 
-**Windows (beta):** run the setup file. This first build hasn't been tried on many PCs yet, so please [report](https://github.com/geetxnshgoyal/morph/issues/new) anything that breaks. It installs for your user only, with no admin prompt. The installer isn't code-signed yet, so SmartScreen may say it doesn't recognise the app: click **More info**, then **Run anyway**. Morph then sits in the taskbar corner; see [windows/README.md](windows/README.md).
+**Windows (beta):** get Morph from the [Microsoft Store](https://apps.microsoft.com/detail/9PHWJVRC85DW), or run the setup file. This first build hasn't been tried on many PCs yet, so please [report](https://github.com/geetxnshgoyal/morph/issues/new) anything that breaks. It installs for your user only, with no admin prompt. The installer isn't code-signed yet, so SmartScreen may say it doesn't recognise the app: click **More info**, then **Run anyway**. Morph then sits in the taskbar corner; see [windows/README.md](windows/README.md).
 
 **Android:** open the APK on your phone and allow installs from that source when asked. See [android/README.md](android/README.md).
 
