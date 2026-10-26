@@ -35,6 +35,7 @@ Convert
 • Photos to JPG, PNG or WEBP, or several into one PDF
 • PDF pages to images
 • Video to MP4, or pull out the soundtrack as M4A
+• SVG to PNG, JPG, WEBP or PDF, and any image traced into a sharp SVG
 
 Compress and clean up
 • Shrink photos and videos to a size you can send
