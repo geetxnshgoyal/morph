@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://morph.geetanshgoyal.in/sitemap.xml
