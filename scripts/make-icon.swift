@@ -1,6 +1,6 @@
 // Draws Morph's app icon.
 //   swift scripts/make-icon.swift <out.iconset>        macOS iconset (bundle.sh turns it into AppIcon.icns)
-//   swift scripts/make-icon.swift --square <out.png>   full-bleed, opaque 1024px square (the App Store rejects
+//   swift scripts/make-icon.swift --square <out.png> [size]   full-bleed, opaque square, 1024px by default (the App Store rejects
 //                                                       alpha); iOS masks it itself
 import AppKit
 
@@ -9,8 +9,9 @@ let square = args.first == "--square"
 let out = URL(fileURLWithPath: args.last ?? "AppIcon.iconset")
 
 func render(_ px: Int, square: Bool = false) -> Data {
+    // Always draw into RGBA: AppKit can't draw into a 3-sample RGB rep, which left the square icon blank.
     let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: px, pixelsHigh: px, bitsPerSample: 8,
-                               samplesPerPixel: square ? 3 : 4, hasAlpha: !square, isPlanar: false,
+                               samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
                                colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0)!
     NSGraphicsContext.saveGraphicsState()
     NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
@@ -44,11 +45,21 @@ func render(_ px: Int, square: Bool = false) -> Data {
     }
 
     NSGraphicsContext.restoreGraphicsState()
-    return rep.representation(using: .png, properties: [:])!
+    return square ? opaque(rep) : rep.representation(using: .png, properties: [:])!
+}
+
+/// The same pixels as a PNG with no alpha channel, as the App Store requires.
+func opaque(_ rep: NSBitmapImageRep) -> Data {
+    let ctx = CGContext(data: nil, width: rep.pixelsWide, height: rep.pixelsHigh, bitsPerComponent: 8, bytesPerRow: 0,
+                        space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue)!
+    ctx.draw(rep.cgImage!, in: CGRect(x: 0, y: 0, width: rep.pixelsWide, height: rep.pixelsHigh))
+    return NSBitmapImageRep(cgImage: ctx.makeImage()!).representation(using: .png, properties: [:])!
 }
 
 if square {
-    try render(1024, square: true).write(to: out)
+    // An optional size after the path, e.g. 512 for the Play Store icon.
+    let size = args.count > 2 ? Int(args[2]) ?? 1024 : 1024
+    try render(size, square: true).write(to: URL(fileURLWithPath: args[1]))
     exit(0)
 }
 
