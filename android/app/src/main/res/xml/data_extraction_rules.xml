@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 12 and later: nothing of Morph's (recent jobs, settings) goes to cloud backup. Moving to a new phone
+     with a cable or Wi-Fi transfer still carries it over. Results live in Downloads › Morph and back up like any file. -->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="root" />
+        <exclude domain="file" />
+        <exclude domain="database" />
+        <exclude domain="sharedpref" />
+        <exclude domain="external" />
+    </cloud-backup>
+</data-extraction-rules>
