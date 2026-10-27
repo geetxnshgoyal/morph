@@ -90,15 +90,14 @@ public static class Library
         var convert = ActionGroup.Convert;
         var tool = ActionGroup.Tool;
 
-        // Images
-        foreach (var format in Enum.GetValues<ImageFormat>().Where(f => f.IsAvailable()))
-        {
-            var f = format;
-            list.Add(One($"convert.{f.Extension()}", f.Extension().ToUpperInvariant(), "photo", convert, image,
-                Sync((p, o) => ImageOps.Convert(p, f, o)), target: f.Extension()));
-        }
+        // Images: the common formats, SVG and PDF come first so they share the wheel's first page; rarer formats follow.
+        ImageFormat[] common = [ImageFormat.Jpg, ImageFormat.Png, ImageFormat.Heic, ImageFormat.Webp];
+        MorphAction Image(ImageFormat f) => One($"convert.{f.Extension()}", f.Extension().ToUpperInvariant(), "photo", convert, image,
+            Sync((p, o) => ImageOps.Convert(p, f, o)), target: f.Extension());
+        foreach (var format in common.Where(f => f.IsAvailable())) list.Add(Image(format));
         list.Add(One("convert.svg", "SVG", "scribble.variable", convert, image, Sync(VectorOps.Trace), target: "svg"));
         list.Add(All("convert.images-pdf", "PDF", "doc.richtext", convert, image, (p, o, c) => Task.Run(() => PdfOps.FromImages(p, o), c)));
+        foreach (var format in Enum.GetValues<ImageFormat>().Where(f => !common.Contains(f) && f.IsAvailable())) list.Add(Image(format));
 
         // Video
         list.Add(One("convert.video-mp4", "MP4", "film", convert, video, (p, o, c) => MediaOps.ConvertVideo(p, "mp4", o, c), "mp4", Requirement.Media));

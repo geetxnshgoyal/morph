@@ -68,14 +68,17 @@ public enum Library {
     public static let actions: [Action] = {
         var list: [Action] = []
 
-        // Images
-        for fmt in ImageFormat.allCases where fmt.isAvailable {
-            list.append(one("convert.\(fmt.rawValue)", fmt.rawValue.uppercased(), "photo", .convert, [.image], target: fmt.rawValue) {
+        // Images: the common formats, SVG and PDF come first so they share the wheel's first page; rarer formats follow.
+        let common: [ImageFormat] = [.jpg, .png, .heic, .webp]
+        func image(_ fmt: ImageFormat) -> Action {
+            one("convert.\(fmt.rawValue)", fmt.rawValue.uppercased(), "photo", .convert, [.image], target: fmt.rawValue) {
                 try ImageOps.convert($0, to: fmt, options: $1)
-            })
+            }
         }
+        for fmt in common where fmt.isAvailable { list.append(image(fmt)) }
         list.append(one("convert.svg", "SVG", "scribble.variable", .convert, [.image], target: "svg") { try VectorOps.trace($0, options: $1) })
         list.append(all("convert.images-pdf", "PDF", "doc.richtext", .convert, [.image]) { try PDFOps.fromImages($0, options: $1) })
+        for fmt in ImageFormat.allCases where !common.contains(fmt) && fmt.isAvailable { list.append(image(fmt)) }
 
         // Video
         for ext in ["mp4", "mov"] {
