@@ -33,6 +33,8 @@ Press and hold the app icon for **Convert Photos** and **Choose Files**.
 
 The app is set up for App Store review: a privacy manifest (`Morph/PrivacyInfo.xcprivacy`, no data collected), `ITSAppUsesNonExemptEncryption` set to `NO`, an opaque 1024 px icon, and Privacy and Help links in Settings. The listing text, screenshots and review notes are in [`marketing/app-store.md`](../marketing/app-store.md).
 
+The project uses the Geetansh Goyal developer team (`675A56FHGZ`) with automatic signing. `ExportOptions.plist` selects App Store Connect distribution for this team and exports an IPA locally without uploading it. Distribution signing still requires a valid Apple Distribution certificate and App Store provisioning profile.
+
 ## Build
 
 The Xcode project is generated from `project.yml` with [XcodeGen](https://github.com/yonaskolb/XcodeGen):
