@@ -31,6 +31,8 @@ Press and hold the app icon for **Convert Photos** and **Choose Files**.
 
 ## App Store
 
+Version 1.0.0 is in internal testing (TestFlight) and App Store review, and comes out around 11 November 2026.
+
 The app is set up for App Store review: a privacy manifest (`Morph/PrivacyInfo.xcprivacy`, no data collected), `ITSAppUsesNonExemptEncryption` set to `NO`, an opaque 1024 px icon, and Privacy and Help links in Settings. The listing text, screenshots and review notes are in [`marketing/app-store.md`](../marketing/app-store.md).
 
 The project uses the Geetansh Goyal developer team (`675A56FHGZ`) with automatic signing. `ExportOptions.plist` selects App Store Connect distribution for this team and exports an IPA locally without uploading it. Distribution signing still requires a valid Apple Distribution certificate and App Store provisioning profile.

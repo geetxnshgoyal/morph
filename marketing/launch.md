@@ -5,8 +5,8 @@ Copy for the 1.0.0 launch. App Store Connect fields, screenshots and review note
 Facts to keep straight in every post:
 - Free and open source. No accounts, no uploads, no tracking.
 - Mac: menu bar app, macOS 14 or later, Apple Silicon and Intel. The DMG is ad-hoc signed, so the first launch needs System Settings → Privacy & Security → Open Anyway.
-- iPhone and iPad: iOS 17 or later, coming to the App Store.
-- Android: Android 10 or later, coming to Google Play (APK on GitHub releases until then). Google Play listing and policy answers are in [`play-store.md`](play-store.md).
+- iPhone and iPad: iOS 17 or later. In internal testing on the App Store, out around 11 November 2026.
+- Android: Android 10 or later. In closed testing on Google Play, out around 11 November 2026; anyone can join through https://morph.geetanshgoyal.in/android.html (APK on GitHub releases too). Google Play listing and policy answers are in [`play-store.md`](play-store.md).
 
 ## Positioning
 
@@ -148,7 +148,7 @@ Attach `linkedin/linkedin-carousel.pdf` as a document (a swipeable carousel), or
 > It's free and open source. No ads, no account, no tracking.
 >
 > 🖥 Mac and Android: download now at morph.geetanshgoyal.in
-> 📱 App Store and Google Play: coming soon
+> 📱 App Store and Google Play: 11 November
 > 💻 Source: github.com/geetxnshgoyal/morph
 >
 > If you try it, tell me which file it choked on. That's the most useful feedback I can get.

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Morph: Free File Converter for Mac, Windows, iPhone and Android</title>
-<meta name="description" content="Convert HEIC to JPG, PNG to SVG, video to MP4 and more, or compress a photo to any size like 200 KB. Free and open source, and your files never leave your device.">
+<meta name="description" content="Free file converter: HEIC to JPG, JPG to PDF, MP4 to MP3, PNG to SVG, MOV to MP4, or compress a photo to 200 KB. Works offline; files never leave your device.">
 <meta property="og:title" content="Morph: Free File Converter for Mac, Windows, iPhone and Android">
 <meta property="og:description" content="Drag a file, tap a key, drop it on the wheel. Free, local file conversion for Mac, Windows, iPhone and Android.">
 <meta property="og:image" content="https://morph.geetanshgoyal.in/images/og-card.png">
@@ -23,7 +23,7 @@
   "@type": "SoftwareApplication",
   "name": "Morph",
   "alternateName": "Morph: File Converter",
-  "description": "Convert HEIC to JPG, PNG to SVG, video to MP4 and more, or compress a photo to any size like 200 KB. Free and open source, and your files never leave your device.",
+  "description": "Free file converter: HEIC to JPG, JPG to PDF, MP4 to MP3, PNG to SVG, MOV to MP4, or compress a photo to 200 KB. Works offline; files never leave your device.",
   "url": "https://morph.geetanshgoyal.in/",
   "image": "https://morph.geetanshgoyal.in/images/og-card.png",
   "applicationCategory": "UtilitiesApplication",
@@ -31,6 +31,11 @@
   "downloadUrl": [
     "https://github.com/geetxnshgoyal/morph/releases/latest",
     "https://apps.microsoft.com/detail/9PHWJVRC85DW"
+  ],
+  "featureList": [
+    "HEIC to JPG", "JPG to PDF and PDF to JPG", "Merge and split PDFs", "Word to PDF", "MP4 to MP3 and M4A",
+    "MOV to MP4", "Video to GIF", "PNG to SVG and SVG to PNG", "WEBP to JPG and PNG", "Compress images to 200 KB, 100 KB, 50 KB or 20 KB",
+    "Remove EXIF and location data", "Image to text (OCR)", "QR code reader", "Zip and unzip"
   ],
   "softwareVersion": "1.0.0",
   "license": "https://opensource.org/licenses/MIT",
@@ -254,6 +259,9 @@
   .faq p { margin: .45rem 0 0; color: var(--ink-soft); max-width: var(--measure); }
 
   .download { text-align: left; }
+  .conversions { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: 1.6rem; }
+  .conversions a { padding: .6rem 1.1rem; border-radius: 999px; background: white; border: 1px solid var(--line); color: var(--ink); text-decoration: none; font-weight: 600; }
+  .conversions a:hover { border-color: var(--brand); color: var(--brand); }
   .platforms { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.2rem; margin-top: 2.5rem; }
   .platform { border-radius: 26px; padding: 1.8rem; background: white; border: 1px solid var(--line); display: grid; gap: .6rem; align-content: start; }
   .platform.mac { background: var(--brand); color: white; border: 0; }
@@ -478,6 +486,29 @@
   </div>
 </section>
 
+<section id="conversions">
+  <div class="wrap">
+    <h2>Popular conversions</h2>
+    <p class="lead">Step-by-step guides, and exactly what works on each device.</p>
+    <nav class="conversions" aria-label="Popular conversions">
+      <a href="heic-to-jpg.html">HEIC to JPG</a>
+      <a href="pdf-converter.html">PDF converter</a>
+      <a href="jpg-to-pdf.html">JPG to PDF</a>
+      <a href="merge-pdf.html">Merge PDFs</a>
+      <a href="mp4-to-mp3.html">MP4 to MP3</a>
+      <a href="mov-to-mp4.html">MOV to MP4</a>
+      <a href="video-to-gif.html">Video to GIF</a>
+      <a href="compress-image.html">Compress to 200 KB</a>
+      <a href="png-to-svg.html">PNG to SVG</a>
+      <a href="svg-to-png.html">SVG to PNG</a>
+      <a href="webp-to-jpg.html">WEBP to JPG</a>
+      <a href="image-converter.html">Image converter</a>
+      <a href="remove-exif.html">Remove EXIF and location</a>
+      <a href="image-to-text.html">Image to text</a>
+    </nav>
+  </div>
+</section>
+
 <section id="questions">
   <div class="wrap">
     <h2>Common questions</h2>
@@ -499,7 +530,7 @@
     <div class="platforms">
       <div class="platform mac">
         <h3>Mac</h3>
-        <p>Menu bar app with the drag wheel and the <code>morph</code> command-line tool. macOS 14 or later.</p>
+        <p>Menu bar app with the drag wheel and the <code>morph</code> command-line tool. macOS 14 or later. Also coming to the Mac App Store around 11 November 2026.</p>
         <a class="button" href="https://github.com/geetxnshgoyal/morph/releases/latest">Download the DMG</a>
       </div>
       <div class="platform">
@@ -510,13 +541,13 @@
       </div>
       <div class="platform">
         <h3>Android</h3>
-        <p>Coming to Google Play. Share files to Morph from any app. Android 10 or later.</p>
+        <p>In testing on Google Play, out for everyone around 11 November 2026. Share files to Morph from any app. Android 10 or later.</p>
         <a class="button quiet" href="android.html">Join the Play Store beta</a>
         <p class="fine">Or <a href="https://github.com/geetxnshgoyal/morph/releases/latest">download the APK</a> from GitHub.</p>
       </div>
       <div class="platform">
         <h3>iPhone and iPad</h3>
-        <p>Coming to the App Store. Until then you can build it with Xcode from the source code. iOS 17 or later.</p>
+        <p>In testing on the App Store, out around 11 November 2026. Until then you can build it with Xcode from the source code. iOS 17 or later.</p>
         <a class="button quiet" href="https://github.com/geetxnshgoyal/morph/tree/main/ios">Build instructions</a>
       </div>
     </div>

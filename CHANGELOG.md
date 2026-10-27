@@ -6,6 +6,18 @@
 - **SVG in and out.** Drop an SVG to get PNG, JPG, WEBP, HEIC, PDF or any other image format. It renders at its own size (at least 1024 px on the long side, so icons come out usable), or exactly at Max size when one is set. PDFs from SVGs stay vectors on the Mac, iPhone and Android.
 - **Image to SVG.** The new SVG action traces a PNG, JPG or any other image into real vector shapes: a small palette, specks cleaned up, outlines smoothed into curves with sharp corners kept. Logos, icons and screenshots come out clean and usually smaller than the PNG. Compression level sets the detail (light keeps more colors and finer edges, strong makes the smallest files); the CLI's `--colors` picks the palette size.
 - Nothing goes online: images an SVG links to on the web are skipped.
+- **SVG and PDF come first** on the Convert wheel, right after the common photo formats, so they share its first page.
+
+### Mac
+- **Mac App Store version.** The menu bar app, sandboxed: the first time it saves next to your files in a folder, macOS asks you to allow that folder, once. Homebrew extras (MP3, WebM, FLAC; WebP) and the command-line tool stay in the download from the website.
+- Results for files from several folders go next to each original, Undo works after a relaunch, and clicking the folder prompt no longer closes the wheel.
+
+### iPhone and iPad
+- Opening two files with the same name works (the second becomes "name 2"), and copies of imported files are cleared at launch.
+
+### Android
+- Recent jobs and settings stay out of Google's cloud backup.
+- A result that can't be written to Downloads is reported instead of leaving an empty or hidden file.
 
 ## 1.0.0 (2026-10-22)
 

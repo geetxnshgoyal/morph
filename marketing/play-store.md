@@ -67,7 +67,9 @@ Everything happens on your phone. Morph has no internet access at all: nothing i
 
 ## Testing before production
 
-Personal developer accounts created after November 2023 must run a **closed test** with at least **12 testers opted in for 14 days in a row** before Play allows a production release. Upload the same bundle to a closed testing track, add the testers' Google accounts (an email list or a Google Group), share the opt-in link, and apply for production access once the 14 days are up. Organization accounts skip this step.
+Personal developer accounts created after November 2023 must run a **closed test** with at least **12 testers opted in for 14 days in a row** before Play allows a production release. Upload the same bundle to a closed testing track, add the testers' Google accounts (an email list or a Google Group), share the opt-in link, and apply for production access once the 14 days are up.
+
+Morph's closed test uses the Google Group [morph-tester](https://groups.google.com/g/morph-tester), added under Closed testing → Testers. Testers join the group, opt in at https://play.google.com/apps/testing/app.morph, then install from the Play Store; the steps for them are on https://morph.geetanshgoyal.in/android.html. Organization accounts skip this step.
 
 ## Release notes (500)
 
