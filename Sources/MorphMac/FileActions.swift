@@ -70,6 +70,12 @@ enum FileActions {
         panel.message = "\(move ? "Move" : "Copy") \(urls.count == 1 ? urls[0].lastPathComponent : "\(urls.count) items") to:"
         panel.directoryURL = urls.first?.deletingLastPathComponent()
         guard panel.runModal() == .OK, let folder = panel.url else { return }
+        // Moving takes the file out of its folder, which the sandbox only allows once that folder is granted.
+        if move {
+            for parent in Set(urls.map { $0.deletingLastPathComponent() }) where FolderAccess.writable(parent)?.path != parent.path {
+                throw MorphError("Morph needs permission for “\(parent.lastPathComponent)” to move files out of it.")
+            }
+        }
         let fm = FileManager.default
         var results: [URL] = []
         for url in urls {

@@ -22,7 +22,13 @@ final class Preferences: ObservableObject {
     @Published var recipesKeys: DragKeys { didSet { defaults.set(recipesKeys.rawValue, forKey: "recipesKeys") } }
     @Published var actionsKeys: DragKeys { didSet { defaults.set(actionsKeys.rawValue, forKey: "actionsKeys") } }
     /// nil saves results next to the original.
-    @Published var outputFolder: URL? { didSet { defaults.set(outputFolder?.path, forKey: "outputFolder") } }
+    @Published var outputFolder: URL? {
+        didSet {
+            defaults.set(outputFolder?.path, forKey: "outputFolder")
+            // The sandbox forgets panel choices on quit; a bookmark keeps the folder writable.
+            defaults.set(outputFolder.flatMap { try? $0.bookmarkData(options: .withSecurityScope) }, forKey: "outputFolderBookmark")
+        }
+    }
 
     private init() {
         defaults.register(defaults: ["playSounds": true])
@@ -31,7 +37,8 @@ final class Preferences: ObservableObject {
         revealWhenDone = defaults.bool(forKey: "revealWhenDone")
         compression = defaults.string(forKey: "compression").flatMap(CompressionLevel.init) ?? .balanced
         sizeLimit = defaults.integer(forKey: SizeLimit.key)
-        outputFolder = defaults.string(forKey: "outputFolder").map { URL(fileURLWithPath: $0) }
+        outputFolder = defaults.data(forKey: "outputFolderBookmark").flatMap(FolderAccess.resolve)
+            ?? defaults.string(forKey: "outputFolder").map { URL(fileURLWithPath: $0) }
         let convert = Self.storedKeys(defaults, "convertKeys", legacy: ["convertKey", "dragKey"]) ?? .shift
         let tools = Self.storedKeys(defaults, "toolsKeys", legacy: ["toolsKey"]) ?? .command
         let recipes = Self.storedKeys(defaults, "recipesKeys", legacy: ["recipesKey"]) ?? .control
@@ -86,14 +93,17 @@ final class Preferences: ObservableObject {
         }
     }
 
-    /// Options for a run from the wheel.
-    var options: Options {
+    /// Options for a run from the wheel on `files`, or nil if the user won't let Morph save where they go.
+    func options(for files: [URL]) -> Options? {
         var options = Options()
         options.compression = compression
         if sizeLimit > 0 { options.targetBytes = sizeLimit }
         if let outputFolder {
             try? FileManager.default.createDirectory(at: outputFolder, withIntermediateDirectories: true)
             options.outputDirectory = outputFolder
+        } else if Sandbox.isActive, let first = files.first {
+            guard let folder = FolderAccess.writable(first.deletingLastPathComponent()) else { return nil }
+            options.outputDirectory = folder
         }
         return options
     }

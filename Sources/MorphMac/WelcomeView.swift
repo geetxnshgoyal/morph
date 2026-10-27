@@ -112,11 +112,11 @@ struct WelcomeView: View {
             Text("Finish setting up").font(Theme.font(26, .bold))
             Text("You can change all of this later in Settings.").font(Theme.font(13)).foregroundStyle(.secondary)
                 .padding(.bottom, 4)
-            if AppLocation.isBundled, !AppLocation.isInstalled { MoveToApplicationsRow() }
+            if AppLocation.isBundled, !AppLocation.isInstalled, !Sandbox.isActive { MoveToApplicationsRow() }
             LoginItemRow()
             DragShortcutRow()
             FinderServiceRow()
-            FFmpegRow()
+            if !Sandbox.isActive { FFmpegRow() }
         }
     }
 

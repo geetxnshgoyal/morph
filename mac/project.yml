@@ -1,0 +1,65 @@
+# The Mac App Store build of the menu bar app. Generate Morph.xcodeproj with: cd mac && xcodegen
+# The Developer ID download (scripts/bundle.sh) builds the same sources without the sandbox.
+name: Morph
+options:
+  bundleIdPrefix: app.morph
+  deploymentTarget:
+    macOS: "14.0"
+packages:
+  Morph:
+    path: ..
+targets:
+  Morph:
+    type: application
+    platform: macOS
+    sources:
+      - path: ../Sources/MorphMac
+      - path: Morph
+    dependencies:
+      - package: Morph
+        product: MorphCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.morph.Morph
+        PRODUCT_NAME: Morph
+        MARKETING_VERSION: 1.0.0
+        CURRENT_PROJECT_VERSION: 3
+        SWIFT_VERSION: "5.0"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: 675A56FHGZ
+        ENABLE_HARDENED_RUNTIME: YES
+        ARCHS: "$(ARCHS_STANDARD)"
+    entitlements:
+      path: Morph/Morph.entitlements
+      properties:
+        com.apple.security.app-sandbox: true
+        # Files the user drops, opens or picks, and folders they allow for saving next to originals.
+        com.apple.security.files.user-selected.read-write: true
+        com.apple.security.files.bookmarks.app-scope: true
+    info:
+      path: Morph/Info.plist
+      properties:
+        CFBundleDisplayName: Morph
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        LSApplicationCategoryType: public.app-category.utilities
+        LSMinimumSystemVersion: "14.0"
+        # Lives in the menu bar, with no Dock icon.
+        LSUIElement: true
+        NSHumanReadableCopyright: Free file converter and toolbox
+        # Morph uses no encryption of its own, so App Store Connect needs no export compliance paperwork.
+        ITSAppUsesNonExemptEncryption: false
+        CFBundleDocumentTypes:
+          - CFBundleTypeName: Any file
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            LSItemContentTypes: [public.item]
+        # Finder → right-click → Services → "Open in Morph".
+        NSServices:
+          - NSMenuItem:
+              default: Open in Morph
+            NSMessage: openFiles
+            NSPortName: Morph
+            NSRequiredContext: {}
+            NSSendFileTypes: [public.item]

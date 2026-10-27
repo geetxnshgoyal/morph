@@ -206,7 +206,7 @@ struct SettingsView: View {
     @ViewBuilder private var general: some View {
         LoginItemRow()
         DragShortcutRow()
-        if AppLocation.isBundled, !AppLocation.isInstalled { MoveToApplicationsRow() }
+        if AppLocation.isBundled, !AppLocation.isInstalled, !Sandbox.isActive { MoveToApplicationsRow() }
         SetupRow(symbol: "paintpalette.fill", title: "Color",
                  detail: "\(Palette.current.name) for highlights and buttons. The app icon stays Teal Ink.") {
             PalettePicker(size: 20)
@@ -238,7 +238,10 @@ struct SettingsView: View {
                 Text(folder.path).font(Theme.font(11)).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
                     .padding(.leading, 30)
             }
-            Text("Originals are never overwritten.").font(Theme.font(11)).foregroundStyle(.tertiary)
+            Text(Sandbox.isActive && prefs.outputFolder == nil
+                 ? "Originals are never overwritten. Morph asks once before saving into a new folder."
+                 : "Originals are never overwritten.")
+                .font(Theme.font(11)).foregroundStyle(.tertiary)
         }
         .card()
 
@@ -262,15 +265,18 @@ struct SettingsView: View {
     }
 
     @ViewBuilder private var tools: some View {
-        FFmpegRow()
+        // The App Store build can't run Homebrew's ffmpeg and ships without the command-line tool.
+        if !Sandbox.isActive { FFmpegRow() }
         FinderServiceRow()
-        SetupRow(symbol: "terminal", title: "Command line",
-                 detail: "Use every action from Terminal with the morph command.") {
-            Button("Copy Setup") {
-                NSPasteboard.general.clearContents()
-                NSPasteboard.general.setString("sudo ln -sf '\(AppLocation.cli.path)' /usr/local/bin/morph", forType: .string)
+        if !Sandbox.isActive {
+            SetupRow(symbol: "terminal", title: "Command line",
+                     detail: "Use every action from Terminal with the morph command.") {
+                Button("Copy Setup") {
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString("sudo ln -sf '\(AppLocation.cli.path)' /usr/local/bin/morph", forType: .string)
+                }
+                .buttonStyle(SoftButtonStyle())
             }
-            .buttonStyle(SoftButtonStyle())
         }
     }
 

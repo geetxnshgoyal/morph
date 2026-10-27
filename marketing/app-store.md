@@ -104,3 +104,62 @@ Shortcuts: open the Shortcuts app, tap +, search for "Morph" and add Convert Ima
 3. In App Store Connect, create the app with the name, bundle ID and SKU above.
 4. In Xcode: Product → Archive, then Distribute App → App Store Connect → Upload.
 5. Fill in this page's fields, add the screenshots, pick the build and submit for review.
+
+## Mac (macOS 1.0.0)
+
+The Mac App Store build of the menu bar app, added as the macOS platform of the same app (same bundle ID, so it is one universal purchase). App information, privacy, pricing and URLs above are shared. Built from `mac/project.yml`; see [`mac/README.md`](../mac/README.md).
+
+**Promotional text (170):**
+
+Drag a file, tap a key, and a wheel of everything you can do with it opens under your cursor. Set a size limit once and Compress makes a JPG that fits.
+
+**Keywords (100):**
+
+converter,heic,jpg,pdf,compress,resize,svg,menu bar,photo,image,exif,metadata,ocr,qr,video,kb,size
+
+**Description (4000):**
+
+Morph lives in your menu bar and turns any file into the one you need, right where it is. Drop files on the menu bar icon, use Open With or right-click → Services → Open in Morph, or tap a key while you drag files anywhere, and a wheel of actions opens under your cursor. Only the actions that fit the file show up.
+
+Drag shortcuts
+While dragging files in Finder or any app, tap ⇧ for Convert, ⌘ for Tools, ⌃ for Recipes or ⌥ for Actions, then drop on the wheel. Tap another key to switch wheels, or Esc to close. Pick your own keys in Settings.
+
+Fit any upload limit
+Exam forms, job portals and government sites often want a photo under 200 KB, 100 KB or even 20 KB. Set a size limit once and Compress makes a JPG that fits, at the best quality that fits.
+
+Convert
+- Photos to JPG, PNG, HEIC, AVIF, TIFF, GIF or BMP, trace them to SVG, or combine several into one PDF
+- Video to MP4 or MOV, or pull out the soundtrack
+- Documents, subtitles and data files between common formats
+
+Compress and clean up
+- Shrink photos, videos and PDFs without a visible change. Morph checks every result against the original and tells you when a file is already as small as it can get
+- Remove location and camera details before you share
+- Blur faces and hide emails, phone and card numbers in screenshots
+- Read the text in an image, or what a QR code or barcode says
+- Merge PDFs, or zip files up
+
+Recipes and actions
+One-tap recipes like Web Image, Under 1 MB and Share-Safe Photo. The Actions wheel sends files with AirDrop, Messages or Mail, copies them or their paths, moves them, or opens Terminal there.
+
+Private by design
+Everything happens on your Mac. Nothing is uploaded, there's no account, and your originals are never changed. Results are saved next to the original (Morph asks once per folder) or in a folder you choose.
+
+**What's New:** First release on the Mac App Store.
+
+**Screenshots (2880 × 1800), in this order:**
+
+| # | File | Caption |
+| --- | --- | --- |
+| 1 | mac-1-convert.png | Drop a file. Pick what to make. |
+| 2 | mac-2-tools.png | Compress, clean up and read any file |
+| 3 | mac-3-result.png | Fit any upload limit, like 200 KB |
+| 4 | mac-4-recipes.png | One-tap recipes for everyday jobs |
+| 5 | mac-5-settings.png | Set a size limit once. Morph does the rest. |
+| 6 | mac-6-dark.png | Nothing is uploaded. Ever. |
+
+**Notes for App Review:**
+
+No account or sign-in is needed, and the app works offline. Morph is a menu bar app (no Dock icon): look for the hexagon icon at the top right of the screen.
+
+To try it: drag any photo onto the menu bar icon and a wheel of actions appears; click PNG. The first time Morph saves into a folder, macOS asks you to allow that folder (the app is sandboxed and saves results next to the original); click Allow and the PNG appears next to the photo. You can also hold a file mid-drag in Finder and tap Shift to open the Convert wheel under the cursor, then drop the file on it. To try the size limit, click the menu bar icon → Settings → Output, set Size limit to 200 KB, then use Tools → Compress on a photo.

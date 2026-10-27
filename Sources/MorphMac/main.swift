@@ -65,6 +65,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         }
 
         if !Preferences.shared.hasSeenWelcome { showWelcome() }
+        #if DEBUG
+        // `open -a Morph --args -settings output`, for screenshots.
+        let args = ProcessInfo.processInfo.arguments
+        if let i = args.firstIndex(of: "-settings") {
+            let tab = args.dropFirst(i + 1).first.flatMap { SettingsView.Tab(rawValue: $0.capitalized) } ?? .general
+            settingsWindow = makeWindow(title: "Morph Settings", content: SettingsView(onWelcome: { [weak self] in self?.showWelcome() }, tab: tab))
+            showSettings()
+        }
+        #endif
     }
 
     /// "Open With → Morph", dragging onto the Dock/app icon, and `open -a Morph file`.
@@ -189,8 +198,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let files = urls.map(\.standardizedFileURL)
         guard !files.isEmpty else { return }
         wheel?.close()
+        var group = group
+        #if DEBUG
+        // `open -a Morph file --args -group tool -hover tool.compress -run tool.compress`, for screenshots.
+        let args = ProcessInfo.processInfo.arguments
+        func arg(_ name: String) -> String? { args.firstIndex(of: name).flatMap { $0 + 1 < args.count ? args[$0 + 1] : nil } }
+        if let name = arg("-group") { group = Action.Group(rawValue: name) }
+        #endif
         wheel = WheelPanel(files: files, dropMode: dropMode, group: group)
         wheel?.present(at: NSEvent.mouseLocation)
+        #if DEBUG
+        if let model = wheel?.model {
+            if let id = arg("-hover") { model.hovered = id }
+            if let id = arg("-run"), let action = model.actions.first(where: { $0.id == id }) { model.run(action) }
+        }
+        #endif
     }
 }
 
@@ -276,7 +298,7 @@ struct ShelfView: View {
                 }
             }
 
-            if !tools.hasFFmpeg {
+            if !tools.hasFFmpeg, !Sandbox.isActive {
                 Button(action: onSettings) {
                     Label("Unlock MP3, WebM and more", systemImage: "sparkles")
                         .font(Theme.font(11, .medium)).foregroundStyle(Theme.brandText)

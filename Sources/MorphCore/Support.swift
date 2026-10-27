@@ -133,9 +133,16 @@ public enum Output {
     }
 }
 
+/// The App Sandbox (the Mac App Store build). Inside it Morph can only touch files and folders the user hands
+/// it, and can't run tools from Homebrew.
+public enum Sandbox {
+    public static let isActive = ProcessInfo.processInfo.environment["APP_SANDBOX_CONTAINER_ID"] != nil
+}
+
 public enum ExternalTool {
     public static func find(_ name: String) -> URL? {
         #if os(macOS)
+        guard !Sandbox.isActive else { return nil }
         for dir in ["/opt/homebrew/bin", "/usr/local/bin", "/usr/bin"] {
             let url = URL(fileURLWithPath: dir).appendingPathComponent(name)
             if FileManager.default.isExecutableFile(atPath: url.path) { return url }

@@ -262,13 +262,14 @@ final class WheelModel: ObservableObject {
             // Acts on the files themselves and may open its own window, so get out of the way first.
             dismiss()
             Task {
-                do { _ = try await action.run(files, prefs.options) } catch { FileActions.report(error) }
+                do { _ = try await action.run(files, Options()) } catch { FileActions.report(error) }
             }
             return
         }
+        guard let options = prefs.options(for: files) else { dismiss(); return }
         phase = .running(action, done: 0, total: files.count)
         Task {
-            let result = await Runner.run(action, inputs: files, options: prefs.options) { done, total in
+            let result = await Runner.run(action, inputs: files, options: options) { done, total in
                 Task { @MainActor in
                     if case .running = self.phase { self.phase = .running(action, done: done, total: total) }
                 }
