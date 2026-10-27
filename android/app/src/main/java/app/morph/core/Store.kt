@@ -65,8 +65,15 @@ object Publisher {
             put(MediaStore.Downloads.IS_PENDING, 1)
         }
         val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values) ?: throw MorphError("Couldn't save ${file.name}")
-        resolver.openOutputStream(uri)?.use { out -> file.inputStream().use { it.copyTo(out) } }
-        resolver.update(uri, ContentValues().apply { put(MediaStore.Downloads.IS_PENDING, 0) }, null, null)
+        try {
+            val stream = resolver.openOutputStream(uri) ?: throw MorphError("Couldn't save ${file.name}")
+            stream.use { out -> file.inputStream().use { it.copyTo(out) } }
+            resolver.update(uri, ContentValues().apply { put(MediaStore.Downloads.IS_PENDING, 0) }, null, null)
+        } catch (e: Exception) {
+            // Don't leave a half-written, hidden entry in Downloads; the result stays in cache for the error.
+            runCatching { resolver.delete(uri, null, null) }
+            throw e
+        }
         val size = file.length()
         file.delete()
         // MediaStore may have renamed it ("a (1).jpg") to avoid a clash.

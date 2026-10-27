@@ -101,9 +101,13 @@ final class Preferences: ObservableObject {
         if let outputFolder {
             try? FileManager.default.createDirectory(at: outputFolder, withIntermediateDirectories: true)
             options.outputDirectory = outputFolder
-        } else if Sandbox.isActive, let first = files.first {
-            guard let folder = FolderAccess.writable(first.deletingLastPathComponent()) else { return nil }
-            options.outputDirectory = folder
+        } else if Sandbox.isActive {
+            // Results go next to each original, so every folder the files come from needs a grant.
+            for parent in Set(files.map { $0.deletingLastPathComponent().standardizedFileURL }) {
+                guard let folder = FolderAccess.writable(parent) else { return nil }
+                // Picked a different folder in the panel: save everything there.
+                if folder.path != parent.path { options.outputDirectory = folder; break }
+            }
         }
         return options
     }

@@ -65,7 +65,11 @@ final class AppState: ObservableObject {
     /// Results go to Documents, which the Files app shows as "On My iPhone → Morph".
     nonisolated static let results: URL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
 
-    init() { reload() }
+    init() {
+        // Copies of files imported in earlier sessions; each job works on its own fresh copies.
+        try? FileManager.default.removeItem(at: Self.inboxRoot)
+        reload()
+    }
 
     func reload() {
         recent = Array(History.shared.entries.reversed().prefix(30))
@@ -79,7 +83,8 @@ final class AppState: ObservableObject {
             let copies = try urls.map { url -> URL in
                 let scoped = url.startAccessingSecurityScopedResource()
                 defer { if scoped { url.stopAccessingSecurityScopedResource() } }
-                let dest = inbox.appendingPathComponent(url.lastPathComponent)
+                // Two files can share a name ("scan.pdf" from two folders); the second becomes "scan 2.pdf".
+                let dest = Output.unique(in: inbox, base: url.deletingPathExtension().lastPathComponent, ext: url.pathExtension)
                 try fm.copyItem(at: url, to: dest)
                 // Files iOS dropped into Documents/Inbox for us shouldn't linger next to the results.
                 if url.path.hasPrefix(Self.results.appendingPathComponent("Inbox").path) { try? fm.removeItem(at: url) }
@@ -98,8 +103,10 @@ final class AppState: ObservableObject {
         batch = Batch(files: urls)
     }
 
+    nonisolated static var inboxRoot: URL { FileManager.default.temporaryDirectory.appendingPathComponent("Inbox") }
+
     nonisolated static func newInbox() throws -> URL {
-        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("Inbox/\(UUID().uuidString)")
+        let dir = inboxRoot.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         return dir
     }

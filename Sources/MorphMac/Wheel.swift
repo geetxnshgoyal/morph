@@ -70,7 +70,8 @@ final class WheelPanel: NSPanel {
         NSAnimationContext.runAnimationGroup { $0.duration = 0.12; animator().alphaValue = 1 }
 
         monitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
-            MainActor.assumeIsolated { self?.close() }
+            // The folder permission panel runs in another process; clicking it isn't clicking away.
+            MainActor.assumeIsolated { if !FolderAccess.isAsking { self?.close() } }
         }
     }
 
