@@ -44,14 +44,18 @@ public enum PDFOps {
         for url in urls {
             if VectorOps.isSVG(url) {
                 let svg = try VectorOps.document(url)
-                var page = CGRect(x: 0, y: 0, width: 595, height: 595 * svg.size.height / svg.size.width)
+                let svgWidth = max(svg.size.width, 1)
+                let svgHeight = max(svg.size.height, 1)
+                var page = CGRect(x: 0, y: 0, width: 595, height: 595 * svgHeight / svgWidth)
                 ctx.beginPDFPage([kCGPDFContextMediaBox: Data(bytes: &page, count: MemoryLayout<CGRect>.size)] as CFDictionary)
                 VectorOps.draw(svg, in: ctx, rect: page)
                 ctx.endPDFPage()
                 continue
             }
             let img = try ImageOps.load(url, maxPixel: options.maxPixel ?? 3000)
-            var page = CGRect(x: 0, y: 0, width: 595, height: 595 * CGFloat(img.height) / CGFloat(img.width))
+            let imgWidth = max(CGFloat(img.width), 1)
+            let imgHeight = max(CGFloat(img.height), 1)
+            var page = CGRect(x: 0, y: 0, width: 595, height: 595 * imgHeight / imgWidth)
             let pageInfo = [kCGPDFContextMediaBox: Data(bytes: &page, count: MemoryLayout<CGRect>.size)] as CFDictionary
             ctx.beginPDFPage(pageInfo)
             ctx.draw(img, in: page)
@@ -78,7 +82,8 @@ public enum PDFOps {
     public static func toImages(_ url: URL, format: ImageFormat = .png, options: Options) throws -> URL {
         guard let doc = CGPDFDocument(url as CFURL) else { throw MorphError("\(url.lastPathComponent) isn't a readable PDF") }
         let folder = try Output.folder(for: url, suffix: "images", options: options)
-        for i in 1...max(doc.numberOfPages, 1) {
+        guard doc.numberOfPages > 0 else { return folder }
+        for i in 1...doc.numberOfPages {
             guard let page = doc.page(at: i), let img = render(page, scale: 2) else { continue }
             try ImageOps.encode(img, as: format, quality: options.quality ?? 0.9)
                 .write(to: folder.appendingPathComponent(String(format: "page %03d.%@", i, format.rawValue)))

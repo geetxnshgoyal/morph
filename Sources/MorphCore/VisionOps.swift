@@ -112,7 +112,8 @@ public enum VisionOps {
                 // Average down to a coarse grid (irreversible), then scale back up with hard edges.
                 let crop = CGRect(x: r.minX, y: h - r.maxY, width: r.width, height: r.height)
                 let blocks = 8
-                guard let piece = img.cropping(to: crop),
+                guard r.width > 0, r.height > 0,
+                      let piece = img.cropping(to: crop),
                       let tiny = CGContext(data: nil, width: blocks, height: max(Int(CGFloat(blocks) * r.height / r.width), 1),
                                            bitsPerComponent: 8, bytesPerRow: 0, space: CGColorSpace(name: CGColorSpace.sRGB)!,
                                            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { continue }

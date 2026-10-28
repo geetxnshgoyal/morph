@@ -137,7 +137,11 @@ public enum MediaOps {
     public static func toGIF(_ url: URL, options: Options) async throws -> URL {
         let out = Output.url(for: url, ext: "gif", options: options)
         let asset = AVURLAsset(url: url)
-        let seconds = min(try await asset.load(.duration).seconds, 30)
+        let rawDuration = try await asset.load(.duration).seconds
+        guard !rawDuration.isNaN, !rawDuration.isInfinite, rawDuration > 0 else {
+            throw MorphError("Video has no duration or cannot be read")
+        }
+        let seconds = min(rawDuration, 30)
         let fps = 12.0
         let side = CGFloat(options.maxPixel ?? 480)
         let gen = AVAssetImageGenerator(asset: asset)
@@ -161,13 +165,18 @@ public enum MediaOps {
 
     public static func snapshots(_ url: URL, count: Int = 6, options: Options) async throws -> [URL] {
         let asset = AVURLAsset(url: url)
-        let seconds = try await asset.load(.duration).seconds
+        let rawDuration = try await asset.load(.duration).seconds
+        guard !rawDuration.isNaN, !rawDuration.isInfinite, rawDuration > 0 else {
+            throw MorphError("Video has no duration or cannot be read")
+        }
+        let seconds = rawDuration
         let folder = try Output.folder(for: url, suffix: "frames", options: options)
         let gen = AVAssetImageGenerator(asset: asset)
         gen.appliesPreferredTrackTransform = true
+        let safeCount = max(count, 1)
         var outputs: [URL] = []
-        for i in 0..<count {
-            let t = seconds * (Double(i) + 0.5) / Double(count)
+        for i in 0..<safeCount {
+            let t = seconds * (Double(i) + 0.5) / Double(safeCount)
             let (img, _) = try await gen.image(at: CMTime(seconds: t, preferredTimescale: 600))
             let out = folder.appendingPathComponent(String(format: "frame %02d (%.1fs).jpg", i + 1, t))
             try ImageOps.encode(img, as: .jpg, quality: 0.9).write(to: out)

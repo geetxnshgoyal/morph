@@ -88,7 +88,12 @@ struct HomeView: View {
                 PhotosPicker(selection: $photoItems, matching: .any(of: [.images, .videos]), photoLibrary: .shared()) {
                     heroButton("Photos", symbol: loadingPhotos ? "hourglass" : "photo.on.rectangle.angled")
                 }
-                Button { showFiles = true } label: { heroButton("Files", symbol: "folder.fill") }
+                .buttonStyle(SquishyButtonStyle())
+
+                Button { showFiles = true } label: {
+                    heroButton("Files", symbol: "folder.fill")
+                }
+                .buttonStyle(SquishyButtonStyle())
             }
         }
         .foregroundStyle(Theme.onBrand)
@@ -138,18 +143,24 @@ struct HomeView: View {
 
     // MARK: Photos
 
+    // The system picker runs outside Morph and hands over only what the user picks, so no library permission is
+    // needed (or asked for).
+
     private func loadPhotos(_ items: [PhotosPickerItem]) {
         guard !items.isEmpty else { return }
         loadingPhotos = true
-        Task {
+        Task { @MainActor in
             var urls: [URL] = []
             for item in items {
                 if let media = try? await item.loadTransferable(type: PickedMedia.self) { urls.append(media.url) }
             }
             loadingPhotos = false
             photoItems = []
-            if urls.isEmpty { state.importError = "Those photos couldn't be loaded. If they're in iCloud, try again once they've downloaded." }
-            state.openCopies(urls)
+            if urls.isEmpty {
+                state.importError = "Those photos couldn't be loaded. If they're in iCloud, try again once they've downloaded."
+            } else {
+                state.openCopies(urls)
+            }
         }
     }
 }

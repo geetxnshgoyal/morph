@@ -15,16 +15,24 @@ public enum DocOps {
         #endif
     }()
 
+    public static func readString(from url: URL) throws -> String {
+        if let text = try? String(contentsOf: url, encoding: .utf8) { return text }
+        if let text = try? String(contentsOf: url, encoding: .windowsCP1252) { return text }
+        if let text = try? String(contentsOf: url, encoding: .isoLatin1) { return text }
+        if let text = try? String(contentsOf: url, encoding: .utf16) { return text }
+        return try String(contentsOf: url)
+    }
+
     public static func read(_ url: URL) throws -> NSAttributedString {
         switch url.pathExtension.lowercased() {
         case "pdf":
             return try PDFOps.attributedText(of: url)
         case "md", "markdown":
-            let text = try String(contentsOf: url, encoding: .utf8)
+            let text = try readString(from: url)
             let attr = try AttributedString(markdown: text, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace))
             return NSAttributedString(attr)
         case "txt", "text", "csv", "tsv", "json", "srt", "vtt":
-            return NSAttributedString(string: try String(contentsOf: url, encoding: .utf8))
+            return NSAttributedString(string: try readString(from: url))
         default:
             return try NSAttributedString(url: url, options: [:], documentAttributes: nil)
         }
@@ -78,7 +86,7 @@ public enum DocOps {
     // MARK: Subtitles
 
     public static func convertSubtitle(_ url: URL, to ext: String, options: Options) throws -> URL {
-        let text = try String(contentsOf: url, encoding: .utf8).replacingOccurrences(of: "\r\n", with: "\n")
+        let text = try readString(from: url).replacingOccurrences(of: "\r\n", with: "\n").replacingOccurrences(of: "\r", with: "\n")
         let out = Output.url(for: url, ext: ext, options: options)
         let timing = try NSRegularExpression(pattern: #"(\d{2}:\d{2}:\d{2})[.,](\d{3})"#)
         func retime(_ line: String, sep: String) -> String {
@@ -107,9 +115,10 @@ public enum DocOps {
     // MARK: Data tables
 
     static func parseDelimited(_ text: String, separator: Character) -> [[String]] {
+        let normalized = text.replacingOccurrences(of: "\r\n", with: "\n").replacingOccurrences(of: "\r", with: "\n")
         var rows: [[String]] = [], row: [String] = [], field = ""
         var quoted = false
-        var chars = text.makeIterator()
+        var chars = normalized.makeIterator()
         var pending: Character? = nil
         while let c = pending ?? chars.next() {
             pending = nil
@@ -123,9 +132,9 @@ public enum DocOps {
                 quoted = true
             } else if c == separator {
                 row.append(field); field = ""
-            } else if c == "\n" || c == "\r\n" {
+            } else if c == "\n" {
                 row.append(field); rows.append(row); row = []; field = ""
-            } else if c != "\r" {
+            } else {
                 field.append(c)
             }
         }
@@ -144,7 +153,7 @@ public enum DocOps {
 
     public static func convertData(_ url: URL, to ext: String, options: Options) throws -> URL {
         let input = url.pathExtension.lowercased()
-        let text = try String(contentsOf: url, encoding: .utf8)
+        let text = try readString(from: url)
         var rows: [[String]]
         if input == "json" {
             guard let objects = try JSONSerialization.jsonObject(with: Data(text.utf8)) as? [[String: Any]] else {
@@ -161,7 +170,7 @@ public enum DocOps {
         case "json":
             guard let headers = rows.first else { throw MorphError("Empty table") }
             let objects = rows.dropFirst().map { r in
-                Dictionary(uniqueKeysWithValues: headers.enumerated().map { ($1, $0 < r.count ? r[$0] : "") })
+                Dictionary(headers.enumerated().map { ($1, $0 < r.count ? r[$0] : "") }, uniquingKeysWith: { first, _ in first })
             }
             try JSONSerialization.data(withJSONObject: objects, options: [.prettyPrinted, .sortedKeys]).write(to: out)
         case "tsv":

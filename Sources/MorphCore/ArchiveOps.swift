@@ -13,7 +13,10 @@ public enum ArchiveOps {
             let tmp = try Output.temporaryDirectory()
             staging = tmp.appendingPathComponent(base)
             try fm.createDirectory(at: staging, withIntermediateDirectories: true)
-            for url in urls { try fm.copyItem(at: url, to: staging.appendingPathComponent(url.lastPathComponent)) }
+            for url in urls {
+                let dest = Output.unique(in: staging, base: url.deletingPathExtension().lastPathComponent, ext: url.pathExtension)
+                try fm.copyItem(at: url, to: dest)
+            }
             cleanup = tmp
         }
         defer { if let cleanup { try? fm.removeItem(at: cleanup) } }
