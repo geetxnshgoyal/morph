@@ -21,6 +21,8 @@ public sealed class Preferences : INotifyPropertyChanged
         public bool RevealWhenDone { get; set; }
         public CompressionLevel Compression { get; set; } = CompressionLevel.Balanced;
         public long SizeLimit { get; set; }
+        public string? PhotoSize { get; set; }
+        public string? PhotoCaption { get; set; }
         public string? OutputFolder { get; set; }
         public string Palette { get; set; } = "teal";
         public Dictionary<ActionGroup, DragKeys>? Keys { get; set; }
@@ -73,6 +75,10 @@ public sealed class Preferences : INotifyPropertyChanged
     public CompressionLevel Compression { get => stored.Compression; set { stored.Compression = value; Save(); } }
     /// Bytes Compress must fit under, for upload forms; 0 is no limit.
     public long SizeLimit { get => stored.SizeLimit; set { stored.SizeLimit = value; Save(); } }
+    /// Exact size Resize makes for forms; null keeps Resize's usual fit to 2048 px.
+    public PixelSize? PhotoSize { get => PixelSize.Parse(stored.PhotoSize); set { stored.PhotoSize = value?.Key; Save(); } }
+    /// Printed with the date under the photo at that size; empty prints nothing.
+    public string PhotoCaption { get => stored.PhotoCaption ?? ""; set { stored.PhotoCaption = value; Save(); } }
     /// Null saves results next to the original.
     public string? OutputFolder { get => stored.OutputFolder; set { stored.OutputFolder = value; Save(); } }
 
@@ -105,7 +111,11 @@ public sealed class Preferences : INotifyPropertyChanged
                 try { Directory.CreateDirectory(chosen); folder = chosen; }
                 catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
             }
-            return new Options { Compression = Compression, TargetBytes = SizeLimit > 0 ? SizeLimit : null, OutputDirectory = folder };
+            return new Options
+            {
+                Compression = Compression, TargetBytes = SizeLimit > 0 ? SizeLimit : null, OutputDirectory = folder,
+                ExactSize = PhotoSize, Caption = PhotoCaption.Trim() is { Length: > 0 } caption ? caption : null,
+            };
         }
     }
 }

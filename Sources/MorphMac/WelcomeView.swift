@@ -113,6 +113,7 @@ struct WelcomeView: View {
             Text("You can change all of this later in Settings.").font(Theme.font(13)).foregroundStyle(.secondary)
                 .padding(.bottom, 4)
             if AppLocation.isBundled, !AppLocation.isInstalled, !Sandbox.isActive { MoveToApplicationsRow() }
+            if Sandbox.isActive { SaveNextToOriginalsRow() }
             LoginItemRow()
             DragShortcutRow()
             FinderServiceRow()

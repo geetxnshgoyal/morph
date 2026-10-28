@@ -8,13 +8,13 @@ Version 1.0.0 is in internal testing and App Store review, and comes out around 
 
 Morph notices the sandbox at run time (`Sandbox.isActive` in MorphCore), so one set of sources serves both builds:
 
-- **Saving next to the original:** a dropped file can be read but its folder can't be written to. The first save into a folder asks the user to allow it in an open panel, and the grant is kept as a security-scoped bookmark for that folder and everything inside it (`FolderAccess.swift`). Folders Morph can already write to aren't asked about.
+- **Saving next to the original:** a dropped file can be read but its folder can't be written to. Rather than stop the wheel to ask, results go to Downloads (the `files.downloads.read-write` entitlement) until the user allows saving next to originals, once, from Settings → Output or the welcome guide. Picking the home folder there covers every folder in it; the grant is kept as a security-scoped bookmark (`FolderAccess.swift`) and restored at launch, so Undo keeps working.
 - **A chosen output folder** is stored as a bookmark too, so it stays writable after relaunch.
 - **Move To…** asks the same way, since moving takes the file out of its folder.
 - **Homebrew tools** (ffmpeg for MP3, WebM, FLAC and more; cwebp for WebP) can't run, so those formats don't appear, and the Settings rows that set them up are hidden.
 - **The command-line tool** and **Move to Applications** are left out.
 
-Entitlements: App Sandbox, read/write access to user-selected files, and app-scoped bookmarks.
+Entitlements: App Sandbox, read/write access to user-selected files and to Downloads, and app-scoped bookmarks.
 
 ## Build and upload
 

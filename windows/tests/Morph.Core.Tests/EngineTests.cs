@@ -101,6 +101,23 @@ public class ImageTests : Scratch
     }
 
     [Fact]
+    public void ResizesToAnExactSizeForForms()
+    {
+        var photo = Picture("photo.png", 900, 1200);
+        var square = ImageOps.Resize(photo, new Options { ExactSize = new PixelSize(600, 600) });
+        Assert.Equal(PathOf("photo 600x600.jpg"), square);
+        var info = new MagickImageInfo(square);
+        Assert.Equal((600u, 600u), (info.Width, info.Height));
+        // With a name strip and a size limit it stays exactly the size asked for, under the limit.
+        var exam = ImageOps.Resize(photo, new Options { ExactSize = new PixelSize(413, 531), Caption = "Asha Rao", TargetBytes = 50_000 });
+        info = new MagickImageInfo(exam);
+        Assert.Equal((413u, 531u), (info.Width, info.Height));
+        Assert.True(new FileInfo(exam).Length <= 50_000);
+        Assert.Equal(new PixelSize(600, 600), PixelSize.Parse("600 x 600"));
+        Assert.Null(PixelSize.Parse("big"));
+    }
+
+    [Fact]
     public void CompressesUnderATarget()
     {
         var big = Picture("big.jpg", 2400, 1800, edit: i => i.AddNoise(NoiseType.Gaussian));

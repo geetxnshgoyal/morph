@@ -112,6 +112,31 @@ public static class Bytes
 
 public enum RedactStyle { Pixelate, Solid }
 
+/// An exact width × height in pixels, for forms that ask for one ("600 × 600", "413 × 531").
+public sealed record PixelSize(int Width, int Height)
+{
+    public string Label => $"{Width} × {Height}";
+    public string Key => $"{Width}x{Height}";
+
+    /// Parses "600x600", "600 × 600" or "600*600".
+    public static PixelSize? Parse(string? text)
+    {
+        var parts = (text ?? "").ToLowerInvariant().Split(['x', '×', '*', ' ', ','], StringSplitOptions.RemoveEmptyEntries);
+        return parts.Length == 2 && int.TryParse(parts[0], out var w) && int.TryParse(parts[1], out var h)
+            && w is >= 16 and <= 8000 && h is >= 16 and <= 8000 ? new PixelSize(w, h) : null;
+    }
+
+    /// Sizes people are asked for most, grouped for a menu. Millimetre sizes are at 300 dpi.
+    public static readonly (string Group, (string Name, PixelSize Size)[] Items)[] Presets =
+    [
+        ("Passport and visa", [("US or India, 2 × 2 in", new(600, 600)), ("Schengen, UK, 35 × 45 mm", new(413, 531)), ("China visa, 33 × 48 mm", new(354, 472))]),
+        ("Exams", [("Exam photo, 3.5 × 4.5 cm", new(413, 531)), ("Bank exams photo", new(200, 230))]),
+        ("Signature", [("Signature, small", new(140, 60)), ("Signature, large", new(280, 120))]),
+        ("Social and web", [("Square post", new(1080, 1080)), ("Portrait post", new(1080, 1350)), ("Story", new(1080, 1920)),
+                            ("Full HD", new(1920, 1080)), ("HD", new(1280, 720)), ("Profile picture", new(400, 400))]),
+    ];
+}
+
 /// Knobs shared by every action. Unset values fall back to sensible per-action defaults.
 public sealed record Options
 {
@@ -124,6 +149,10 @@ public sealed record Options
     public string? OutputDirectory { get; init; }
     /// Palette size when tracing an image into an SVG; null picks one from `Compression`.
     public int? Colors { get; init; }
+    /// Exact size for Resize, cropped to fill: what passport, visa and exam forms ask for.
+    public PixelSize? ExactSize { get; init; }
+    /// Printed with the date the photo was taken in a white strip under it, for exam forms.
+    public string? Caption { get; init; }
 
     /// Parses "500KB", "2.5mb", "1g", or plain bytes.
     public static long? ParseSize(string text)

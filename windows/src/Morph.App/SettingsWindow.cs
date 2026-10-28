@@ -92,7 +92,7 @@ public sealed class SettingsWindow : Window
             Choice(folder is null ? "In a folder I choose…" : $"In {System.IO.Path.GetFileName(System.IO.Path.TrimEndingDirectorySeparator(folder))}", folder is not null, ChooseFolder),
             folder is null ? null : Ui.Text(folder, "Caption").Margin(26, 2, 0, 0),
             Ui.Text("Originals are never overwritten.", "Caption").Margin(0, 10, 0, 0));
-        return Ui.Stack(10, Ui.Card(save), Rows.Compression(), Rows.SizeLimit(this, SizeLimit.Detail(prefs.SizeLimit)));
+        return Ui.Stack(10, Ui.Card(save), Rows.Compression(), Rows.SizeLimit(this, SizeLimit.Detail(prefs.SizeLimit)), Rows.PhotoSize(this));
     }
 
     void ChooseFolder()

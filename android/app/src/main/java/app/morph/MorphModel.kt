@@ -13,6 +13,7 @@ import app.morph.core.Compression
 import app.morph.core.FileKind
 import app.morph.core.Group
 import app.morph.core.History
+import app.morph.core.PixelSize
 import app.morph.core.HistoryEntry
 import app.morph.core.Inbox
 import app.morph.core.Library
@@ -60,6 +61,10 @@ class MorphModel(app: Application) : AndroidViewModel(app) {
         private set
     var sizeLimit by mutableStateOf(prefs.sizeLimit)
         private set
+    var photoSize by mutableStateOf(PixelSize.parse(prefs.photoSize))
+        private set
+    var photoCaption by mutableStateOf(prefs.photoCaption)
+        private set
     var palette by mutableStateOf(prefs.palette)
         private set
     var recent by mutableStateOf<List<HistoryEntry>>(emptyList())
@@ -89,6 +94,8 @@ class MorphModel(app: Application) : AndroidViewModel(app) {
     fun updateHaptics(on: Boolean) { haptics = on; prefs.haptics = on }
     fun updateCompression(level: Compression) { compression = level; prefs.compression = level }
     fun updateSizeLimit(bytes: Int) { sizeLimit = bytes; prefs.sizeLimit = bytes }
+    fun updatePhotoSize(size: PixelSize?) { photoSize = size; prefs.photoSize = size?.key.orEmpty() }
+    fun updatePhotoCaption(text: String) { photoCaption = text; prefs.photoCaption = text }
     fun updatePalette(choice: Palette) { palette = choice; prefs.palette = choice }
 
     /** Shared, picked or "Open with" content: copy it in, then show the actions sheet. */
@@ -120,7 +127,8 @@ class MorphModel(app: Application) : AndroidViewModel(app) {
         current.phase = Phase.Running(action, 0, current.files.size)
         viewModelScope.launch {
             val work = File(app.cacheDir, "work/${UUID.randomUUID()}")
-            val result = Runner.run(app, action, current.files, Options(compression, work, sizeLimit.takeIf { it > 0 })) { done, total ->
+            val result = Runner.run(app, action, current.files, Options(compression, work, sizeLimit.takeIf { it > 0 },
+                exactSize = photoSize, caption = photoCaption.takeIf { it.isNotBlank() })) { done, total ->
                 viewModelScope.launch { if (current.phase is Phase.Running) current.phase = Phase.Running(action, done, total) }
             }
             val failures = result.failures.toMutableList()

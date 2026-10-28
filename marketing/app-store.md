@@ -143,7 +143,10 @@ Recipes and actions
 One-tap recipes like Web Image, Under 1 MB and Share-Safe Photo. The Actions wheel sends files with AirDrop, Messages or Mail, copies them or their paths, moves them, or opens Terminal there.
 
 Private by design
-Everything happens on your Mac. Nothing is uploaded, there's no account, and your originals are never changed. Results are saved next to the original (Morph asks once per folder) or in a folder you choose.
+Everything happens on your Mac. Nothing is uploaded, there's no account, and your originals are never changed. Results are saved to Downloads, next to the original once you allow it in Settings, or in a folder you choose.
+
+Form-ready photos
+Set a photo size (passport and visa 600 × 600 or 35 × 45 mm, exam photos, signatures, social posts, or any size) and Resize crops to exactly that size, under your KB limit, with your name and the date printed below when an exam asks for it.
 
 **What's New:** First release on the Mac App Store.
 
@@ -162,4 +165,4 @@ Everything happens on your Mac. Nothing is uploaded, there's no account, and you
 
 No account or sign-in is needed, and the app works offline. Morph is a menu bar app (no Dock icon): look for the hexagon icon at the top right of the screen.
 
-To try it: drag any photo onto the menu bar icon and a wheel of actions appears; click PNG. The first time Morph saves into a folder, macOS asks you to allow that folder (the app is sandboxed and saves results next to the original); click Allow and the PNG appears next to the photo. You can also hold a file mid-drag in Finder and tap Shift to open the Convert wheel under the cursor, then drop the file on it. To try the size limit, click the menu bar icon → Settings → Output, set Size limit to 200 KB, then use Tools → Compress on a photo.
+To try it: drag any photo onto the menu bar icon and a wheel of actions appears; click PNG. The app is sandboxed, so the PNG is saved to Downloads; to save next to originals instead, open Settings → Output and click Allow… once. You can also hold a file mid-drag in Finder and tap Shift to open the Convert wheel under the cursor, then drop the file on it. To try the size limit, click the menu bar icon → Settings → Output, set Size limit to 200 KB, then use Tools → Compress on a photo.

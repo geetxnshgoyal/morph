@@ -173,6 +173,16 @@ class Prefs(context: Context) {
         get() = runCatching { Compression.valueOf(prefs.getString("compression", null) ?: "") }.getOrDefault(Compression.BALANCED)
         set(value) = prefs.edit().putString("compression", value.name).apply()
 
+    /** Exact size Resize makes for forms, as "600x600"; empty keeps the usual fit. */
+    var photoSize: String
+        get() = prefs.getString("photoSize", "") ?: ""
+        set(value) = prefs.edit().putString("photoSize", value).apply()
+
+    /** Printed with the date under the photo at that size; empty prints nothing. */
+    var photoCaption: String
+        get() = prefs.getString("photoCaption", "") ?: ""
+        set(value) = prefs.edit().putString("photoCaption", value).apply()
+
     /** Bytes Compress must fit under; 0 is no limit. */
     var sizeLimit: Int
         get() = prefs.getInt("sizeLimit", 0)

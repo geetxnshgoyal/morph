@@ -7,6 +7,8 @@ struct SettingsView: View {
     @AppStorage("haptics") private var haptics = true
     @AppStorage("hasSeenWelcome") private var hasSeenWelcome = true
     @AppStorage(SizeLimit.key) private var sizeLimit = 0
+    @AppStorage("photoSize") private var photoSize = ""
+    @AppStorage("photoCaption") private var photoCaption = ""
 
     var body: some View {
         PaletteScope {
@@ -34,6 +36,22 @@ struct SettingsView: View {
                         }
                         Text(SizeLimit.detail(sizeLimit)).font(Theme.font(14)).foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
+                        Divider().padding(.vertical, 4)
+                        HStack {
+                            Text("Photo size").font(Theme.font(17, .semibold))
+                            Spacer()
+                            PhotoSizeMenu(stored: $photoSize)
+                        }
+                        Text(PixelSize(photoSize).map { "Resize makes photos exactly \($0.label) as a JPG, cropped to fill, and under your size limit if one is set. For passport, visa and exam forms." }
+                             ?? "Pick the exact size a form asks for, like 600 × 600, and Resize makes it.")
+                            .font(Theme.font(14)).foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                        if PixelSize(photoSize) != nil {
+                            TextField("Name to print below the photo (optional)", text: $photoCaption)
+                                .textFieldStyle(.roundedBorder).font(Theme.font(15))
+                            Text("Some exam forms want the name and the date the photo was taken under it.")
+                                .font(Theme.font(13)).foregroundStyle(.tertiary)
+                        }
                     }
                     .card()
 

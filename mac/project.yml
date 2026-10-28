@@ -23,7 +23,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: app.morph.Morph
         PRODUCT_NAME: Morph
         MARKETING_VERSION: 1.0.0
-        CURRENT_PROJECT_VERSION: 3
+        CURRENT_PROJECT_VERSION: 4
         SWIFT_VERSION: "5.0"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         CODE_SIGN_STYLE: Automatic
@@ -37,6 +37,8 @@ targets:
         # Files the user drops, opens or picks, and folders they allow for saving next to originals.
         com.apple.security.files.user-selected.read-write: true
         com.apple.security.files.bookmarks.app-scope: true
+        # Results go to Downloads until the user allows saving next to originals.
+        com.apple.security.files.downloads.read-write: true
     info:
       path: Morph/Info.plist
       properties:

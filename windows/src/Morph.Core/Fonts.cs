@@ -10,6 +10,9 @@ static class Fonts
 
     static int installed;
 
+    /// The sans font file (Segoe UI on Windows), for drawing text into images.
+    public static string? SansFile(bool bold) => Resolver.File("sans", bold ? 1 : 0);
+
     public static void Install()
     {
         if (Interlocked.Exchange(ref installed, 1) == 0 && GlobalFontSettings.FontResolver is null)
@@ -39,7 +42,7 @@ static class Fonts
             ],
         };
 
-        static string? File(string family, int style) => candidates[family][style].FirstOrDefault(System.IO.File.Exists);
+        internal static string? File(string family, int style) => candidates[family][style].FirstOrDefault(System.IO.File.Exists);
 
         public FontResolverInfo? ResolveTypeface(string familyName, bool bold, bool italic)
         {

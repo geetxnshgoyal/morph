@@ -7,10 +7,13 @@
 - **Image to SVG.** The new SVG action traces a PNG, JPG or any other image into real vector shapes: a small palette, specks cleaned up, outlines smoothed into curves with sharp corners kept. Logos, icons and screenshots come out clean and usually smaller than the PNG. Compression level sets the detail (light keeps more colors and finer edges, strong makes the smallest files); the CLI's `--colors` picks the palette size.
 - Nothing goes online: images an SVG links to on the web are skipped.
 - **SVG and PDF come first** on the Convert wheel, right after the common photo formats, so they share its first page.
+- **Exact photo size for forms.** Settings → Photo size makes Resize produce exactly the size a form asks for: passport and visa (600 × 600, 35 × 45 mm, China visa), exams (3.5 × 4.5 cm, bank exams 200 × 230), signatures (140 × 60, 280 × 120), social and web sizes, or any width × height. The photo is cropped to fill, keeping the face area, saved as a JPG without location data, and fitted under the size limit when one is set. Optionally the name and the date the photo was taken are printed in a strip under it, for exam forms. The CLI has `--size 600x600` and `--caption "Name"`.
+- Text, CSV and subtitle files in older encodings (Windows-1252, Latin-1, UTF-16) open, CSVs with old Mac line endings parse, and duplicate column names no longer stop a JSON export. Zip copes with two files of the same name, and empty videos and PDFs give a clear error.
 
 ### Mac
-- **Mac App Store version.** The menu bar app, sandboxed: the first time it saves next to your files in a folder, macOS asks you to allow that folder, once. Homebrew extras (MP3, WebM, FLAC; WebP) and the command-line tool stay in the download from the website.
-- Results for files from several folders go next to each original, Undo works after a relaunch, and clicking the folder prompt no longer closes the wheel.
+- **Mac App Store version.** The menu bar app, sandboxed. Results go to Downloads until you allow saving next to the originals, once, in Settings → Output or the welcome guide; the wheel never stops to ask. Homebrew extras (MP3, WebM, FLAC; WebP) and the command-line tool stay in the download from the website.
+- The download from the website is signed with a Developer ID and notarized by Apple, so it opens without a warning.
+- Undo works after a relaunch in the App Store version.
 
 ### iPhone and iPad
 - Opening two files with the same name works (the second becomes "name 2"), and copies of imported files are cleared at launch.

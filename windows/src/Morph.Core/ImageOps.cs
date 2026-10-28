@@ -1,6 +1,7 @@
 using System.Buffers.Binary;
 using System.Security.Cryptography;
 using ImageMagick;
+using ImageMagick.Drawing;
 
 namespace Morph;
 
@@ -109,6 +110,7 @@ public static class ImageOps
 
     public static string Resize(string path, Options options)
     {
+        if (options.ExactSize is { } size) return ResizeExactly(path, size, options);
         var format = OutputFormat(path);
         using var image = Load(path, options.MaxPixel ?? 2048);
         // Name by the size actually written: smaller images are never upscaled.
@@ -116,6 +118,71 @@ public static class ImageOps
         Write(image, format, options.Quality ?? 0.9, output);
         return output;
     }
+
+    /// Exactly `size`, cropped to fill, as a JPG with no metadata: what passport, visa and exam forms ask for.
+    /// With a caption, the name and the date the photo was taken go in a white strip at the bottom, inside the size.
+    /// With a size limit, the JPG is fitted under it at that size.
+    static string ResizeExactly(string path, PixelSize size, Options options)
+    {
+        // Decode big enough that cropping never has to stretch the photo.
+        using var photo = Load(path, Math.Max(size.Width, size.Height) * 3);
+        var taken = CaptureDate(photo) ?? DateTime.Now;
+        var caption = options.Caption?.Trim() is { Length: > 0 } text ? text : null;
+        uint w = (uint)size.Width, h = (uint)size.Height;
+        var strip = caption is null ? 0u : (uint)Math.Max(Math.Round(h * 0.16), 18);
+        var area = h - strip;
+        // Cover the photo area, then crop: centred across, a bit above centre down (where faces are).
+        photo.Resize(new MagickGeometry(w, area) { FillArea = true });
+        photo.Crop(new MagickGeometry((int)(photo.Width - w) / 2, (int)Math.Round((photo.Height - area) * 0.3), w, area));
+        photo.ResetPage();
+        using var image = new MagickImage(MagickColors.White, w, h);
+        image.Composite(photo, 0, 0, CompositeOperator.Over);
+        if (caption is not null) DrawLines(image, [caption, taken.ToString("dd/MM/yyyy", System.Globalization.CultureInfo.InvariantCulture)], strip);
+        image.Strip();
+        var output = Output.For(path, ImageFormat.Jpg.Extension(), options, size.Key);
+        if (options.TargetBytes is not long target)
+        {
+            Write(image, ImageFormat.Jpg, options.Quality ?? 0.92, output);
+            return output;
+        }
+        // The size is fixed, so only quality can give: binary-search the best JPG that fits.
+        double lo = 0.05, hi = 0.95;
+        byte[]? best = null;
+        for (var i = 0; i < 8; i++)
+        {
+            var mid = (lo + hi) / 2;
+            var data = Encode(image, ImageFormat.Jpg, mid);
+            if (data.Length <= target) { best = data; lo = mid; } else hi = mid;
+        }
+        if (best is null) throw new MorphException($"{size.Label} can't get under {SizeLimit.Label(target)}; pick a larger size limit");
+        File.WriteAllBytes(output, best);
+        return output;
+    }
+
+    /// Centred lines in the strip at the bottom (the first in bold), shrunk to fit the width.
+    static void DrawLines(MagickImage image, string[] lines, uint strip)
+    {
+        double w = image.Width, h = image.Height;
+        var size = strip * 0.36;
+        // Roughly half an em per character is enough to keep long names inside the photo's width.
+        var widest = lines.Max(l => l.Length) * 0.55 * size;
+        if (widest > w * 0.92) size *= w * 0.92 / widest;
+        var lineHeight = size * 1.15;
+        var y = h - strip / 2.0 - lineHeight * (lines.Length - 1) / 2 + size * 0.35;
+        for (var i = 0; i < lines.Length; i++)
+        {
+            var drawing = new Drawables().FontPointSize(size).FillColor(MagickColors.Black).TextAlignment(TextAlignment.Center);
+            if (Fonts.SansFile(bold: i == 0) is { } font) drawing.Font(font);
+            drawing.Text(w / 2, y, lines[i]).Draw(image);
+            y += lineHeight;
+        }
+    }
+
+    /// When the photo was taken, from its EXIF data.
+    static DateTime? CaptureDate(MagickImage image) =>
+        image.GetExifProfile()?.GetValue(ExifTag.DateTimeOriginal)?.Value is { } text
+        && DateTime.TryParseExact(text, "yyyy:MM:dd HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture,
+               System.Globalization.DateTimeStyles.None, out var date) ? date : null;
 
     /// Makes the file smaller without a visible change: re-encodes at a range of qualities, compares each with
     /// the original and keeps the smallest that still looks the same at the chosen compression level. Throws

@@ -175,10 +175,18 @@ enum Prefs {
     /// Bytes Compress must fit under, for upload forms; 0 is no limit.
     static var sizeLimit: Int { UserDefaults.standard.integer(forKey: SizeLimit.key) }
 
+    /// Exact size Resize makes for forms ("600x600"); empty keeps the usual fit.
+    static var photoSize: PixelSize? { PixelSize(UserDefaults.standard.string(forKey: "photoSize") ?? "") }
+
+    /// Printed with the date under the photo at that size; empty prints nothing.
+    static var photoCaption: String { UserDefaults.standard.string(forKey: "photoCaption") ?? "" }
+
     static var options: Options {
         var options = Options()
         options.compression = compression
         if sizeLimit > 0 { options.targetBytes = sizeLimit }
+        options.exactSize = photoSize
+        if !photoCaption.isEmpty { options.caption = photoCaption }
         options.outputDirectory = AppState.results
         return options
     }

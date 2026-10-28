@@ -9,6 +9,9 @@ import android.graphics.Color
 import android.graphics.ImageDecoder
 import android.graphics.Paint
 import android.graphics.Rect
+import android.graphics.RectF
+import android.graphics.Typeface
+import android.media.ExifInterface
 import android.graphics.pdf.PdfDocument
 import android.graphics.pdf.PdfRenderer
 import android.media.MediaMetadataRetriever
@@ -70,9 +73,52 @@ enum class Compression(val label: String, val detail: String, val quality: Int, 
 /**
  * Knobs shared by every action. Results are written under [outDir], then published to Downloads/Morph.
  * [targetBytes] makes Compress fit under a size, for upload forms. [colors] is the palette size when tracing an
- * image into an SVG; unset picks one from [compression].
+ * image into an SVG; unset picks one from [compression]. [exactSize] makes Resize crop to exactly that size for
+ * passport, visa and exam forms, with [caption] and the date printed under the photo when set.
  */
-class Options(val compression: Compression, val outDir: File, val targetBytes: Int? = null, val colors: Int? = null)
+class Options(
+    val compression: Compression, val outDir: File, val targetBytes: Int? = null, val colors: Int? = null,
+    val exactSize: PixelSize? = null, val caption: String? = null,
+)
+
+/** An exact width × height in pixels, for forms that ask for one ("600 × 600", "413 × 531"). */
+data class PixelSize(val width: Int, val height: Int) {
+    val label get() = "$width × $height"
+    val key get() = "${width}x$height"
+
+    companion object {
+        /** Parses "600x600", "600 × 600" or "600*600". */
+        fun parse(text: String): PixelSize? {
+            val parts = text.lowercase().split('x', '×', '*', ' ', ',').mapNotNull { it.trim().toIntOrNull() }
+            return if (parts.size == 2 && parts.all { it in 16..8000 }) PixelSize(parts[0], parts[1]) else null
+        }
+
+        /** Sizes people are asked for most, grouped for a menu. Millimetre sizes are at 300 dpi. */
+        val presets = listOf(
+            "Passport and visa" to listOf(
+                "US or India, 2 × 2 in" to PixelSize(600, 600),
+                "Schengen, UK, 35 × 45 mm" to PixelSize(413, 531),
+                "China visa, 33 × 48 mm" to PixelSize(354, 472),
+            ),
+            "Exams" to listOf(
+                "Exam photo, 3.5 × 4.5 cm" to PixelSize(413, 531),
+                "Bank exams photo" to PixelSize(200, 230),
+            ),
+            "Signature" to listOf(
+                "Signature, small" to PixelSize(140, 60),
+                "Signature, large" to PixelSize(280, 120),
+            ),
+            "Social and web" to listOf(
+                "Square post" to PixelSize(1080, 1080),
+                "Portrait post" to PixelSize(1080, 1350),
+                "Story" to PixelSize(1080, 1920),
+                "Full HD" to PixelSize(1920, 1080),
+                "HD" to PixelSize(1280, 720),
+                "Profile picture" to PixelSize(400, 400),
+            ),
+        )
+    }
+}
 
 /** Size limits offered for Compress, for upload forms that cap file size; 0 is no limit. Sizes are decimal. */
 object SizeLimit {
@@ -158,7 +204,7 @@ object Library {
                 else -> ImageOps.compress(f, o)
             }
         },
-        one("tool.resize", "Resize", "resize", Group.TOOL, setOf(FileKind.IMAGE)) { _, f, o -> ImageOps.resize(f, 2048, o) },
+        one("tool.resize", "Resize", "resize", Group.TOOL, setOf(FileKind.IMAGE)) { _, f, o -> o.exactSize?.let { ImageOps.resizeExactly(f, it, o) } ?: ImageOps.resize(f, 2048, o) },
         one("tool.strip-metadata", "Remove Metadata", "strip", Group.TOOL, setOf(FileKind.IMAGE)) { _, f, o -> ImageOps.stripMetadata(f, o) },
         one("tool.ocr", "Extract Text", "text", Group.TOOL, setOf(FileKind.IMAGE)) { _, f, o -> VisionOps.ocr(f, o) },
         one("tool.mute", "Mute", "mute", Group.TOOL, setOf(FileKind.VIDEO)) { ctx, f, o ->
@@ -290,6 +336,73 @@ object ImageOps {
         val format = sameFormat(file)
         return write(bitmap, format, 90, Output.file(file, format.ext, "${max(bitmap.width, bitmap.height)}px", o))
     }
+
+    /**
+     * Exactly [size], cropped to fill, as a JPG with no metadata: what passport, visa and exam forms ask for. With a
+     * caption, the name and the date the photo was taken go in a white strip at the bottom, inside the size. With a
+     * size limit, the JPG is fitted under it at that size.
+     */
+    fun resizeExactly(file: File, size: PixelSize, o: Options): File {
+        // Decode big enough that cropping never has to stretch the photo.
+        val photo = decode(file, max(size.width, size.height) * 3)
+        val caption = o.caption?.trim()?.takeIf { it.isNotEmpty() }
+        val image = fitted(photo, size, caption, captureDate(file) ?: java.util.Date())
+        val out = Output.file(file, "jpg", size.key, o)
+        val target = o.targetBytes ?: return write(image, ImageFormat.JPG, 92, out)
+        // The size is fixed, so only quality can give: search the best JPG that fits.
+        var lo = 5; var hi = 95; var best: ByteArray? = null
+        while (lo <= hi) {
+            val mid = (lo + hi) / 2
+            val bytes = java.io.ByteArrayOutputStream().also { image.compress(Bitmap.CompressFormat.JPEG, mid, it) }.toByteArray()
+            if (bytes.size <= target) { best = bytes; lo = mid + 1 } else hi = mid - 1
+        }
+        if (best == null) {
+            out.delete()
+            throw MorphError("${size.label} can't get under ${SizeLimit.label(target)}; pick a larger size limit")
+        }
+        out.writeBytes(best)
+        return out
+    }
+
+    /** [photo] scaled to cover [size] and cropped, keeping more of the top (where faces are) than the bottom. */
+    private fun fitted(photo: Bitmap, size: PixelSize, caption: String?, date: java.util.Date): Bitmap {
+        val w = size.width.toFloat(); val h = size.height.toFloat()
+        val strip = if (caption == null) 0f else max((h * 0.16f).roundToInt(), 18).toFloat()
+        val out = Bitmap.createBitmap(size.width, size.height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(out)
+        canvas.drawColor(Color.WHITE)
+        val areaH = h - strip
+        val scale = max(w / photo.width, areaH / photo.height)
+        // The part of the photo that fills the area, centred across and a bit above centre down.
+        val srcW = w / scale; val srcH = areaH / scale
+        val left = (photo.width - srcW) / 2; val top = (photo.height - srcH) * 0.3f
+        canvas.drawBitmap(photo, Rect(left.roundToInt(), top.roundToInt(), (left + srcW).roundToInt(), (top + srcH).roundToInt()),
+            RectF(0f, 0f, w, areaH), Paint(Paint.FILTER_BITMAP_FLAG or Paint.ANTI_ALIAS_FLAG))
+        if (caption != null) {
+            val lines = listOf(caption, java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.US).format(date))
+            var textSize = strip * 0.36f
+            val paints = lines.indices.map { i ->
+                Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    color = Color.BLACK
+                    typeface = if (i == 0) Typeface.DEFAULT_BOLD else Typeface.DEFAULT
+                    textAlign = Paint.Align.CENTER
+                }
+            }
+            paints.forEach { it.textSize = textSize }
+            val widest = lines.indices.maxOf { paints[it].measureText(lines[it]) }
+            if (widest > w * 0.92f) { textSize *= w * 0.92f / widest; paints.forEach { it.textSize = textSize } }
+            val lineHeight = textSize * 1.15f
+            var y = areaH + strip / 2 - lineHeight * (lines.size - 1) / 2 + textSize * 0.35f
+            lines.forEachIndexed { i, line -> canvas.drawText(line, w / 2, y, paints[i]); y += lineHeight }
+        }
+        return out
+    }
+
+    /** When the photo was taken, from its EXIF data. */
+    private fun captureDate(file: File): java.util.Date? = runCatching {
+        val text = ExifInterface(file.path).getAttribute(ExifInterface.TAG_DATETIME_ORIGINAL) ?: return null
+        java.text.SimpleDateFormat("yyyy:MM:dd HH:mm:ss", java.util.Locale.US).parse(text)
+    }.getOrNull()
 
     /** Re-encoding keeps the pixels and drops EXIF/GPS and every other metadata block. */
     fun stripMetadata(file: File, o: Options): File {

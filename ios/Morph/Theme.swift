@@ -204,6 +204,57 @@ struct SizeLimitMenu: View {
     }
 }
 
+/// A tinted pill that opens a menu of exact photo sizes, grouped (passport, exams, signature, social), or any size
+/// typed in. Stored as text like "600x600"; empty is off.
+struct PhotoSizeMenu: View {
+    @Binding var stored: String
+    @State private var typing = false
+    @State private var custom = ""
+
+    private var size: PixelSize? { PixelSize(stored) }
+    private func key(_ size: PixelSize) -> String { "\(size.width)x\(size.height)" }
+
+    var body: some View {
+        Menu {
+            Button { stored = "" } label: {
+                if size == nil { Label("Off", systemImage: "checkmark") } else { Text("Off") }
+            }
+            ForEach(PixelSize.presets, id: \.group) { group in
+                Section(group.group) {
+                    ForEach(group.items, id: \.name) { item in
+                        Button { stored = key(item.size) } label: {
+                            if size == item.size { Label("\(item.name) · \(item.size.label)", systemImage: "checkmark") }
+                            else { Text("\(item.name) · \(item.size.label)") }
+                        }
+                    }
+                }
+            }
+            Button("Custom Size…") {
+                custom = size.map { "\($0.width) x \($0.height)" } ?? ""
+                typing = true
+            }
+        } label: {
+            HStack(spacing: 5) {
+                Text(size?.label ?? "Off")
+                Image(systemName: "chevron.up.chevron.down").font(.system(size: 15 * 0.7, weight: .semibold))
+            }
+            .font(Theme.font(15, .semibold))
+            .foregroundStyle(Theme.brandText)
+            .padding(.horizontal, 16).padding(.vertical, 10)
+            .background(Capsule().fill(Theme.tint))
+        }
+        .menuStyle(.button)
+        .buttonStyle(.plain)
+        .alert("Custom photo size", isPresented: $typing) {
+            TextField("600 x 600", text: $custom)
+            Button("Set") { if let parsed = PixelSize(custom) { stored = key(parsed) } }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Width × height in pixels, as the form asks for it, such as 600 x 600.")
+        }
+    }
+}
+
 /// Teal pill for the main action on a screen: tinted Liquid Glass on iOS 26, a solid capsule before that.
 struct BubbleButtonStyle: ButtonStyle {
     var fullWidth = false

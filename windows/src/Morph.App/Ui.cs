@@ -195,6 +195,28 @@ public static class Ui
         return button;
     }
 
+    /// Picks Resize's exact size: off, a preset (passport, exams, signature, social), or any width × height typed in.
+    public static Button PhotoSizePicker(Window owner)
+    {
+        var size = Preferences.Shared.PhotoSize;
+        void Pick(PixelSize? value) => Preferences.Shared.PhotoSize = value;
+        var menu = new ContextMenu();
+        menu.Items.Add(Item("Off", size is null, () => Pick(null)));
+        foreach (var (group, items) in PixelSize.Presets)
+        {
+            menu.Items.Add(new Separator());
+            menu.Items.Add(new MenuItem { Header = group, IsEnabled = false });
+            foreach (var (name, preset) in items) menu.Items.Add(Item($"{name} · {preset.Label}", preset == size, () => Pick(preset)));
+        }
+        menu.Items.Add(new Separator());
+        var custom = new MenuItem { Header = "Custom size…" };
+        custom.Click += (_, _) => { if (CustomPhotoSize.Ask(owner, size) is { } chosen) Pick(chosen); };
+        menu.Items.Add(custom);
+        var button = MenuButton(size?.Label ?? "Off", menu);
+        System.Windows.Automation.AutomationProperties.SetName(button, "Photo size");
+        return button;
+    }
+
     /// Dashed bubble that takes dropped files.
     public static Border DropZone(UIElement content, Action<string[]> onFiles, double height)
     {
@@ -286,6 +308,48 @@ sealed class CustomSize : Window
     public static long? Ask(Window owner, long current)
     {
         var dialog = new CustomSize(owner, current);
+        dialog.ShowDialog();
+        return dialog.result;
+    }
+}
+
+/// Asks for an exact photo size, like "600 x 600", for forms that want one.
+sealed class CustomPhotoSize : Window
+{
+    readonly TextBox box = new() { FontSize = 14, Margin = new Thickness(0, 12, 0, 0), MinWidth = 260 };
+    PixelSize? result;
+
+    CustomPhotoSize(Window owner, PixelSize? current)
+    {
+        Title = "Custom photo size";
+        Owner = owner;
+        SizeToContent = SizeToContent.WidthAndHeight;
+        ResizeMode = ResizeMode.NoResize;
+        WindowStartupLocation = WindowStartupLocation.CenterOwner;
+        ShowInTaskbar = false;
+        this.Brush(BackgroundProperty, "Canvas");
+        box.Text = current is null ? "" : $"{current.Width} x {current.Height}";
+        var error = Ui.Text("", "Detail");
+        error.SetResourceReference(TextBlock.ForegroundProperty, "Danger");
+        var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 16, 0, 0) };
+        buttons.Children.Add(Ui.Plain("Cancel", Close));
+        buttons.Children.Add(Ui.Primary("Set", () =>
+        {
+            if (PixelSize.Parse(box.Text) is { } size) { result = size; Close(); }
+            else error.Text = "Type a width and height in pixels, such as 600 x 600.";
+        }).Margin(8, 0, 0, 0));
+        Content = new StackPanel
+        {
+            Margin = new Thickness(24),
+            Children = { Ui.Text("Custom photo size", "Heading"), Ui.Text("Width × height in pixels, as the form asks for it.", "Detail").Margin(0, 4, 0, 0), box, error, buttons },
+        };
+        SourceInitialized += (_, _) => Theme.DarkTitleBar(this);
+        Loaded += (_, _) => { box.Focus(); box.SelectAll(); };
+    }
+
+    public static PixelSize? Ask(Window owner, PixelSize? current)
+    {
+        var dialog = new CustomPhotoSize(owner, current);
         dialog.ShowDialog();
         return dialog.result;
     }

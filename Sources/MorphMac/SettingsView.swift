@@ -155,6 +155,22 @@ struct FFmpegRow: View {
     }
 }
 
+/// App Store version only: one permission so results can go next to originals instead of Downloads.
+struct SaveNextToOriginalsRow: View {
+    @State private var allowed = FolderAccess.hasGrants
+
+    var body: some View {
+        SetupRow(symbol: allowed ? "checkmark.seal.fill" : "folder.badge.gearshape",
+                 title: allowed ? "Saving next to your files" : "Save next to your files",
+                 detail: allowed ? "Results land beside the originals."
+                                 : "Allow Morph once and results land beside the originals. Until then they go to Downloads.") {
+            if !allowed {
+                Button("Allow…") { allowed = FolderAccess.allowNextToOriginals() }.buttonStyle(SoftButtonStyle())
+            }
+        }
+    }
+}
+
 struct MoveToApplicationsRow: View {
     @State private var failure: String?
 
@@ -176,6 +192,7 @@ struct SettingsView: View {
 
     @ObservedObject private var prefs = Preferences.shared
     @State var tab = Tab.general
+    @State private var allowedNextToOriginals = FolderAccess.hasGrants
 
     enum Tab: String, CaseIterable { case general = "General", output = "Output", tools = "Tools" }
 
@@ -238,10 +255,17 @@ struct SettingsView: View {
                 Text(folder.path).font(Theme.font(11)).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
                     .padding(.leading, 30)
             }
-            Text(Sandbox.isActive && prefs.outputFolder == nil
-                 ? "Originals are never overwritten. Morph asks once before saving into a new folder."
-                 : "Originals are never overwritten.")
-                .font(Theme.font(11)).foregroundStyle(.tertiary)
+            if Sandbox.isActive, prefs.outputFolder == nil, !allowedNextToOriginals {
+                // The App Store version can't write next to a file until it's allowed to, once.
+                HStack(spacing: 10) {
+                    Text("Until you allow it, results go to Downloads.").font(Theme.font(12)).foregroundStyle(.secondary)
+                    Spacer()
+                    Button("Allow…") { allowedNextToOriginals = FolderAccess.allowNextToOriginals() }
+                        .buttonStyle(SoftButtonStyle())
+                }
+                .padding(.leading, 30)
+            }
+            Text("Originals are never overwritten.").font(Theme.font(11)).foregroundStyle(.tertiary)
         }
         .card()
 
@@ -260,6 +284,24 @@ struct SettingsView: View {
             }
             Text(SizeLimit.detail(prefs.sizeLimit)).font(Theme.font(12)).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
+        }
+        .card()
+
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("Photo size").font(Theme.font(14, .semibold))
+                Spacer()
+                PhotoSizeMenu(size: $prefs.photoSize)
+            }
+            Text(prefs.photoSize.map { "Resize makes photos exactly \($0.label) as a JPG, cropped to fill, and under your size limit if one is set. For passport, visa and exam forms." }
+                 ?? "Pick the exact size a form asks for, like 600 × 600, and Resize makes it.")
+                .font(Theme.font(12)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            if prefs.photoSize != nil {
+                TextField("Name to print below the photo (optional)", text: $prefs.photoCaption)
+                    .textFieldStyle(.roundedBorder).font(Theme.font(12))
+                Text("Some exam forms want the name and the date the photo was taken under it. Leave empty for none.")
+                    .font(Theme.font(11)).foregroundStyle(.tertiary)
+            }
         }
         .card()
     }

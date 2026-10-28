@@ -1,6 +1,7 @@
 import Foundation
 import ImageIO
 import CoreGraphics
+import CoreText
 import UniformTypeIdentifiers
 import CryptoKit
 
@@ -181,6 +182,7 @@ public enum ImageOps {
     }
 
     public static func resize(_ url: URL, options: Options) throws -> URL {
+        if let size = options.exactSize { return try resize(url, exactly: size, options: options) }
         // An SVG is drawn at the size asked for, larger or smaller, into a PNG: SVG has no pixel size to change.
         let src = VectorOps.isSVG(url) ? nil : try source(url)
         let fmt = src.map(outputFormat) ?? .png
@@ -190,6 +192,104 @@ public enum ImageOps {
         let out = Output.url(for: url, ext: fmt.rawValue, suffix: "\(max(img.width, img.height))px", options: options)
         try write(img, as: fmt, quality: options.quality ?? 0.9, metadata: carriedMetadata(src), to: out)
         return out
+    }
+
+    // MARK: Exact size, for forms
+
+    /// Exactly `size`, cropped to fill, as a JPG with no metadata: what passport, visa and exam forms ask for.
+    /// With a caption, the name and the date the photo was taken go in a white strip at the bottom, inside the size.
+    /// With a size limit, the JPG is fitted under it at that size (a form checks both).
+    static func resize(_ url: URL, exactly size: PixelSize, options: Options) throws -> URL {
+        let src = VectorOps.isSVG(url) ? nil : try source(url)
+        // Decode big enough that cropping never has to stretch the photo.
+        let decode = max(size.width, size.height) * 3
+        let photo = try src.map { try image(from: $0, maxPixel: decode) } ?? VectorOps.render(url, maxPixel: decode)
+        let caption = options.caption?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let taken = src.flatMap(captureDate) ?? Date()
+        guard let img = fitted(photo, to: size, caption: caption?.isEmpty == false ? caption : nil, date: taken) else {
+            throw MorphError("Couldn't make \(url.lastPathComponent) \(size.label)")
+        }
+        let out = Output.url(for: url, ext: ImageFormat.jpg.rawValue, suffix: "\(size.width)x\(size.height)", options: options)
+        guard let target = options.targetBytes else {
+            try encode(img, as: .jpg, quality: options.quality ?? 0.92).write(to: out)
+            return out
+        }
+        // The size is fixed, so only quality can give: binary-search the best JPG that fits.
+        var lo = 0.05, hi = 0.95, best: Data?
+        for _ in 0..<8 {
+            let mid = (lo + hi) / 2
+            let data = try encode(img, as: .jpg, quality: mid)
+            if data.count <= target { best = data; lo = mid } else { hi = mid }
+        }
+        guard let best else {
+            throw MorphError("\(size.label) can't get under \(SizeLimit.label(target)); pick a larger size limit")
+        }
+        try best.write(to: out)
+        return out
+    }
+
+    /// `img` scaled to cover `size` and cropped, keeping more of the top (where faces are) than the bottom.
+    static func fitted(_ img: CGImage, to size: PixelSize, caption: String?, date: Date) -> CGImage? {
+        let w = CGFloat(size.width), h = CGFloat(size.height)
+        let strip: CGFloat = caption == nil ? 0 : max((h * 0.16).rounded(), 18)
+        guard let ctx = CGContext(data: nil, width: size.width, height: size.height, bitsPerComponent: 8, bytesPerRow: 0,
+                                  space: CGColorSpace(name: CGColorSpace.sRGB)!,
+                                  bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue) else { return nil }
+        ctx.setFillColor(CGColor(red: 1, green: 1, blue: 1, alpha: 1))
+        ctx.fill(CGRect(x: 0, y: 0, width: w, height: h))
+        // Photo area above the strip (Core Graphics counts y from the bottom).
+        let area = CGRect(x: 0, y: strip, width: w, height: h - strip)
+        let scale = max(area.width / CGFloat(img.width), area.height / CGFloat(img.height))
+        let dw = CGFloat(img.width) * scale, dh = CGFloat(img.height) * scale
+        let spareY = dh - area.height
+        let drawn = CGRect(x: (area.width - dw) / 2, y: area.maxY + spareY * 0.3 - dh, width: dw, height: dh)
+        ctx.saveGState()
+        ctx.clip(to: area)
+        ctx.interpolationQuality = .high
+        ctx.draw(img, in: drawn)
+        ctx.restoreGState()
+        if let caption {
+            let style = DateFormatter()
+            style.dateFormat = "dd/MM/yyyy"
+            drawLines([caption, style.string(from: date)], in: CGRect(x: 0, y: 0, width: w, height: strip), ctx: ctx)
+        }
+        return ctx.makeImage()
+    }
+
+    /// Two centred lines (name in bold, date below), shrunk to fit the strip's width.
+    private static func drawLines(_ lines: [String], in rect: CGRect, ctx: CGContext) {
+        let ink = CGColor(red: 0, green: 0, blue: 0, alpha: 1)
+        var size = rect.height * 0.36
+        func make(_ text: String, bold: Bool, _ size: CGFloat) -> CTLine {
+            let font = CTFontCreateUIFontForLanguage(bold ? .emphasizedSystem : .system, size, nil)
+                ?? CTFontCreateWithName("Helvetica" as CFString, size, nil)
+            let attrs = [kCTFontAttributeName: font, kCTForegroundColorAttributeName: ink] as [CFString: Any]
+            return CTLineCreateWithAttributedString(CFAttributedStringCreate(nil, text as CFString, attrs as CFDictionary))
+        }
+        var made = lines.enumerated().map { make($1, bold: $0 == 0, size) }
+        let widest = made.map { CTLineGetTypographicBounds($0, nil, nil, nil) }.max() ?? 0
+        if widest > rect.width * 0.92 {
+            size *= rect.width * 0.92 / widest
+            made = lines.enumerated().map { make($1, bold: $0 == 0, size) }
+        }
+        let lineHeight = size * 1.15
+        var y = rect.midY + lineHeight * CGFloat(made.count - 1) / 2 - size * 0.35
+        for line in made {
+            let width = CGFloat(CTLineGetTypographicBounds(line, nil, nil, nil))
+            ctx.textPosition = CGPoint(x: rect.midX - width / 2, y: y)
+            CTLineDraw(line, ctx)
+            y -= lineHeight
+        }
+    }
+
+    /// When the photo was taken, from its EXIF data.
+    static func captureDate(_ src: CGImageSource) -> Date? {
+        guard let exif = properties(src)[kCGImagePropertyExifDictionary] as? [CFString: Any],
+              let text = exif[kCGImagePropertyExifDateTimeOriginal] as? String else { return nil }
+        let style = DateFormatter()
+        style.locale = Locale(identifier: "en_US_POSIX")
+        style.dateFormat = "yyyy:MM:dd HH:mm:ss"
+        return style.date(from: text)
     }
 
     /// Makes the file smaller without a visible change: re-encodes at a range of qualities, compares each with

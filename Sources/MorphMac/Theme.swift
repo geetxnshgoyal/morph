@@ -216,6 +216,55 @@ struct SizeLimitMenu: View {
     }
 }
 
+/// A tinted pill that opens a menu of exact photo sizes, grouped (passport, exams, signature, social), or any size typed in.
+struct PhotoSizeMenu: View {
+    @Binding var size: PixelSize?
+    @State private var typing = false
+    @State private var custom = ""
+
+    var body: some View {
+        Menu {
+            Button { size = nil } label: {
+                if size == nil { Label("Off", systemImage: "checkmark") } else { Text("Off") }
+            }
+            ForEach(PixelSize.presets, id: \.group) { group in
+                Section(group.group) {
+                    ForEach(group.items, id: \.name) { item in
+                        Button { size = item.size } label: {
+                            let title = "\(item.name)  ·  \(item.size.label)"
+                            if size == item.size { Label(title, systemImage: "checkmark") } else { Text(title) }
+                        }
+                    }
+                }
+            }
+            Divider()
+            Button("Custom Size…") {
+                custom = size.map { "\($0.width) x \($0.height)" } ?? ""
+                typing = true
+            }
+        } label: {
+            HStack(spacing: 5) {
+                Text(size?.label ?? "Off")
+                Image(systemName: "chevron.up.chevron.down").font(.system(size: 12 * 0.7, weight: .semibold))
+            }
+            .font(Theme.font(12, .semibold))
+            .foregroundStyle(Theme.brandText)
+            .padding(.horizontal, 12).padding(.vertical, 6)
+            .background(Capsule().fill(Theme.tint))
+        }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .alert("Custom photo size", isPresented: $typing) {
+            TextField("600 x 600", text: $custom)
+            Button("Set") { if let parsed = PixelSize(custom) { size = parsed } }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Width × height in pixels, as the form asks for it, such as 600 x 600.")
+        }
+    }
+}
+
 /// Teal pill for the main action on a screen: tinted Liquid Glass on macOS 26, a solid capsule before that.
 struct BubbleButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {

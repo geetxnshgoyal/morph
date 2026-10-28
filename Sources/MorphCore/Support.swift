@@ -62,6 +62,10 @@ public struct Options: Codable, Sendable {
     public var outputDirectory: URL?
     /// Palette size when tracing an image into an SVG; unset picks one from `compression`.
     public var colors: Int?
+    /// Exact size for Resize, cropped to fill: what passport, visa and exam forms ask for.
+    public var exactSize: PixelSize?
+    /// Printed with the date the photo was taken in a white strip under it, for exam forms.
+    public var caption: String?
 
     public init() {}
 
@@ -92,6 +96,47 @@ public enum SizeLimit {
             ? "Compress makes the smallest file that still looks the same. Set a limit for upload forms that cap file size."
             : "Compress fits photos under \(label(bytes)) as JPG, at the best quality that fits, ready for upload forms."
     }
+}
+
+/// An exact width × height in pixels, for forms that ask for one ("600 × 600", "413 × 531").
+public struct PixelSize: Codable, Hashable, Sendable {
+    public var width: Int
+    public var height: Int
+    public init(width: Int, height: Int) { self.width = width; self.height = height }
+
+    public var label: String { "\(width) × \(height)" }
+
+    /// Parses "600x600", "600 × 600" or "600*600".
+    public init?(_ text: String) {
+        let parts = text.lowercased().split(whereSeparator: { "x×* ,".contains($0) }).compactMap { Int($0) }
+        guard parts.count == 2, (16...8000).contains(parts[0]), (16...8000).contains(parts[1]) else { return nil }
+        self.init(width: parts[0], height: parts[1])
+    }
+
+    /// Sizes people are asked for most, grouped for a menu. Millimetre sizes are at 300 dpi.
+    public static let presets: [(group: String, items: [(name: String, size: PixelSize)])] = [
+        ("Passport and visa", [
+            ("US or India, 2 × 2 in", PixelSize(width: 600, height: 600)),
+            ("Schengen, UK, 35 × 45 mm", PixelSize(width: 413, height: 531)),
+            ("China visa, 33 × 48 mm", PixelSize(width: 354, height: 472)),
+        ]),
+        ("Exams", [
+            ("Exam photo, 3.5 × 4.5 cm", PixelSize(width: 413, height: 531)),
+            ("Bank exams photo", PixelSize(width: 200, height: 230)),
+        ]),
+        ("Signature", [
+            ("Signature, small", PixelSize(width: 140, height: 60)),
+            ("Signature, large", PixelSize(width: 280, height: 120)),
+        ]),
+        ("Social and web", [
+            ("Square post", PixelSize(width: 1080, height: 1080)),
+            ("Portrait post", PixelSize(width: 1080, height: 1350)),
+            ("Story", PixelSize(width: 1080, height: 1920)),
+            ("Full HD", PixelSize(width: 1920, height: 1080)),
+            ("HD", PixelSize(width: 1280, height: 720)),
+            ("Profile picture", PixelSize(width: 400, height: 400)),
+        ]),
+    ]
 }
 
 /// Picks non-colliding output paths next to the source (originals are never overwritten).

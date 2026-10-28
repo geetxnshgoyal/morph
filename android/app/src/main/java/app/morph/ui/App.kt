@@ -3,6 +3,7 @@ package app.morph.ui
 import androidx.compose.material.icons.automirrored.rounded.HelpOutline
 import androidx.compose.material.icons.rounded.PrivacyTip
 import android.net.Uri
+import app.morph.core.PixelSize
 import app.morph.core.SizeLimit
 import androidx.compose.runtime.remember
 import androidx.compose.material3.TextButton
@@ -71,7 +72,7 @@ import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.Vibration
 import androidx.compose.material.icons.rounded.VisibilityOff
-import androidx.compose.material.icons.rounded.VolumeOff
+import androidx.compose.material.icons.automirrored.rounded.VolumeOff
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Switch
@@ -185,6 +186,7 @@ fun HomeScreen(model: MorphModel, openSettings: () -> Unit) {
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     HeroButton("Photos", Icons.Rounded.PhotoLibrary, Modifier.weight(1f)) {
+                        // The system photo picker needs no permission and hands over only what's picked.
                         photos.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo))
                     }
                     HeroButton("Files", Icons.Rounded.Folder, Modifier.weight(1f)) { files.launch(arrayOf("*/*")) }
@@ -215,6 +217,7 @@ fun HomeScreen(model: MorphModel, openSettings: () -> Unit) {
         }
         Spacer(Modifier.height(24.dp))
     }
+
 }
 
 @Composable
@@ -295,6 +298,24 @@ fun SettingsScreen(model: MorphModel, back: () -> Unit) {
             }
             Spacer(Modifier.height(8.dp))
             Text(SizeLimit.detail(model.sizeLimit), style = rounded(14), color = colors.secondary)
+            Spacer(Modifier.height(16.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Photo size", style = rounded(17, FontWeight.Bold), color = colors.text, modifier = Modifier.weight(1f))
+                PhotoSizePicker(model.photoSize, model::updatePhotoSize)
+            }
+            Spacer(Modifier.height(8.dp))
+            Text(
+                model.photoSize?.let { "Resize makes photos exactly ${it.label} as a JPG, cropped to fill, and under your size limit if one is set. For passport, visa and exam forms." }
+                    ?: "Pick the exact size a form asks for, like 600 × 600, and Resize makes it.",
+                style = rounded(14), color = colors.secondary,
+            )
+            if (model.photoSize != null) {
+                Spacer(Modifier.height(10.dp))
+                OutlinedTextField(model.photoCaption, model::updatePhotoCaption, singleLine = true,
+                    placeholder = { Text("Name to print below the photo (optional)") }, modifier = Modifier.fillMaxWidth())
+                Spacer(Modifier.height(6.dp))
+                Text("Some exam forms want the name and the date the photo was taken under it.", style = rounded(13), color = colors.secondary)
+            }
         }
 
         MorphCard {
@@ -370,7 +391,7 @@ fun iconFor(key: String): ImageVector = when (key) {
     "strip" -> Icons.Rounded.VisibilityOff
     "text" -> Icons.Rounded.DocumentScanner
     "zip" -> Icons.Rounded.FolderZip
-    "mute" -> Icons.Rounded.VolumeOff
+    "mute" -> Icons.AutoMirrored.Rounded.VolumeOff
     "recipe" -> Icons.Rounded.AutoAwesome
     else -> Icons.Rounded.Description
 }
@@ -382,16 +403,31 @@ fun share(context: Context, outputs: List<Published>) {
         Intent(Intent.ACTION_SEND_MULTIPLE).setType("*/*").putParcelableArrayListExtra(Intent.EXTRA_STREAM, ArrayList(outputs.map { it.uri }))
     }
     intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-    context.startActivity(Intent.createChooser(intent, null))
+    val chooser = Intent.createChooser(intent, null).apply {
+        if (context !is android.app.Activity) addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    }
+    context.startActivity(chooser)
 }
 
 fun view(context: Context, output: Published) {
     val intent = Intent(Intent.ACTION_VIEW).setDataAndType(output.uri, output.mime).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    if (context !is android.app.Activity) intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     runCatching { context.startActivity(intent) }.onFailure { share(context, listOf(output)) }
 }
 
 fun openDownloads(context: Context) {
-    runCatching { context.startActivity(Intent(DownloadManager.ACTION_VIEW_DOWNLOADS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
+    val opened = runCatching {
+        context.startActivity(Intent(DownloadManager.ACTION_VIEW_DOWNLOADS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+    }.isSuccess
+    if (!opened) {
+        runCatching {
+            val intent = Intent(Intent.ACTION_VIEW).apply {
+                setDataAndType(Uri.parse("content://com.android.externalstorage.documents/document/primary%3ADownload%2FMorph"), "resource/folder")
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            context.startActivity(intent)
+        }
+    }
 }
 
 /** Compress's size limit: none, a common upload-form size, or any size typed in ("300 KB", "1.5 MB"). */
@@ -426,6 +462,47 @@ internal fun SizeLimitPicker(limit: Int, onChange: (Int) -> Unit) {
             confirmButton = {
                 TextButton({ SizeLimit.parse(text)?.takeIf { it >= 5_000 }?.let(onChange); typing = false }) { Text("Set") }
             },
+            dismissButton = { TextButton({ typing = false }) { Text("Cancel") } },
+        )
+    }
+}
+
+/** Resize's exact size: off, a preset (passport, exams, signature, social), or any width × height typed in. */
+@Composable
+internal fun PhotoSizePicker(size: PixelSize?, onChange: (PixelSize?) -> Unit) {
+    var open by remember { mutableStateOf(false) }
+    var typing by remember { mutableStateOf(false) }
+    Box {
+        SoftButton((size?.label ?: "Off") + "  ▾") { open = true }
+        DropdownMenu(open, onDismissRequest = { open = false }) {
+            DropdownMenuItem(text = { Text("Off", style = rounded(15, if (size == null) FontWeight.Bold else FontWeight.Medium)) },
+                trailingIcon = { if (size == null) Icon(Icons.Rounded.Check, null, tint = colors.brandText) },
+                onClick = { onChange(null); open = false })
+            PixelSize.presets.forEach { (group, items) ->
+                Text(group, style = rounded(12, FontWeight.Bold), color = colors.secondary, modifier = Modifier.padding(start = 12.dp, top = 10.dp, bottom = 2.dp))
+                items.forEach { (name, preset) ->
+                    DropdownMenuItem(
+                        text = { Text("$name · ${preset.label}", style = rounded(15, if (preset == size) FontWeight.Bold else FontWeight.Medium)) },
+                        trailingIcon = { if (preset == size) Icon(Icons.Rounded.Check, null, tint = colors.brandText) },
+                        onClick = { onChange(preset); open = false },
+                    )
+                }
+            }
+            DropdownMenuItem(text = { Text("Custom size…", style = rounded(15, FontWeight.Medium)) }, onClick = { open = false; typing = true })
+        }
+    }
+    if (typing) {
+        var text by remember { mutableStateOf(size?.let { "${it.width} x ${it.height}" } ?: "") }
+        AlertDialog(
+            onDismissRequest = { typing = false },
+            title = { Text("Custom photo size", style = rounded(20, FontWeight.Bold)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("Width × height in pixels, as the form asks for it.", style = rounded(15))
+                    OutlinedTextField(text, { text = it }, singleLine = true, placeholder = { Text("600 x 600") })
+                }
+            },
+            confirmButton = { TextButton({ PixelSize.parse(text)?.let(onChange); typing = false }) { Text("Set") } },
             dismissButton = { TextButton({ typing = false }) { Text("Cancel") } },
         )
     }

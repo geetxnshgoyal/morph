@@ -86,6 +86,32 @@ public static class Rows
         Ui.Pills(Enum.GetValues<CompressionLevel>(), Preferences.Shared.Compression, l => l.Label(), l => Preferences.Shared.Compression = l),
         Ui.Text(Preferences.Shared.Compression.Detail(), "Detail")));
 
+    public static UIElement PhotoSize(Window owner)
+    {
+        var prefs = Preferences.Shared;
+        var grid = new Grid();
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        grid.ColumnDefinitions.Add(new ColumnDefinition());
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        grid.Children.Add(Ui.Bubble(Icons.Compress));
+        var detail = prefs.PhotoSize is { } size
+            ? $"Resize makes photos exactly {size.Label} as a JPG, cropped to fill, and under your size limit if one is set. For passport, visa and exam forms."
+            : "Pick the exact size a form asks for, like 600 × 600, and Resize makes it.";
+        var texts = Ui.Stack(2, Ui.Text("Photo size", "Heading"), Ui.Text(detail, "Detail"));
+        texts.Margin = new Thickness(14, 0, 8, 0);
+        texts.VerticalAlignment = VerticalAlignment.Center;
+        Grid.SetColumn(texts, 1);
+        grid.Children.Add(texts);
+        var picker = Ui.PhotoSizePicker(owner);
+        Grid.SetColumn(picker, 2);
+        grid.Children.Add(picker);
+        if (prefs.PhotoSize is null) return Ui.Card(grid, 14);
+        // Saved when the box loses focus, so the page doesn't redraw under the typing.
+        var caption = new TextBox { Text = prefs.PhotoCaption, FontSize = 13, Margin = new Thickness(0, 12, 0, 0) };
+        caption.LostFocus += (_, _) => { if (caption.Text != prefs.PhotoCaption) prefs.PhotoCaption = caption.Text; };
+        return Ui.Card(Ui.Stack(0, grid, Ui.Text("Name to print below the photo, with the date it was taken (optional, for exam forms)", "Caption").Margin(0, 12, 0, 0), caption), 14);
+    }
+
     public static UIElement SizeLimit(Window owner, string detail)
     {
         var grid = new Grid();

@@ -21,6 +21,12 @@ final class Preferences: ObservableObject {
     @Published var toolsKeys: DragKeys { didSet { defaults.set(toolsKeys.rawValue, forKey: "toolsKeys") } }
     @Published var recipesKeys: DragKeys { didSet { defaults.set(recipesKeys.rawValue, forKey: "recipesKeys") } }
     @Published var actionsKeys: DragKeys { didSet { defaults.set(actionsKeys.rawValue, forKey: "actionsKeys") } }
+    /// Exact size Resize makes, for forms; nil keeps Resize's usual fit to 2048 px.
+    @Published var photoSize: PixelSize? {
+        didSet { defaults.set(photoSize.map { [$0.width, $0.height] }, forKey: "photoSize") }
+    }
+    /// Printed with the date under the photo at that size, for exam forms; empty prints nothing.
+    @Published var photoCaption: String { didSet { defaults.set(photoCaption, forKey: "photoCaption") } }
     /// nil saves results next to the original.
     @Published var outputFolder: URL? {
         didSet {
@@ -37,6 +43,8 @@ final class Preferences: ObservableObject {
         revealWhenDone = defaults.bool(forKey: "revealWhenDone")
         compression = defaults.string(forKey: "compression").flatMap(CompressionLevel.init) ?? .balanced
         sizeLimit = defaults.integer(forKey: SizeLimit.key)
+        photoSize = (defaults.array(forKey: "photoSize") as? [Int]).flatMap { $0.count == 2 ? PixelSize(width: $0[0], height: $0[1]) : nil }
+        photoCaption = defaults.string(forKey: "photoCaption") ?? ""
         outputFolder = defaults.data(forKey: "outputFolderBookmark").flatMap(FolderAccess.resolve)
             ?? defaults.string(forKey: "outputFolder").map { URL(fileURLWithPath: $0) }
         let convert = Self.storedKeys(defaults, "convertKeys", legacy: ["convertKey", "dragKey"]) ?? .shift
@@ -98,16 +106,16 @@ final class Preferences: ObservableObject {
         var options = Options()
         options.compression = compression
         if sizeLimit > 0 { options.targetBytes = sizeLimit }
+        options.exactSize = photoSize
+        if !photoCaption.isEmpty { options.caption = photoCaption }
         if let outputFolder {
             try? FileManager.default.createDirectory(at: outputFolder, withIntermediateDirectories: true)
             options.outputDirectory = outputFolder
-        } else if Sandbox.isActive {
-            // Results go next to each original, so every folder the files come from needs a grant.
-            for parent in Set(files.map { $0.deletingLastPathComponent().standardizedFileURL }) {
-                guard let folder = FolderAccess.writable(parent) else { return nil }
-                // Picked a different folder in the panel: save everything there.
-                if folder.path != parent.path { options.outputDirectory = folder; break }
-            }
+        } else if Sandbox.isActive,
+                  !files.allSatisfy({ FolderAccess.canSave(in: $0.deletingLastPathComponent()) }) {
+            // Not allowed next to these originals yet: save to Downloads rather than stop the wheel to ask.
+            // Settings → Output offers the one-time permission.
+            options.outputDirectory = FolderAccess.downloads
         }
         return options
     }
