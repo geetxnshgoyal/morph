@@ -29,7 +29,7 @@
   "applicationCategory": "UtilitiesApplication",
   "operatingSystem": "macOS 14 or later, Windows 10 or later, iOS 17 or later, Android 10 or later",
   "downloadUrl": [
-    "https://github.com/geetxnshgoyal/morph/releases/latest",
+    "https://github.com/geetxnshgoyal/morph/releases/download/v1.0.0/Morph-1.0.0.dmg",
     "https://apps.microsoft.com/detail/9PHWJVRC85DW"
   ],
   "featureList": [
@@ -114,6 +114,7 @@
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/icon-512.png" type="image/png" sizes="512x512">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="stylesheet" href="assets/css/stage.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,400..800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -157,12 +158,16 @@
   .bar nav a:hover { color: var(--ink); }
 
   /* Hero */
-  .hero { display: grid; grid-template-columns: 1.05fr 1fr; gap: 3rem; align-items: center; padding: 3.5rem 0 5rem; }
+  .hero { padding: 3rem 0 4.5rem; }
+  .hero-top { display: grid; grid-template-columns: 1.15fr 1fr; gap: 3.5rem; align-items: start; }
+  @media (max-width: 900px) {
+    .hero-top { grid-template-columns: 1fr; gap: 2rem; }
+  }
   h1 {
     font: 750 clamp(2.9rem, 6.2vw, 5.4rem)/0.98 var(--display);
     font-variation-settings: "wdth" 82, "opsz" 96;
     letter-spacing: -0.02em;
-    margin: 0 0 1.5rem;
+    margin: 0;
     text-wrap: balance;
     animation: unsquish 1.2s cubic-bezier(.2, .8, .2, 1) both;
   }
@@ -171,46 +176,25 @@
     to { font-variation-settings: "wdth" 82, "opsz" 96; opacity: 1; }
   }
   .lede, .lead { text-wrap: pretty; }
-  .lede { font-size: 1.25rem; color: var(--ink-soft); max-width: var(--measure); margin: 0 0 2.2rem; }
+  .lede { font-size: 1.25rem; color: var(--ink-soft); max-width: var(--measure); margin: 0 0 1.8rem; }
   .cta { display: flex; flex-wrap: wrap; gap: .8rem; align-items: center; }
   .button {
     display: inline-flex; align-items: center; gap: .55rem;
     padding: .95rem 1.5rem; border-radius: 999px;
     font: 650 1rem/1 var(--body); text-decoration: none;
-    transition: transform .2s ease, box-shadow .2s ease;
+    transition: transform .18s cubic-bezier(.2, .9, .2, 1), box-shadow .18s ease;
+    user-select: none;
+    -webkit-user-select: none;
   }
-  .button.primary { color: white; background: var(--brand); }
-  .button.primary:hover { background: var(--brand-deep); transform: translateY(-2px); }
+  .button.primary { color: white; background: var(--brand); box-shadow: 0 4px 14px rgba(11, 110, 105, 0.25); }
+  .button.primary:hover { background: var(--brand-deep); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(11, 110, 105, 0.35); }
   .button.quiet { color: var(--ink); background: white; border: 1px solid var(--line); }
-  .button.quiet:hover { border-color: var(--brand); }
-  .fineprint { font-size: .88rem; color: var(--ink-soft); margin-top: 1rem; }
-
-  /* The live wheel */
-  .stage { position: relative; display: grid; justify-items: center; gap: 1.4rem; }
-  .dial { position: relative; width: min(100%, 470px); aspect-ratio: 1; }
-  #wheel { position: relative; display: block; width: 100%; height: 100%; overflow: visible; touch-action: manipulation; }
-  .petal { cursor: pointer; transform-box: view-box; transform-origin: 220px 220px; }
-  .petal .face { transition: transform .32s cubic-bezier(.3, 1.6, .5, 1); }
-  .petal path { fill: white; stroke: var(--line); stroke-width: 1.2; transition: fill .2s; }
-  .petal text { font: 650 12.5px/1 var(--body); fill: var(--ink); text-anchor: middle; dominant-baseline: middle; pointer-events: none; }
-  .petal.on path { fill: var(--brand); stroke: var(--brand); }
-  .petal.on text { fill: white; }
-  .bloom { animation: bloom .7s cubic-bezier(.25, 1.5, .45, 1) both; }
-  @keyframes bloom { from { transform: scale(.35); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-  .hub circle { fill: white; stroke: var(--line); }
-  .hub .title { font: 700 17px/1 var(--display); fill: var(--ink); text-anchor: middle; }
-  .hub .caption { font: 500 12px/1 var(--body); fill: var(--ink-soft); text-anchor: middle; }
-  .keys { display: flex; flex-wrap: wrap; justify-content: center; gap: .5rem; padding: .4rem; border-radius: 999px; background: rgba(255, 255, 255, .7); border: 1px solid var(--line); backdrop-filter: blur(14px); }
-  .key {
-    display: inline-flex; align-items: center; gap: .45rem;
-    border: 0; background: transparent; color: var(--ink);
-    padding: .6rem 1rem; border-radius: 999px; cursor: pointer;
-    font: 600 .95rem/1 var(--body);
+  .button.quiet:hover { border-color: var(--brand); transform: translateY(-2px); }
+  .button:active {
+    transform: scale(0.97) !important;
+    transition: transform 90ms ease-out !important;
   }
-  .key kbd { font: 700 1rem/1 var(--body); opacity: .55; }
-  .key[aria-pressed="true"] { background: var(--brand); color: white; }
-  .key[aria-pressed="true"] kbd { opacity: .9; }
-  .hint { font-size: .9rem; color: var(--ink-soft); text-align: center; margin: 0; }
+  .fineprint { font-size: .88rem; color: var(--ink-soft); margin-top: 1rem; }
 
   /* Sections */
   section { padding: 5.5rem 0; }
@@ -260,8 +244,15 @@
 
   .download { text-align: left; }
   .conversions { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: 1.6rem; }
-  .conversions a { padding: .6rem 1.1rem; border-radius: 999px; background: white; border: 1px solid var(--line); color: var(--ink); text-decoration: none; font-weight: 600; }
-  .conversions a:hover { border-color: var(--brand); color: var(--brand); }
+  .conversions a {
+    padding: .6rem 1.1rem; border-radius: 999px; background: white;
+    border: 1px solid var(--line); color: var(--ink); text-decoration: none; font-weight: 600;
+    transition: transform .18s cubic-bezier(.2, .9, .2, 1), border-color .18s ease, color .18s ease;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .conversions a:hover { border-color: var(--brand); color: var(--brand); transform: translateY(-1px); }
+  .conversions a:active { transform: scale(0.96); transition: transform 90ms ease-out; }
   .platforms { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.2rem; margin-top: 2.5rem; }
   .platform { border-radius: 26px; padding: 1.8rem; background: white; border: 1px solid var(--line); display: grid; gap: .6rem; align-content: start; }
   .platform.mac { background: var(--brand); color: white; border: 0; }
@@ -297,6 +288,8 @@
     .shortcuts { grid-template-columns: 1fr; }
     .mac-pair { grid-template-columns: 1fr; }
     .mac-pair .shot:last-child { margin-top: 0; }
+    .phones { gap: .5rem; }
+    .phones img { border-radius: 20px; }
   }
   @media (prefers-reduced-motion: reduce) {
     h1, .bloom { animation: none; }
@@ -323,35 +316,56 @@
 
   <main>
     <div class="hero">
-      <div>
-        <h1>Drag a file, tap a key, drop it on the wheel.</h1>
-        <p class="lede">Morph converts, shrinks and cleans up files right where they are, on your Mac, Windows PC, iPhone and Android. It's free, and nothing is ever uploaded.</p>
-        <div class="cta">
-          <a class="button primary" href="https://github.com/geetxnshgoyal/morph/releases/latest">Download for Mac</a>
-          <a class="button quiet" href="#download">Windows, iPhone and Android</a>
+      <div class="hero-top">
+        <div>
+          <h1>Drag a file, tap a key, drop it on the wheel.</h1>
         </div>
-        <p class="fineprint">macOS 14 or later, Apple Silicon and Intel.</p>
+        <div>
+          <p class="lede">Morph converts, shrinks and cleans up files right where they are, on your Mac, Windows PC, iPhone and Android. It's free, and nothing is ever uploaded.</p>
+          <div class="cta">
+            <a class="button primary" href="https://github.com/geetxnshgoyal/morph/releases/download/v1.0.0/Morph-1.0.0.dmg">Download for Mac</a>
+            <a class="button quiet" href="#download">Windows, iPhone and Android</a>
+          </div>
+          <p class="fineprint">macOS 14 or later, Windows 10 &amp; 11, iOS 17+, Android 10+. Free and open source.</p>
+        </div>
       </div>
 
-      <div class="stage">
-        <div class="dial">
-          <svg id="wheel" viewBox="0 0 440 440" role="group" aria-label="Interactive preview of the Morph wheel">
-            <g id="petals"></g>
-            <g class="hub" aria-live="polite">
-              <circle cx="220" cy="220" r="78"/>
-              <text class="title" id="hubTitle" x="220" y="216">photo.heic</text>
-              <text class="caption" id="hubCaption" x="220" y="240">Tap ⇧ ⌘ ⌃ ⌥</text>
-            </g>
-          </svg>
+      <div class="stage" data-stage tabindex="-1" aria-label="Try the wheel: a Downloads folder with sample files">
+        <div class="desk">
+          <div class="explorer">
+            <div class="explorer-bar">
+              <span data-icon="files" class="explorer-title"></span><span class="explorer-name">Downloads</span>
+              <span class="explorer-controls" aria-hidden="true"><i></i><i></i><i></i></span>
+            </div>
+            <div class="explorer-body">
+              <ul class="explorer-side" aria-hidden="true">
+                <li>Home</li><li>Desktop</li><li class="is-on">Downloads</li><li>Documents</li><li>Pictures</li><li>Music</li>
+              </ul>
+              <div class="explorer-files" data-files role="group" aria-label="Sample files. Press Enter on one to open the wheel."></div>
+            </div>
+          </div>
+
+          <div class="overlay" data-overlay>
+            <div class="panel" data-panel></div>
+            <div class="wheel-wrap" data-wheel></div>
+            <div class="result-card" data-card aria-hidden="true"></div>
+            <div class="island" data-island role="status"></div>
+            <div class="ghost" data-ghost aria-hidden="true"></div>
+          </div>
+
+          <button type="button" class="keycap" data-keycap><span data-icon="shift"></span>Shift</button>
+          <p class="hint" data-hint></p>
         </div>
-        <div class="keys" role="group" aria-label="Wheels">
-          <button class="key" data-wheel="convert" aria-pressed="true"><kbd>⇧</kbd>Convert</button>
-          <button class="key" data-wheel="tools" aria-pressed="false"><kbd>⌘</kbd>Tools</button>
-          <button class="key" data-wheel="recipes" aria-pressed="false"><kbd>⌃</kbd>Recipes</button>
-          <button class="key" data-wheel="actions" aria-pressed="false"><kbd>⌥</kbd>Actions</button>
+        <div class="taskbar" aria-hidden="true">
+          <div class="taskbar-apps">
+            <span data-icon="globe"></span><span data-icon="files" class="is-on"></span><span data-icon="document"></span><span data-icon="code"></span>
+            <svg class="mark taskbar-mark" viewBox="0 0 64 64"><rect width="64" height="64" rx="16" fill="#0B6E69"/><g fill="#fff"><circle cx="32" cy="32" r="6"/><circle cx="32" cy="17" r="6"/><circle cx="32" cy="47" r="6"/><circle cx="19" cy="24.5" r="6"/><circle cx="45" cy="24.5" r="6"/><circle cx="19" cy="39.5" r="6"/><circle cx="45" cy="39.5" r="6"/></g></svg>
+          </div>
+          <div class="taskbar-clock mono" data-clock></div>
         </div>
-        <p class="hint">Try it: press Shift, Command, Control or Option, or tap a key above.</p>
+        <p class="sr-only" aria-live="polite" data-live></p>
       </div>
+      <p class="stage-note">This is the real wheel, drawn in your browser with the app's own layout. Drag a file, or tap to open. Ctrl+click picks several files. Nothing is uploaded or converted here.</p>
     </div>
   </main>
 </div>
@@ -510,6 +524,8 @@
       <a href="split-pdf.html">Split PDF</a>
       <a href="word-to-pdf.html">Word to PDF</a>
       <a href="passport-photo-size.html">Passport photo size</a>
+      <a href="signature-resize.html">Signature resize</a>
+      <a href="resize-image-pixels.html">Resize to exact pixels</a>
       <a href="compress-video.html">Compress video</a>
       <a href="png-to-jpg.html">PNG to JPG</a>
     </nav>
@@ -538,7 +554,7 @@
       <div class="platform mac">
         <h3>Mac</h3>
         <p>Menu bar app with the drag wheel and the <code>morph</code> command-line tool. macOS 14 or later. Also coming to the Mac App Store around 11 November 2026.</p>
-        <a class="button" href="https://github.com/geetxnshgoyal/morph/releases/latest">Download the DMG</a>
+        <a class="button" href="https://github.com/geetxnshgoyal/morph/releases/download/v1.0.0/Morph-1.0.0.dmg">Download the DMG</a>
       </div>
       <div class="platform">
         <h3>Windows</h3>
@@ -578,127 +594,6 @@ morph watch ~/Downloads tool.strip-metadata</pre>
   </footer>
 </div>
 
-<script>
-(() => {
-  const wheels = {
-    convert: { name: "Convert", verb: "Convert to ", items: ["JPG", "PNG", "HEIC", "WEBP", "SVG", "PDF", "MP4", "GIF"] },
-    tools: { name: "Tools", verb: "", items: ["Compress", "Resize", "Remove Metadata", "Blur Faces", "Extract Text", "Read QR", "Merge PDFs", "Zip"] },
-    recipes: { name: "Recipes", verb: "", items: ["Web Image", "Under 1 MB", "Share-Safe Photo"] },
-    actions: { name: "Actions", verb: "", items: ["AirDrop", "Messages", "Mail", "Copy", "Copy Path", "Move To…", "Copy To…", "Terminal"] },
-  };
-  const keyToWheel = { Shift: "convert", Meta: "tools", Control: "recipes", Alt: "actions" };
-  const C = 220, R_IN = 92, R_OUT = 178, GAP = 8, CORNER = 10, LIFT = 10;
-  const svgNS = "http://www.w3.org/2000/svg";
-  const petals = document.getElementById("petals");
-  const title = document.getElementById("hubTitle");
-  const caption = document.getElementById("hubCaption");
-  const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  let current = "convert";
-  let resetTimer;
-
-  const pt = (r, a) => [C + r * Math.cos(a), C + r * Math.sin(a)];
-  const unit = (from, to) => { const dx = to[0] - from[0], dy = to[1] - from[1], l = Math.hypot(dx, dy); return [dx / l, dy / l]; };
-  const along = (p, u, d) => [p[0] + u[0] * d, p[1] + u[1] * d];
-  const f = (p) => p.map((v) => v.toFixed(2)).join(" ");
-
-  // An annular wedge whose sides run parallel to the boundary between petals, so every gap keeps the same
-  // width from hub to rim, with each corner rounded: the same shape the apps draw.
-  function petalPath(mid, sector) {
-    const half = (r) => sector / 2 - Math.asin(Math.min(1, GAP / 2 / r));
-    const ho = half(R_OUT), hi = half(R_IN);
-    const os = pt(R_OUT, mid - ho), oe = pt(R_OUT, mid + ho), ie = pt(R_IN, mid + hi), is = pt(R_IN, mid - hi);
-    const r = CORNER, dO = r / R_OUT, dI = r / R_IN;
-    const large = (span) => (span > Math.PI ? 1 : 0);
-    return [
-      "M", f(along(os, unit(os, is), r)),
-      "Q", f(os), f(pt(R_OUT, mid - ho + dO)),
-      "A", R_OUT, R_OUT, 0, large(2 * (ho - dO)), 1, f(pt(R_OUT, mid + ho - dO)),
-      "Q", f(oe), f(along(oe, unit(oe, ie), r)),
-      "L", f(along(ie, unit(ie, oe), r)),
-      "Q", f(ie), f(pt(R_IN, mid + hi - dI)),
-      "A", R_IN, R_IN, 0, large(2 * (hi - dI)), 0, f(pt(R_IN, mid - hi + dI)),
-      "Q", f(is), f(along(is, unit(is, os), r)),
-      "Z",
-    ].join(" ");
-  }
-
-  function setHub(main, sub) { title.textContent = main; caption.textContent = sub; }
-
-  function build(name) {
-    const wheel = wheels[name];
-    const n = wheel.items.length, sector = (2 * Math.PI) / n;
-    petals.replaceChildren();
-    wheel.items.forEach((label, i) => {
-      const mid = i * sector - Math.PI / 2;
-      const g = document.createElementNS(svgNS, "g");
-      g.setAttribute("class", "petal" + (reduceMotion ? "" : " bloom"));
-      g.setAttribute("tabindex", "0");
-      g.setAttribute("role", "button");
-      g.setAttribute("aria-label", wheel.verb + label);
-      g.style.animationDelay = reduceMotion ? "0s" : `${i * 28}ms`;
-      const face = document.createElementNS(svgNS, "g");
-      face.setAttribute("class", "face");
-      const path = document.createElementNS(svgNS, "path");
-      path.setAttribute("d", petalPath(mid, sector));
-      const text = document.createElementNS(svgNS, "text");
-      const [tx, ty] = pt((R_IN + R_OUT) / 2 + 2, mid);
-      text.setAttribute("x", tx.toFixed(1));
-      text.setAttribute("y", ty.toFixed(1));
-      // Long names wrap onto two lines at the space nearest the middle, so they stay inside the petal.
-      const space = label.length > 9 ? [...label].reduce((best, ch, k) =>
-        ch === " " && Math.abs(k - label.length / 2) < Math.abs(best - label.length / 2) ? k : best, -1) : -1;
-      if (space > 0) {
-        [label.slice(0, space), label.slice(space + 1)].forEach((line, k) => {
-          const span = document.createElementNS(svgNS, "tspan");
-          span.setAttribute("x", tx.toFixed(1));
-          span.setAttribute("dy", k === 0 ? "-0.6em" : "1.2em");
-          span.textContent = line;
-          text.append(span);
-        });
-      } else {
-        text.textContent = label;
-      }
-      face.append(path, text);
-      g.append(face);
-      const lift = () => {
-        petals.querySelectorAll(".petal.on").forEach((p) => { p.classList.remove("on"); p.firstChild.style.transform = ""; });
-        g.classList.add("on");
-        face.style.transform = `translate(${(Math.cos(mid) * LIFT).toFixed(1)}px, ${(Math.sin(mid) * LIFT).toFixed(1)}px)`;
-        setHub(wheel.verb ? wheel.verb + label : label, "Click to run");
-      };
-      const drop = () => { g.classList.remove("on"); face.style.transform = ""; setHub("photo.heic", wheel.name); };
-      const run = () => {
-        lift();
-        setHub("Done", "Saved next to the original");
-        clearTimeout(resetTimer);
-        resetTimer = setTimeout(() => setHub("photo.heic", wheel.name), 1600);
-      };
-      g.addEventListener("pointerenter", lift);
-      g.addEventListener("pointerleave", drop);
-      g.addEventListener("focus", lift);
-      g.addEventListener("blur", drop);
-      g.addEventListener("click", run);
-      g.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); run(); } });
-      petals.append(g);
-    });
-  }
-
-  function show(name) {
-    if (!wheels[name]) return;
-    current = name;
-    document.querySelectorAll(".key").forEach((k) => k.setAttribute("aria-pressed", String(k.dataset.wheel === name)));
-    build(name);
-    setHub("photo.heic", wheels[name].name);
-  }
-
-  document.querySelectorAll(".key").forEach((k) => k.addEventListener("click", () => show(k.dataset.wheel)));
-  // Like the app: tapping a wheel's key opens that wheel.
-  addEventListener("keydown", (e) => {
-    const name = keyToWheel[e.key];
-    if (name && !e.repeat && name !== current) show(name);
-  });
-  show("convert");
-})();
-</script>
+<script type="module" src="assets/js/site.js"></script>
 </body>
 </html>
