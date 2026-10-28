@@ -5,7 +5,7 @@ Morph's Windows app: the drop wheel, drag shortcuts, a tray panel, Settings and 
 ## Install
 
 - **Microsoft Store:** [Morph: File Converter](https://apps.microsoft.com/detail/9PHWJVRC85DW). Signed by Microsoft, so there's no SmartScreen warning, and it updates itself.
-- **Installer (beta):** download [`Morph-1.0.0-x64-setup.exe`](https://github.com/geetxnshgoyal/morph/releases/download/v1.0.0/Morph-1.0.0-x64-setup.exe) (or [`Morph-1.0.0-arm64-setup.exe`](https://github.com/geetxnshgoyal/morph/releases/download/v1.0.0/Morph-1.0.0-arm64-setup.exe) for Arm PCs such as Surface Pro X and Copilot+ PCs) and run it. This first build hasn't been tried on many PCs yet, so please [report](https://github.com/geetxnshgoyal/morph/issues/new) anything that breaks. It installs for your user only, without an admin prompt; choose "Install for all users" in the first screen if you prefer. The installer isn't code-signed yet, so SmartScreen may warn that it doesn't recognise the app: click **More info**, then **Run anyway**.
+- **Installer (beta):** download [`Morph-1.0.1-x64-setup.exe`](https://github.com/geetxnshgoyal/morph/releases/download/v1.0.0/Morph-1.0.1-x64-setup.exe) (or [`Morph-1.0.1-arm64-setup.exe`](https://github.com/geetxnshgoyal/morph/releases/download/v1.0.0/Morph-1.0.1-arm64-setup.exe) for Arm PCs such as Surface Pro X and Copilot+ PCs) and run it. This first build hasn't been tried on many PCs yet, so please [report](https://github.com/geetxnshgoyal/morph/issues/new) anything that breaks. It installs for your user only, without an admin prompt; choose "Install for all users" in the first screen if you prefer. The installer isn't code-signed yet, so SmartScreen may warn that it doesn't recognise the app: click **More info**, then **Run anyway**.
 
 Needs Windows 10 version 1809 or later, or Windows 11. .NET comes with the app; nothing else to install. Uninstall from Settings → Apps.
 
@@ -68,7 +68,7 @@ To package on Windows (needs the Windows SDK and Inno Setup 6):
 windows/scripts/package.ps1 -Version 1.0.0
 ```
 
-That writes `windows/dist/`: `Morph-1.0.0.msixbundle` and one `.msix` per architecture for the Microsoft Store, and `Morph-1.0.0-x64-setup.exe` and `-arm64-setup.exe` for GitHub releases.
+That writes `windows/dist/`: `Morph-1.0.0.msixbundle` and one `.msix` per architecture for the Microsoft Store, and `Morph-1.0.1-x64-setup.exe` and `-arm64-setup.exe` for GitHub releases.
 
 `Morph.exe --snapshots <folder>` draws every screen in light and dark to PNGs without opening a window, for checking the UI on a machine that can't run it.
 

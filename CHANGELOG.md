@@ -18,6 +18,9 @@
 ### iPhone and iPad
 - Opening two files with the same name works (the second becomes "name 2"), and copies of imported files are cleared at launch.
 
+### Windows
+- Version 1.0.1, for the Microsoft Store update and the installers.
+
 ### Android
 - Recent jobs and settings stay out of Google's cloud backup.
 - A result that can't be written to Downloads is reported instead of leaving an empty or hidden file.
