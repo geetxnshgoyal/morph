@@ -16,16 +16,18 @@ SITE = "https://morph.geetanshgoyal.in"
 DOCS = pathlib.Path(__file__).resolve().parent.parent / "docs"
 LAUNCH = "around 11 November 2026"
 UPDATED = "2026-10-28"
+TESTFLIGHT = "https://testflight.apple.com/join/6fFuMydz"
 
 # Where each platform's download or status lives, for the "Get Morph" block.
 GET = [
-    ("Mac", f'<a class="button" href="https://github.com/geetxnshgoyal/morph/releases/download/v1.0.0/Morph-1.0.0.dmg">Download for Mac</a>',
-     f"macOS 14 or later, Apple Silicon or Intel. The Mac App Store version is coming {LAUNCH}."),
+    ("Mac", f'<a class="button" href="https://github.com/geetxnshgoyal/morph/releases/download/v1.0.0/Morph-1.0.0.dmg">Download for Mac</a> <a class="button quiet" href="{TESTFLIGHT}">Mac App Store beta</a>',
+     f"macOS 14 or later, Apple Silicon or Intel. The App Store beta is on TestFlight; it's early and still has bugs."),
     ("Windows", '<a class="button quiet" href="https://apps.microsoft.com/detail/9PHWJVRC85DW">Microsoft Store</a>',
      "Windows 10 (1809) or later and Windows 11."),
     ("Android", '<a class="button quiet" href="android.html">Join the Google Play test</a>',
      f"Android 10 or later. Out for everyone on Google Play {LAUNCH}."),
-    ("iPhone and iPad", None, f"iOS 17 or later. In testing on the App Store, out {LAUNCH}."),
+    ("iPhone and iPad", f'<a class="button quiet" href="{TESTFLIGHT}">Join the TestFlight beta</a>',
+     f"iOS 17 or later. On the App Store {LAUNCH}; try the beta now with TestFlight (expect a few bugs)."),
 ]
 
 # Platform notes reused across pages.
@@ -57,7 +59,7 @@ PAGES = [
             ("Can I convert many HEIC photos at once?", "Yes. Select or drag as many as you like; Morph converts them in one go and shows how many finished."),
             ("Are my photos uploaded anywhere?", "No. The conversion runs on your device and Morph makes no network requests."),
         ],
-        "related": ["image-converter", "compress-image", "remove-exif", "jpg-to-pdf"],
+        "related": ["heic-to-png", "heic-to-pdf", "image-converter", "compress-image", "remove-exif"],
     },
     {
         "slug": "pdf-converter",
@@ -82,7 +84,7 @@ PAGES = [
             ("Can Morph convert Word to PDF?", "On a Mac and on Windows, yes: DOCX, ODT, RTF, HTML, Markdown and plain text all convert to PDF."),
             ("Is it safe for private documents?", "Yes. Everything runs on your device, with no uploads, no account and no tracking."),
         ],
-        "related": ["jpg-to-pdf", "compress-pdf", "pdf-to-jpg", "word-to-pdf", "merge-pdf", "split-pdf"],
+        "related": ["png-to-pdf", "pdf-to-png", "pdf-to-word", "pdf-to-text", "jpg-to-pdf", "compress-pdf", "merge-pdf", "split-pdf"],
     },
     {
         "slug": "jpg-to-pdf",
@@ -101,7 +103,7 @@ PAGES = [
             ("Can I make the PDF smaller?", "Yes. On a Mac, Windows or iPhone, use Compress on the finished PDF, or set a size limit before converting the photos."),
             ("Does it need internet?", "No. Morph works fully offline."),
         ],
-        "related": ["pdf-converter", "merge-pdf", "heic-to-jpg", "compress-image"],
+        "related": ["png-to-pdf", "heic-to-pdf", "pdf-converter", "merge-pdf", "compress-pdf"],
     },
     {
         "slug": "merge-pdf",
@@ -183,7 +185,7 @@ PAGES = [
         "faq": [
             ("Why is my GIF large?", "GIF is an old format that doesn't compress video well. Keep clips to a few seconds for small files."),
         ],
-        "related": ["mov-to-mp4", "mp4-to-mp3", "image-converter"],
+        "related": ["mp4-to-gif", "mov-to-mp4", "mp4-to-mp3", "image-converter"],
     },
     {
         "slug": "compress-image",
@@ -220,7 +222,7 @@ PAGES = [
             ("Is this a real vector or a PNG inside an SVG?", "A real vector: shapes and curves, not an embedded bitmap. That's why it scales without blur."),
             ("What works best?", "Logos, icons, text and flat drawings. Photos trace into a stylised poster look."),
         ],
-        "related": ["svg-to-png", "image-converter", "pdf-converter"],
+        "related": ["jpg-to-svg", "svg-to-png", "svg-to-pdf", "image-converter"],
     },
     {
         "slug": "svg-to-png",
@@ -237,7 +239,7 @@ PAGES = [
         "faq": [
             ("Does Morph load images linked from the web inside an SVG?", "No. Morph never goes online, so linked web images are skipped."),
         ],
-        "related": ["png-to-svg", "image-converter"],
+        "related": ["svg-to-pdf", "png-to-svg", "jpg-to-svg", "image-converter"],
     },
     {
         "slug": "webp-to-jpg",
@@ -254,7 +256,7 @@ PAGES = [
         "faq": [
             ("Can I convert to WEBP as well?", "Yes on Windows and Android, and on a Mac in the download from this site once the free webp tools are installed."),
         ],
-        "related": ["image-converter", "heic-to-jpg", "compress-image"],
+        "related": ["webp-to-png", "png-to-webp", "avif-to-jpg", "image-converter"],
     },
     {
         "slug": "compress-pdf",
@@ -428,7 +430,247 @@ PAGES = [
             ("What happens to transparency in JPG?", "JPG has no transparency, so transparent areas are filled with white."),
             ("Which is smaller?", "JPG, usually by a lot for photos. For screenshots with flat colors, PNG can be smaller and sharper."),
         ],
-        "related": ["image-converter", "heic-to-jpg", "webp-to-jpg", "compress-image"],
+        "related": ["jpg-to-png", "png-to-pdf", "png-to-webp", "image-converter", "compress-image"],
+    },
+    {
+        "slug": "png-to-pdf",
+        "title": "PNG to PDF Converter: Combine Images into One PDF | Morph",
+        "description": "Convert PNG screenshots and images to PDF, one file or many in a single PDF, on Mac, Windows, iPhone or Android. Free and offline.",
+        "h1": "Convert PNG to PDF",
+        "lede": "Screenshots, scans and diagrams saved as PNG turn into a PDF you can email, print or upload. Pick one PNG for a one-page PDF, or several to get them all in one PDF, a page each.",
+        "steps": [
+            ("Open the files in Morph", "On a Mac or Windows PC, start dragging them and tap Shift. On iPhone or Android, share them to Morph or pick them in the app."),
+            ("Choose PDF", "It's on the Convert wheel. Several PNGs become one PDF in the order you picked them."),
+            ("Done", "The PDF is saved next to the first PNG."),
+        ],
+        "where": [(MAC, "Yes."), (WIN, "Yes."), (IOS, "Yes."), (AND, "Yes.")],
+        "faq": [
+            ("Will the PDF be sharp?", "Yes. Each PNG goes in at its full resolution, so text in screenshots stays crisp."),
+            ("Can I mix PNG and JPG?", "Yes. Any images can go in one PDF, in the order you pick them."),
+            ("Are my files uploaded?", "No. Morph converts on your own device and makes no network requests, so nothing leaves it."),
+        ],
+        "related": ["pdf-to-png", "jpg-to-pdf", "pdf-converter", "compress-pdf"],
+    },
+    {
+        "slug": "pdf-to-png",
+        "title": "PDF to PNG Converter: Every Page as an Image | Morph",
+        "description": "Save each page of a PDF as a sharp PNG image, on Mac, Windows, iPhone or Android. Free, offline, and the PDF is never uploaded.",
+        "h1": "Convert PDF to PNG",
+        "lede": "Need a PDF page as a picture for a slide, a chat or a form? Morph saves every page as a high-resolution PNG, all in one folder named after the PDF.",
+        "steps": [
+            ("Open the files in Morph", "On a Mac or Windows PC, start dragging them and tap Shift. On iPhone or Android, share them to Morph or pick them in the app."),
+            ("Choose Images", "Each page becomes a PNG, numbered page 001, page 002 and so on."),
+            ("Use the pages you need", "The folder is saved next to the PDF."),
+        ],
+        "where": [(MAC, "Yes, rendered at twice the page size for sharp text."), (WIN, "Yes."), (IOS, "Yes."), (AND, "Yes.")],
+        "faq": [
+            ("Why PNG and not JPG?", "PNG keeps text and lines perfectly sharp. If a site only takes JPG, select the PNGs and convert them to JPG in one more step."),
+            ("Can I get the text instead?", "Yes, on Mac, Windows, iPhone and iPad: choose Text to save the PDF's words as a text file."),
+            ("Are my files uploaded?", "No. Morph converts on your own device and makes no network requests, so nothing leaves it."),
+        ],
+        "related": ["pdf-to-jpg", "png-to-pdf", "pdf-to-text", "pdf-converter"],
+    },
+    {
+        "slug": "jpg-to-png",
+        "title": "JPG to PNG Converter, Free and Offline | Morph",
+        "description": "Convert JPG photos to PNG on Mac, Windows, iPhone or Android, one file or a whole batch. Free, private, and nothing is uploaded.",
+        "h1": "Convert JPG to PNG",
+        "lede": "PNG is lossless, so further edits don't add more JPG blur, and many design tools and upload forms prefer it. Morph converts any number of JPGs to PNG at once.",
+        "steps": [
+            ("Open the files in Morph", "On a Mac or Windows PC, start dragging them and tap Shift. On iPhone or Android, share them to Morph or pick them in the app."),
+            ("Choose PNG", ""),
+            ("Done", "Each PNG lands next to its JPG; the JPGs aren't touched."),
+        ],
+        "where": [(MAC, "Yes."), (WIN, "Yes."), (IOS, "Yes."), (AND, "Yes.")],
+        "faq": [
+            ("Will PNG look better than the JPG?", "It keeps exactly what's in the JPG without losing more, but it can't bring back detail the JPG already lost."),
+            ("Why is the PNG bigger?", "PNG doesn't throw away detail like JPG does, so photos come out larger. For screenshots and graphics the difference is small."),
+            ("Are my files uploaded?", "No. Morph converts on your own device and makes no network requests, so nothing leaves it."),
+        ],
+        "related": ["png-to-jpg", "image-converter", "heic-to-png", "png-to-svg"],
+    },
+    {
+        "slug": "heic-to-png",
+        "title": "HEIC to PNG Converter, Free and Offline | Morph",
+        "description": "Convert iPhone HEIC photos to PNG on Mac, Windows, iPhone or Android. Batch convert, keep full quality, nothing uploaded.",
+        "h1": "Convert HEIC to PNG",
+        "lede": "Need a lossless copy of an iPhone photo for editing or a site that won't take HEIC? Morph turns HEIC into PNG at full quality.",
+        "steps": [
+            ("Open the files in Morph", "On a Mac or Windows PC, start dragging them and tap Shift. On iPhone or Android, share them to Morph or pick them in the app."),
+            ("Choose PNG", "Choose JPG instead if you want smaller files."),
+            ("Done", "The PNGs land next to the HEIC photos."),
+        ],
+        "where": [(MAC, "Yes."), (WIN, "Yes."), (IOS, "Yes."), (AND, "Yes.")],
+        "faq": [
+            ("HEIC to PNG or HEIC to JPG?", "PNG keeps every pixel and is best for editing; JPG is much smaller and fine for sharing and upload forms."),
+            ("Are my files uploaded?", "No. Morph converts on your own device and makes no network requests, so nothing leaves it."),
+        ],
+        "related": ["heic-to-jpg", "heic-to-pdf", "jpg-to-png", "image-converter"],
+    },
+    {
+        "slug": "heic-to-pdf",
+        "title": "HEIC to PDF Converter: iPhone Photos to One PDF | Morph",
+        "description": "Turn iPhone HEIC photos into a PDF, one photo per page, on Mac, Windows, iPhone or Android. Free and offline.",
+        "h1": "Convert HEIC to PDF",
+        "lede": "Photos of documents, receipts or homework taken on an iPhone are saved as HEIC. Morph puts them straight into one PDF, ready to send.",
+        "steps": [
+            ("Open the files in Morph", "On a Mac or Windows PC, start dragging them and tap Shift. On iPhone or Android, share them to Morph or pick them in the app."),
+            ("Choose PDF", "Pick the photos in the order you want the pages."),
+            ("Send it", "The PDF is saved next to the first photo."),
+        ],
+        "where": [(MAC, "Yes."), (WIN, "Yes."), (IOS, "Yes."), (AND, "Yes.")],
+        "faq": [
+            ("Can I make the PDF smaller?", "Yes, on Mac, Windows and iPhone: use Compress on the finished PDF."),
+            ("Are my files uploaded?", "No. Morph converts on your own device and makes no network requests, so nothing leaves it."),
+        ],
+        "related": ["heic-to-jpg", "jpg-to-pdf", "png-to-pdf", "compress-pdf"],
+    },
+    {
+        "slug": "webp-to-png",
+        "title": "WEBP to PNG Converter, Free and Offline | Morph",
+        "description": "Convert WEBP images saved from the web to PNG, keeping transparency, on Mac, Windows, iPhone or Android. Free, nothing uploaded.",
+        "h1": "Convert WEBP to PNG",
+        "lede": "Images saved from websites are often WEBP, which older apps can't open. Morph converts them to PNG and keeps any transparent background.",
+        "steps": [
+            ("Open the files in Morph", "On a Mac or Windows PC, start dragging them and tap Shift. On iPhone or Android, share them to Morph or pick them in the app."),
+            ("Choose PNG", ""),
+            ("Done", "Each PNG lands next to its WEBP."),
+        ],
+        "where": [(MAC, "Yes."), (WIN, "Yes."), (IOS, "Yes."), (AND, "Yes.")],
+        "faq": [
+            ("Does transparency survive?", "Yes. PNG keeps transparent areas; JPG would fill them with white."),
+            ("Are my files uploaded?", "No. Morph converts on your own device and makes no network requests, so nothing leaves it."),
+        ],
+        "related": ["webp-to-jpg", "png-to-webp", "image-converter", "png-to-jpg"],
+    },
+    {
+        "slug": "png-to-webp",
+        "title": "PNG to WEBP and JPG to WEBP Converter | Morph",
+        "description": "Make images smaller for your website by converting PNG or JPG to WEBP, on Windows, Android or Mac. Free and offline.",
+        "h1": "Convert PNG or JPG to WEBP",
+        "lede": "WEBP images are usually a third smaller than JPG or PNG at the same look, so pages load faster. The Web Image recipe resizes to 1600 px and converts to WEBP in one step.",
+        "steps": [
+            ("Open the files in Morph", "On a Mac or Windows PC, start dragging them and tap Shift. On iPhone or Android, share them to Morph or pick them in the app."),
+            ("Choose WEBP", "Or use the Web Image recipe to resize and convert at once."),
+            ("Upload", "The WEBP files land next to the originals."),
+        ],
+        "where": [(MAC, "In the download from this site, once the free webp tools are installed (Morph shows the one command)."), (WIN, "Yes."), (IOS, "Not yet: iOS can read WEBP but not write it. Morph makes AVIF or HEIC instead, which are just as small."), (AND, "Yes.")],
+        "faq": [
+            ("Do all browsers show WEBP?", "Yes, every current browser does."),
+            ("Are my files uploaded?", "No. Morph converts on your own device and makes no network requests, so nothing leaves it."),
+        ],
+        "related": ["webp-to-png", "webp-to-jpg", "compress-image", "image-converter"],
+    },
+    {
+        "slug": "avif-to-jpg",
+        "title": "AVIF to JPG Converter, Free and Offline | Morph",
+        "description": "Convert AVIF images to JPG or PNG that every app opens, on Mac, Windows, iPhone or Android. Free, nothing uploaded.",
+        "h1": "Convert AVIF to JPG",
+        "lede": "AVIF is a new, very small image format some sites now serve, but many apps can't open it yet. Morph turns it into a JPG or PNG that works everywhere.",
+        "steps": [
+            ("Open the files in Morph", "On a Mac or Windows PC, start dragging them and tap Shift. On iPhone or Android, share them to Morph or pick them in the app."),
+            ("Choose JPG or PNG", ""),
+            ("Done", "The converted image lands next to the AVIF."),
+        ],
+        "where": [(MAC, "Yes."), (WIN, "Yes."), (IOS, "Yes."), (AND, "Yes, on Android 12 and later.")],
+        "faq": [
+            ("Can Morph make AVIF too?", "Yes, on Mac, Windows and iPhone: choose AVIF on the Convert wheel."),
+            ("Are my files uploaded?", "No. Morph converts on your own device and makes no network requests, so nothing leaves it."),
+        ],
+        "related": ["webp-to-jpg", "heic-to-jpg", "image-converter", "png-to-jpg"],
+    },
+    {
+        "slug": "svg-to-pdf",
+        "title": "SVG to PDF Converter: Keep It Vector | Morph",
+        "description": "Convert SVG logos and drawings to a PDF that stays vector, sharp at any zoom, on Mac, Windows, iPhone or Android. Free and offline.",
+        "h1": "Convert SVG to PDF",
+        "lede": "Need a logo or diagram as a PDF for print or a client? Morph puts the SVG into a PDF without turning it into pixels, so it stays sharp at any size.",
+        "steps": [
+            ("Open the files in Morph", "On a Mac or Windows PC, start dragging them and tap Shift. On iPhone or Android, share them to Morph or pick them in the app."),
+            ("Choose PDF", "Several SVGs become one PDF, a page each."),
+            ("Done", "The PDF is saved next to the SVG."),
+        ],
+        "where": [(MAC, "Yes, and the PDF stays vector."), (WIN, "Yes."), (IOS, "Yes, and the PDF stays vector."), (AND, "Yes, and the PDF stays vector.")],
+        "faq": [
+            ("Will text in the SVG stay text?", "Shapes and paths stay vector. Morph never goes online, so images the SVG links to on the web are skipped."),
+            ("Are my files uploaded?", "No. Morph converts on your own device and makes no network requests, so nothing leaves it."),
+        ],
+        "related": ["svg-to-png", "png-to-svg", "png-to-pdf", "pdf-converter"],
+    },
+    {
+        "slug": "jpg-to-svg",
+        "title": "JPG to SVG Converter: Trace a Photo into Vector | Morph",
+        "description": "Trace a JPG logo, icon or sketch into a real vector SVG with smooth curves, on Mac, Windows, iPhone or Android. Free, offline.",
+        "h1": "Convert JPG to SVG",
+        "lede": "Got a logo only as a JPG? Morph traces it into real vector shapes with a small palette and smooth curves, so it scales without blur and edits in any vector app.",
+        "steps": [
+            ("Open the files in Morph", "On a Mac or Windows PC, start dragging them and tap Shift. On iPhone or Android, share them to Morph or pick them in the app."),
+            ("Choose SVG", "Compression level sets the detail: Light keeps more colors, Strong makes the smallest file."),
+            ("Edit it", "Open the SVG in Figma, Illustrator, Inkscape or a browser."),
+        ],
+        "where": [(MAC, "Yes."), (WIN, "Yes."), (IOS, "Yes."), (AND, "Yes.")],
+        "faq": [
+            ("Does it work on photos?", "It works best on logos, icons, text and flat drawings. Photos come out as a stylised poster."),
+            ("Is it a real vector?", "Yes: paths and curves, not a JPG wrapped in an SVG."),
+            ("Are my files uploaded?", "No. Morph converts on your own device and makes no network requests, so nothing leaves it."),
+        ],
+        "related": ["png-to-svg", "svg-to-png", "svg-to-pdf", "image-converter"],
+    },
+    {
+        "slug": "pdf-to-word",
+        "title": "PDF to Word (DOCX) on Mac or Windows, Free | Morph",
+        "description": "Get the text of a PDF into an editable Word document on a Mac or Windows PC, without uploading it. Free and open source.",
+        "h1": "Convert PDF to Word",
+        "lede": "Morph pulls the text and paragraphs out of a PDF into a DOCX you can edit in Word, Pages or Google Docs, on your own computer.",
+        "steps": [
+            ("Start dragging the PDF", "In Finder or File Explorer, start dragging it and tap Shift."),
+            ("Drop it on DOCX", "The Convert wheel opens under your cursor."),
+            ("Edit it", "The DOCX is saved next to the PDF."),
+        ],
+        "where": [(MAC, "Yes."), (WIN, "Yes."), (IOS, "Not yet: iPhone and iPad can save a PDF's text as a text file."), (AND, "Not yet.")],
+        "faq": [
+            ("Does it keep the layout?", "It keeps the text and paragraphs, which is what you need to edit or reuse the words. Columns, images and exact positions aren't carried over."),
+            ("What about scanned PDFs?", "A scan is a picture of text. Use Extract Text first to read the words, then paste them into a document."),
+            ("Are my files uploaded?", "No. Morph converts on your own device and makes no network requests, so nothing leaves it."),
+        ],
+        "related": ["word-to-pdf", "pdf-to-text", "pdf-converter", "image-to-text"],
+    },
+    {
+        "slug": "pdf-to-text",
+        "title": "PDF to Text: Copy the Text out of a PDF | Morph",
+        "description": "Save all the text in a PDF as a plain text file, or read scanned PDFs, on Mac, Windows, iPhone and iPad. Free and offline.",
+        "h1": "Get the text out of a PDF",
+        "lede": "Morph saves every word of a PDF as a plain text file you can search, copy or paste anywhere. For scanned PDFs, Extract Text reads the words from the page images.",
+        "steps": [
+            ("Open the files in Morph", "On a Mac or Windows PC, start dragging them and tap Shift. On iPhone or Android, share them to Morph or pick them in the app."),
+            ("Choose Text", "Or Extract Text on the Tools wheel for a scanned PDF."),
+            ("Copy what you need", "The text file is saved next to the PDF."),
+        ],
+        "where": [(MAC, "Yes, and scanned PDFs too."), (WIN, "Yes, and scanned PDFs too."), (IOS, "Yes, and scanned PDFs too."), (AND, "Not yet: Android reads text from photos and screenshots.")],
+        "faq": [
+            ("Does it work on scans?", "Yes, with Extract Text, which uses the text recognition built into your device. It runs offline."),
+            ("Are my files uploaded?", "No. Morph converts on your own device and makes no network requests, so nothing leaves it."),
+        ],
+        "related": ["pdf-to-word", "image-to-text", "pdf-to-png", "pdf-converter"],
+    },
+    {
+        "slug": "mp4-to-gif",
+        "title": "MP4 to GIF Converter, Free and Offline | Morph",
+        "description": "Turn a short MP4 or MOV clip into a GIF on Mac, Windows, iPhone or iPad. Free, no watermark, nothing uploaded.",
+        "h1": "Convert MP4 to GIF",
+        "lede": "Screen recordings and short clips become GIFs that play anywhere, from Slack and GitHub to chat apps. No watermark, no account.",
+        "steps": [
+            ("Open the files in Morph", "On a Mac or Windows PC, start dragging them and tap Shift. On iPhone or Android, share them to Morph or pick them in the app."),
+            ("Choose GIF", "It's on the Convert wheel next to the video formats."),
+            ("Share it", "The GIF is saved next to the video."),
+        ],
+        "where": [(MAC, "Yes."), (WIN, "Yes."), (IOS, "Yes."), (AND, "Not yet.")],
+        "faq": [
+            ("How long can the clip be?", "Morph uses the first 30 seconds. Shorter clips make smaller GIFs."),
+            ("Is there a watermark?", "No. Morph is free and open source."),
+            ("Are my files uploaded?", "No. Morph converts on your own device and makes no network requests, so nothing leaves it."),
+        ],
+        "related": ["video-to-gif", "mov-to-mp4", "compress-video", "mp4-to-mp3"],
     },
     {
         "slug": "image-converter",
@@ -451,7 +693,7 @@ PAGES = [
             ("Which format should I pick?", "JPG for photos, PNG for screenshots and anything with transparency, SVG for logos, HEIC or AVIF for the smallest photos on newer devices."),
             ("Can I resize at the same time?", "Yes. Use Resize, or the Web Image recipe, which resizes to 1600 px and converts in one step."),
         ],
-        "related": ["png-to-jpg", "heic-to-jpg", "webp-to-jpg", "png-to-svg", "compress-image"],
+        "related": ["png-to-jpg", "jpg-to-png", "heic-to-jpg", "webp-to-png", "avif-to-jpg", "png-to-webp", "png-to-svg", "compress-image"],
     },
     {
         "slug": "remove-exif",

@@ -15,12 +15,16 @@ Grab the latest build from [Releases](../../releases/latest):
 
 | Platform | File | Needs |
 | --- | --- | --- |
-| macOS | [`Morph-1.0.0.dmg`](https://github.com/geetxnshgoyal/morph/releases/download/v1.0.0/Morph-1.0.0.dmg); the Mac App Store version is in internal testing, out around 11 November 2026 | macOS 14 or later, Apple Silicon or Intel |
+| macOS | [`Morph-1.0.0.dmg`](https://github.com/geetxnshgoyal/morph/releases/download/v1.0.0/Morph-1.0.0.dmg), or the Mac App Store beta on [TestFlight](https://testflight.apple.com/join/6fFuMydz) (out around 11 November 2026) | macOS 14 or later, Apple Silicon or Intel |
 | Windows (beta) | [Microsoft Store](https://apps.microsoft.com/detail/9PHWJVRC85DW), or [`Morph-1.0.1-x64-setup.exe`](https://github.com/geetxnshgoyal/morph/releases/download/v1.0.0/Morph-1.0.1-x64-setup.exe) ([`arm64`](https://github.com/geetxnshgoyal/morph/releases/download/v1.0.0/Morph-1.0.1-arm64-setup.exe) for Arm PCs) | Windows 10 version 1809 or later, or Windows 11 |
 | Android | Google Play is in closed testing, out around 11 November 2026: [join the testers](https://morph.geetanshgoyal.in/android.html) to get it now, or use `Morph-1.0.0.apk` | Android 10 or later |
-| iOS | the App Store version is in internal testing, out around 11 November 2026; until then build from source, see [ios/README.md](ios/README.md) | iOS 17 or later |
+| iOS | the beta on [TestFlight](https://testflight.apple.com/join/6fFuMydz); on the App Store around 11 November 2026 | iOS 17 or later |
 
-**macOS:** open the DMG and drag Morph into Applications. The build is signed with a Developer ID and notarized by Apple.
+**macOS:** open the DMG and drag Morph into Applications. The build is signed with a Developer ID and notarized by Apple. To try the Mac App Store version instead, install TestFlight and open the [beta link](https://testflight.apple.com/join/6fFuMydz) on your Mac; it saves results to Downloads until you allow saving next to your files in Settings → Output.
+
+**iPhone and iPad:** install TestFlight, then open the [beta link](https://testflight.apple.com/join/6fFuMydz) on your iPhone or iPad.
+
+**Betas:** Morph is new and still has bugs, most of all in the TestFlight builds. Please [report](https://github.com/geetxnshgoyal/morph/issues/new) anything that breaks, with your device and the file you used.
 
 **Windows (beta):** get Morph from the [Microsoft Store](https://apps.microsoft.com/detail/9PHWJVRC85DW), or run the setup file. This first build hasn't been tried on many PCs yet, so please [report](https://github.com/geetxnshgoyal/morph/issues/new) anything that breaks. It installs for your user only, with no admin prompt. The installer isn't code-signed yet, so SmartScreen may say it doesn't recognise the app: click **More info**, then **Run anyway**. Morph then sits in the taskbar corner; see [windows/README.md](windows/README.md).
 
