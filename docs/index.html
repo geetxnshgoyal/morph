@@ -331,15 +331,22 @@
       </div>
 
       <div class="stage" data-stage tabindex="-1" aria-label="Try the wheel: a Downloads folder with sample files">
+        <div class="menubar" aria-hidden="true">
+          <span class="menubar-app">Finder</span><span>File</span><span>Edit</span><span>View</span><span>Go</span><span>Window</span>
+          <span class="menubar-right">
+            <svg class="mark menubar-mark" viewBox="0 0 64 64"><g fill="currentColor"><circle cx="32" cy="32" r="6"/><circle cx="32" cy="17" r="6"/><circle cx="32" cy="47" r="6"/><circle cx="19" cy="24.5" r="6"/><circle cx="45" cy="24.5" r="6"/><circle cx="19" cy="39.5" r="6"/><circle cx="45" cy="39.5" r="6"/></g></svg>
+            <span class="mono" data-clock></span>
+          </span>
+        </div>
         <div class="desk">
           <div class="explorer">
             <div class="explorer-bar">
-              <span data-icon="files" class="explorer-title"></span><span class="explorer-name">Downloads</span>
-              <span class="explorer-controls" aria-hidden="true"><i></i><i></i><i></i></span>
+              <span class="traffic" aria-hidden="true"><i></i><i></i><i></i></span>
+              <span class="explorer-name">Downloads</span>
             </div>
             <div class="explorer-body">
               <ul class="explorer-side" aria-hidden="true">
-                <li>Home</li><li>Desktop</li><li class="is-on">Downloads</li><li>Documents</li><li>Pictures</li><li>Music</li>
+                <li class="side-head">Favorites</li><li>Recents</li><li>Applications</li><li>Desktop</li><li>Documents</li><li class="is-on">Downloads</li>
               </ul>
               <div class="explorer-files" data-files role="group" aria-label="Sample files. Press Enter on one to open the wheel."></div>
             </div>
@@ -353,19 +360,12 @@
             <div class="ghost" data-ghost aria-hidden="true"></div>
           </div>
 
-          <button type="button" class="keycap" data-keycap><span data-icon="shift"></span>Shift</button>
+          <div class="stage-keys" data-keys aria-label="Wheel keys"></div>
           <p class="hint" data-hint></p>
-        </div>
-        <div class="taskbar" aria-hidden="true">
-          <div class="taskbar-apps">
-            <span data-icon="globe"></span><span data-icon="files" class="is-on"></span><span data-icon="document"></span><span data-icon="code"></span>
-            <svg class="mark taskbar-mark" viewBox="0 0 64 64"><rect width="64" height="64" rx="16" fill="#0B6E69"/><g fill="#fff"><circle cx="32" cy="32" r="6"/><circle cx="32" cy="17" r="6"/><circle cx="32" cy="47" r="6"/><circle cx="19" cy="24.5" r="6"/><circle cx="45" cy="24.5" r="6"/><circle cx="19" cy="39.5" r="6"/><circle cx="45" cy="39.5" r="6"/></g></svg>
-          </div>
-          <div class="taskbar-clock mono" data-clock></div>
         </div>
         <p class="sr-only" aria-live="polite" data-live></p>
       </div>
-      <p class="stage-note">This is the real wheel, drawn in your browser with the app's own layout. Drag a file, or tap to open. Ctrl+click picks several files. Nothing is uploaded or converted here.</p>
+      <p class="stage-note">Morph's own wheels and actions, drawn in your browser. Drag a file and tap a key, or tap a file on a phone. ⌘-click (Ctrl-click) picks several files. Nothing is uploaded or converted here.</p>
     </div>
   </main>
 </div>

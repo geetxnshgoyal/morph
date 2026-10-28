@@ -1,9 +1,7 @@
-// The ShiftDrop wheel, drawn in SVG with the app's own geometry and motion.
-//
-// Everything here mirrors the Windows app: src/keyboard/WheelLayout.* (rings, slots, hit-testing),
-// src/keyboard/WheelLabels.* (one label style, one or two lines, never cut), and src/Overlay.cpp
-// (tile shape, lift on hover, the open spring, the section switch). Lengths are DIPs; the SVG's
-// viewBox is in DIPs and CSS scales it.
+// Morph's wheel, drawn in SVG with the Mac app's geometry (WheelMetrics in Sources/MorphMac/Wheel.swift):
+// a ring of up to eight petals around a hub, the highlighted petal lifting outward in Teal Ink, and the hub
+// naming the file or the action under the pointer. Lengths are points; the SVG's viewBox is in points and
+// CSS scales it.
 
 import { icon } from './icons.js';
 
@@ -12,20 +10,20 @@ const SVG = 'http://www.w3.org/2000/svg';
 // ---- Layout (WheelLayout.h) -----------------------------------------------------------------------
 
 export const RING_CAPACITY = 8;
-export const CENTRE = 52;          // centre disc = dead zone: dropping here cancels
-const INNER_IN = 58, INNER_OUT = 128;
-const OUTER_IN = 134, OUTER_OUT = 192;
+export const CENTRE = 76;          // the hub: dropping here cancels
+const INNER_IN = 88, INNER_OUT = 168;
+const OUTER_IN = 174, OUTER_OUT = 232;
 
-const GAP = 4;                     // straight gap between tiles
-const CORNER = 6;                  // tile corner rounding
-const LIFT = 7, PUSH = 3;          // a hovered tile grows outward and moves out along its centre line
+const GAP = 7;                     // the same gap between petals from hub to rim
+const CORNER = 9;                  // petal corner rounding
+const LIFT = 12, PUSH = 2;         // a highlighted petal grows outward and moves out along its centre line
 const INNER_LIFT = 2, INNER_PUSH = 1;
-const PLATE = 4;                   // the plate around the tiles
+const PLATE = 0;                   // petals float on their own shadow, with no plate behind them
 
 const OPEN_MS = 420, FADE_IN_MS = 120, SWITCH_MS = 260, CLOSE_MS = 200, HOT_TAU = 42;
 
-export const LABEL_PX = 13, ICON_PX = 20, ICON_GAP = 3, LINE_HEIGHT = 1.05, LABEL_PAD = 1.5;
-const MAIN_PX = 20, DETAIL_PX = 12;
+export const LABEL_PX = 12, ICON_PX = 22, ICON_GAP = 4, LINE_HEIGHT = 1.1, LABEL_PAD = 1.5;
+const MAIN_PX = 15, DETAIL_PX = 12;
 
 export function arrange(total) {
   const slots = [];
@@ -61,7 +59,7 @@ export function hitSlot(layout, d, deg, reach) {
   return base + (Math.floor((deg + sp / 2) / sp) % count);
 }
 
-// ---- Geometry (Overlay.cpp: TileGeometry) ---------------------------------------------------------
+// ---- Geometry (PetalShape in Wheel.swift) -----------------------------------------------------------
 
 const RAD = Math.PI / 180;
 const polar = (r, deg) => [r * Math.sin(deg * RAD), -r * Math.cos(deg * RAD)];
@@ -98,10 +96,12 @@ export function tilePath(count, index, inner, outer) {
   ].join('');
 }
 
-// ---- Labels (WheelLabels.cpp) ---------------------------------------------------------------------
+// ---- Labels -----------------------------------------------------------------------------------------
 
-const LABEL_FONT = `600 ${LABEL_PX}px "Segoe UI Variable Text", "Segoe UI Variable", "Segoe UI", "IBM Plex Sans", system-ui, sans-serif`;
-const DETAIL_FONT = `400 ${DETAIL_PX}px "Segoe UI Variable Text", "Segoe UI Variable", "Segoe UI", "IBM Plex Sans", system-ui, sans-serif`;
+const FACE = '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", "IBM Plex Sans", system-ui, sans-serif';
+const LABEL_FONT = `700 ${LABEL_PX}px ${FACE}`;
+const MAIN_FONT = `600 ${MAIN_PX}px ${FACE}`;
+const DETAIL_FONT = `400 ${DETAIL_PX}px ${FACE}`;
 let measureCtx = null;
 function measure(text, font = LABEL_FONT) {
   measureCtx ??= document.createElement('canvas').getContext('2d');
@@ -203,7 +203,7 @@ function wrap(text, width, font = DETAIL_FONT) {
   return lines;
 }
 
-// ---- Motion (Theme.cpp) ---------------------------------------------------------------------------
+// ---- Motion -----------------------------------------------------------------------------------------
 
 export const easeOutCubic = (t) => 1 - Math.pow(1 - Math.min(Math.max(t, 0), 1), 3);
 // Damped oscillation, normalised so it starts at 0 and has settled by t = 1.
@@ -231,7 +231,7 @@ export class Wheel {
     this.reducedMotion = options.reducedMotion ?? false;
     this.svg = el('svg', { class: 'wheel-svg', 'aria-hidden': 'true', focusable: 'false' });
     const defs = el('defs', {}, this.svg);
-    // Soft shadow under the ring, slightly lower than the wheel, as if lit from above (Overlay.cpp).
+    // Soft shadow under the ring, slightly lower than the wheel, as if lit from above.
     this.shadowGrad = el('radialGradient', { id: `${this.id}-shadow`, gradientUnits: 'userSpaceOnUse', cx: 0, cy: 5 }, defs);
     this.defs = defs;
     this.root = el('g', { class: 'wheel-root' }, this.svg);
@@ -247,7 +247,6 @@ export class Wheel {
     this.mainB = el('text', { class: 'wheel-main', 'text-anchor': 'middle' }, this.centre);
     this.detailA = el('text', { class: 'wheel-detail', 'text-anchor': 'middle' }, this.centre);
     this.detailB = el('text', { class: 'wheel-detail', 'text-anchor': 'middle' }, this.centre);
-    this.dots = el('g', { class: 'wheel-dots' }, this.centre);
 
     this.slices = [];
     this.tiles = [];
@@ -263,6 +262,7 @@ export class Wheel {
     this.section = 0;
     this.centreText = '';
     this.title = '';
+    this.hint = '';
     this.frame = null;
     this.last = 0;
     this.builds = 0;
@@ -276,7 +276,7 @@ export class Wheel {
   get reach() { return outerEdge(this.layout) + LIFT; }
   get extent() { return band(Math.max(this.layout.rings, this.frameRings) - 1)[1] + PLATE + 26; }
 
-  // Show a section: its slices, the centre's main line and the section's title.
+  // Show a wheel: its actions, the hub's name (the file) and line under it, and what the hub says over an action.
   set(content, { animate = false, dir = 1 } = {}) {
     if (animate && !this.reducedMotion && this.tiles.length) {
       this.prevLayer.replaceChildren(...this.layer.childNodes);
@@ -290,6 +290,7 @@ export class Wheel {
     this.slices = content.slices;
     this.centreText = content.centre;
     this.title = content.title;
+    this.hint = content.hint ?? '';
     this.sections = content.sections ?? 1;
     this.section = content.section ?? 0;
     this.layout = arrange(this.slices.length);
@@ -390,26 +391,13 @@ export class Wheel {
   paintCentre() {
     const hot = this.hot >= 0 ? this.slices[this.hot] : null;
     const hotT = this.hot >= 0 ? this.hotT[this.hot] : 0;
-    // Main line: the count (or a size), crossfading to the hovered slice's headline when it has one.
-    const headline = hot && hot.headline;
-    this.setLines(this.mainA, [this.centreText], -16, MAIN_PX, headline ? 1 - hotT : 1);
-    this.setLines(this.mainB, headline ? [headline] : [], -16, MAIN_PX, headline ? hotT : 0);
-    // Under it the detail: the section's name, crossfading to what the hovered slice does.
-    const width = 2 * CENTRE - 8;
-    this.setLines(this.detailA, wrap(this.title, width), 7, DETAIL_PX * 1.25, 1 - hotT, true);
-    this.setLines(this.detailB, hot ? wrap(hot.detail ?? hot.label, width) : [], 7, DETAIL_PX * 1.25, hotT, true);
-    // Dots: one per section, the current one in the accent colour.
-    if (this.dots.dataset.key !== `${this.sections}:${this.section}`) {
-      this.dots.dataset.key = `${this.sections}:${this.section}`;
-      this.dots.replaceChildren();
-      if (this.sections > 1) {
-        const gap = 9, y = CENTRE - 9, x0 = (-gap * (this.sections - 1)) / 2;
-        for (let i = 0; i < this.sections; i++) {
-          const on = i === this.section;
-          el('circle', { cx: x0 + gap * i, cy: y, r: on ? 2.6 : 2.1, class: on ? 'dot on' : 'dot' }, this.dots);
-        }
-      }
-    }
+    // As in the app: the file's name and what to do, crossfading to the action under the pointer.
+    const width = 2 * CENTRE - 24;
+    const main = (text) => wrap(text, width, MAIN_FONT).slice(0, 2);
+    this.setLines(this.mainA, main(this.centreText), -8, MAIN_PX * 1.2, 1 - hotT);
+    this.setLines(this.mainB, hot ? main(hot.title ?? hot.label) : [], -8, MAIN_PX * 1.2, hotT);
+    this.setLines(this.detailA, wrap(this.title, width), 12, DETAIL_PX * 1.25, 1 - hotT, true);
+    this.setLines(this.detailB, hot ? wrap(this.hint, width) : [], 12, DETAIL_PX * 1.25, hotT, true);
   }
 
   setLines(node, lines, top, step, opacity, fromTop = false) {
