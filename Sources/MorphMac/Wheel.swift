@@ -123,7 +123,7 @@ final class WheelModel: ObservableObject {
     /// Petals per ring; more actions than this page around with a turn of the wheel.
     static let perPage = 8
 
-    let files: [URL]
+    private(set) var files: [URL]
     let actions: [Action]
     let dropMode: Bool
     @Published private(set) var group: Action.Group
@@ -250,6 +250,13 @@ final class WheelModel: ObservableObject {
         if event.phase == .ended || event.momentumPhase == .ended { scrollAccumulator = 0 }
     }
 
+    /// Takes the files from a drop on the wheel. The App Store build can't read a dragged file until it's dropped
+    /// on Morph, so the paths seen mid-drag only pick the actions; the drop itself brings the access.
+    func takeDropped(_ pasteboard: NSPasteboard) {
+        let urls = pasteboard.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL] ?? []
+        if !urls.isEmpty { files = urls.map(\.standardizedFileURL) }
+    }
+
     func runHighlighted() {
         if let action = pageItems.first(where: { $0.id == hovered }) { run(action) }
     }
@@ -309,6 +316,9 @@ struct WheelView: View {
     var body: some View {
         ZStack(alignment: .topLeading) {
             ZStack {
+                // Liquid Glass leaves the window's own pixels clear, and macOS hands clicks and drops on clear
+                // pixels to the window behind. A fill too faint to see keeps the ring, gaps included, ours.
+                Circle().fill(.black.opacity(0.01))
                 if case .choosing = model.phase {
                     PetalRing(model: model, items: model.pageItems)
                         .id("\(model.group)-\(model.page)")
@@ -399,6 +409,7 @@ private struct RingDropDelegate: DropDelegate {
     func performDrop(info: DropInfo) -> Bool {
         MainActor.assumeIsolated {
             guard let action = model.action(at: centered(info.location)) else { return false }
+            model.takeDropped(NSPasteboard(name: .drag))
             model.run(action)
             return true
         }
@@ -572,6 +583,7 @@ private struct WheelBar: View {
             }
         }
         .padding(4)
+        .background(Capsule().fill(.black.opacity(0.01)))
         .wheelGlass(in: Capsule())
         .overlay(Capsule().strokeBorder(.white.opacity(0.18), lineWidth: 1))
         .shadow(color: .black.opacity(0.15), radius: 10, y: 4)

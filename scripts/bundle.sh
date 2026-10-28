@@ -27,8 +27,11 @@ sign() {
 APP=dist/Morph.app
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
-cp "$BIN/MorphMac" "$APP/Contents/MacOS/Morph"
-cp "$BIN/morph" "$APP/Contents/Resources/morph"
+# SwiftPM's universal build records macOS 14 as the SDK, which runs the app in compatibility mode: no Liquid
+# Glass and the old look. Record the SDK it was really built with, as Xcode does (signing comes later).
+SDK_VERSION=$(xcrun --sdk macosx --show-sdk-version)
+vtool -set-build-version macos 14.0 "$SDK_VERSION" -replace -output "$APP/Contents/MacOS/Morph" "$BIN/MorphMac" 2>/dev/null
+vtool -set-build-version macos 14.0 "$SDK_VERSION" -replace -output "$APP/Contents/Resources/morph" "$BIN/morph" 2>/dev/null
 ICONSET=$(mktemp -d)/AppIcon.iconset
 swift scripts/make-icon.swift "$ICONSET"
 iconutil -c icns "$ICONSET" -o "$APP/Contents/Resources/AppIcon.icns"

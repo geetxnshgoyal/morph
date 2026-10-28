@@ -14,6 +14,8 @@
 - **Mac App Store version.** The menu bar app, sandboxed. Results go to Downloads until you allow saving next to the originals, once, in Settings → Output or the welcome guide; the wheel never stops to ask. Homebrew extras (MP3, WebM, FLAC; WebP) and the command-line tool stay in the download from the website.
 - The download from the website is signed with a Developer ID and notarized by Apple, so it opens without a warning.
 - Undo works after a relaunch in the App Store version.
+- The wheel takes clicks and drops again in the App Store version. With Liquid Glass, a click or drop on a petal went to the window behind it, and a dragged file couldn't be read until it was dropped on Morph ("isn't a readable image").
+- The download from the website now uses Liquid Glass on macOS 26 too, like the App Store version.
 
 ### iPhone and iPad
 - Opening two files with the same name works (the second becomes "name 2"), and copies of imported files are cleared at launch.
@@ -24,6 +26,9 @@
 ### Android
 - Recent jobs and settings stay out of Google's cloud backup.
 - A result that can't be written to Downloads is reported instead of leaving an empty or hidden file.
+
+### Website
+- The demo on the homepage shows Morph itself: its four wheels and their keys (⇧ ⌘ ⌃ ⌥, or Shift, Ctrl, Ctrl+Shift and Alt on Windows), the real actions for each file, and a Mac desktop.
 
 ## 1.0.0 (2026-10-22)
 
