@@ -35,14 +35,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         NSUpdateDynamicServices()
 
         popover.behavior = .transient
-        popover.contentViewController = NSHostingController(rootView: ShelfView(
-            onFiles: { [weak self] urls in
-                self?.popover.performClose(nil)
-                self?.showWheel(for: urls)
-            },
-            onSettings: { [weak self] in self?.popover.performClose(nil); self?.showSettings() },
-            onWelcome: { [weak self] in self?.popover.performClose(nil); self?.showWelcome() }
-        ).followsPalette())
 
         // Tap a wheel's keys while dragging files anywhere: that wheel appears under the cursor to drop on.
         dragShortcut.onTrigger = { [weak self] urls, group in self?.showWheel(for: urls, dropMode: true, group: group) }
@@ -191,6 +183,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     private func showPopover() {
         guard let button = statusItem.button, !popover.isShown else { return }
+        // A fresh view each time, sized before it's placed: a popover that grows once shown rides up over the menu bar.
+        ToolStatus.shared.refresh()
+        let shelf = NSHostingController(rootView: ShelfView(
+            onFiles: { [weak self] urls in
+                self?.popover.performClose(nil)
+                self?.showWheel(for: urls)
+            },
+            onSettings: { [weak self] in self?.popover.performClose(nil); self?.showSettings() },
+            onWelcome: { [weak self] in self?.popover.performClose(nil); self?.showWelcome() }
+        ).followsPalette())
+        popover.contentViewController = shelf
+        popover.contentSize = shelf.view.fittingSize
         popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
         NSApp.activate(ignoringOtherApps: true)
     }
@@ -253,7 +257,7 @@ struct ShelfView: View {
 
     @ObservedObject private var tools = ToolStatus.shared
     @State private var targeted = false
-    @State private var recent: [HistoryEntry] = []
+    @State private var recent = Array(History.shared.entries.suffix(5).reversed())
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -312,10 +316,6 @@ struct ShelfView: View {
         .frame(width: 310)
         .background(Theme.canvas)
         .tint(Theme.brand)
-        .onAppear {
-            recent = Array(History.shared.entries.suffix(5).reversed())
-            tools.refresh()
-        }
     }
 
     private func row(_ entry: HistoryEntry) -> some View {
