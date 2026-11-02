@@ -5,7 +5,7 @@ Morph's Windows app: the drop wheel, drag shortcuts, a tray panel, Settings and 
 ## Install
 
 - **Microsoft Store:** [Morph: File Converter](https://apps.microsoft.com/detail/9PHWJVRC85DW). Signed by Microsoft, so there's no SmartScreen warning, and it updates itself.
-- **Installer (beta):** download [`Morph-1.0.1-x64-setup.exe`](https://github.com/geetxnshgoyal/morph/releases/download/v1.0.0/Morph-1.0.1-x64-setup.exe) (or [`Morph-1.0.1-arm64-setup.exe`](https://github.com/geetxnshgoyal/morph/releases/download/v1.0.0/Morph-1.0.1-arm64-setup.exe) for Arm PCs such as Surface Pro X and Copilot+ PCs) and run it. This first build hasn't been tried on many PCs yet, so please [report](https://github.com/geetxnshgoyal/morph/issues/new) anything that breaks. It installs for your user only, without an admin prompt; choose "Install for all users" in the first screen if you prefer. The installer isn't code-signed yet, so SmartScreen may warn that it doesn't recognise the app: click **More info**, then **Run anyway**.
+- **Installer:** download [`Morph-1.0.1-x64-setup.exe`](https://github.com/geetxnshgoyal/morph/releases/download/v1.0.0/Morph-1.0.1-x64-setup.exe) (or [`Morph-1.0.1-arm64-setup.exe`](https://github.com/geetxnshgoyal/morph/releases/download/v1.0.0/Morph-1.0.1-arm64-setup.exe) for Arm PCs such as Surface Pro X and Copilot+ PCs) and run it. It installs for your user only, without an admin prompt; choose "Install for all users" in the first screen if you prefer. The installer isn't code-signed yet, so SmartScreen may warn that it doesn't recognise the app: click **More info**, then **Run anyway**.
 
 Needs Windows 10 version 1809 or later, or Windows 11. .NET comes with the app; nothing else to install. Uninstall from Settings → Apps.
 

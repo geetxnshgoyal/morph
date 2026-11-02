@@ -16,7 +16,7 @@ Grab the latest build from [Releases](../../releases/latest):
 | Platform | File | Needs |
 | --- | --- | --- |
 | macOS | [`Morph-1.0.0.dmg`](https://github.com/geetxnshgoyal/morph/releases/download/v1.0.0/Morph-1.0.0.dmg), or the Mac App Store beta on [TestFlight](https://testflight.apple.com/join/6fFuMydz) (out around 11 November 2026) | macOS 14 or later, Apple Silicon or Intel |
-| Windows (beta) | [Microsoft Store](https://apps.microsoft.com/detail/9PHWJVRC85DW), or [`Morph-1.0.1-x64-setup.exe`](https://github.com/geetxnshgoyal/morph/releases/download/v1.0.0/Morph-1.0.1-x64-setup.exe) ([`arm64`](https://github.com/geetxnshgoyal/morph/releases/download/v1.0.0/Morph-1.0.1-arm64-setup.exe) for Arm PCs) | Windows 10 version 1809 or later, or Windows 11 |
+| Windows | [Microsoft Store](https://apps.microsoft.com/detail/9PHWJVRC85DW), or [`Morph-1.0.1-x64-setup.exe`](https://github.com/geetxnshgoyal/morph/releases/download/v1.0.0/Morph-1.0.1-x64-setup.exe) ([`arm64`](https://github.com/geetxnshgoyal/morph/releases/download/v1.0.0/Morph-1.0.1-arm64-setup.exe) for Arm PCs) | Windows 10 version 1809 or later, or Windows 11 |
 | Android | Google Play is in closed testing, out around 11 November 2026: [join the testers](https://morph.geetanshgoyal.in/android.html) to get it now, or use the APK from Releases | Android 10 or later |
 | iOS | the beta on [TestFlight](https://testflight.apple.com/join/6fFuMydz); on the App Store around 11 November 2026 | iOS 17 or later |
 
@@ -26,7 +26,7 @@ Grab the latest build from [Releases](../../releases/latest):
 
 **Betas:** Morph is new and still has bugs, most of all in the TestFlight builds. Please [report](https://github.com/geetxnshgoyal/morph/issues/new) anything that breaks, with your device and the file you used.
 
-**Windows (beta):** get Morph from the [Microsoft Store](https://apps.microsoft.com/detail/9PHWJVRC85DW), or run the setup file. This first build hasn't been tried on many PCs yet, so please [report](https://github.com/geetxnshgoyal/morph/issues/new) anything that breaks. It installs for your user only, with no admin prompt. The installer isn't code-signed yet, so SmartScreen may say it doesn't recognise the app: click **More info**, then **Run anyway**. Morph then sits in the taskbar corner; see [windows/README.md](windows/README.md).
+**Windows:** get Morph from the [Microsoft Store](https://apps.microsoft.com/detail/9PHWJVRC85DW), or run the setup file. If something breaks, please [report it](https://github.com/geetxnshgoyal/morph/issues/new). It installs for your user only, with no admin prompt. The installer isn't code-signed yet, so SmartScreen may say it doesn't recognise the app: click **More info**, then **Run anyway**. Morph then sits in the taskbar corner; see [windows/README.md](windows/README.md).
 
 **Android:** to get Morph from Google Play now, join the [Morph testers group](https://groups.google.com/g/morph-tester), tap **Become a tester** on the [opt-in page](https://play.google.com/apps/testing/app.morph) with the same Google account, then install it from the [Play Store](https://play.google.com/store/apps/details?id=app.morph). Or open the APK on your phone and allow installs from that source when asked. See [android/README.md](android/README.md).
 
