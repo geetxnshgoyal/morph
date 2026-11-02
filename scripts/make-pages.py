@@ -38,6 +38,49 @@ AND = "Android"
 
 PAGES = [
     {
+        "slug": "raw-to-jpg",
+        "title": "RAW to JPG: Convert CR3, NEF, ARW and DNG, Free | Morph",
+        "description": "Convert camera RAW photos (CR3, CR2, NEF, ARW, RAF, ORF, RW2, DNG) to JPG, PNG or HEIC on Mac, Windows, iPhone or Android. Free and offline.",
+        "h1": "Convert RAW photos to JPG",
+        "lede": "Camera RAW files are huge and most apps and websites can't open them. Morph turns CR3, NEF, ARW, DNG and the rest into JPGs you can share, on your own device, a whole card at a time.",
+        "steps": [
+            ("Open the RAW files in Morph", "On a Mac or Windows PC, start dragging them and tap Shift. On iPhone or Android, share them to Morph or pick them in the app."),
+            ("Choose JPG", "Or PNG, HEIC, WEBP or TIFF, or Compress to fit an upload limit."),
+            ("Find the JPGs beside the originals", "The RAW files are never changed."),
+        ],
+        "where": [
+            (MAC, "Yes: developed by macOS, for every camera Apple supports."),
+            (WIN, "Yes, for CR2, CR3, NEF, ARW, RAF, ORF, RW2 and DNG."),
+            (IOS, "Yes: developed by iOS, as on the Mac."),
+            (AND, "Yes. Android develops DNG and several others itself; for CR3 and the rest Morph uses the full-size JPEG preview the camera saved in the file."),
+        ],
+        "faq": [
+            ("Will the JPG look like my camera's own JPG?", "On Mac and iPhone the photo is developed by Apple's RAW engine with its default look. On Android, CR3 and similar files give the camera's own preview, which is exactly the JPG your camera would have made."),
+            ("Can I convert a whole memory card at once?", "Yes. Select or drag as many files as you like; Morph converts them in one go."),
+            ("Are my photos uploaded?", "No. Morph converts on your device and makes no network requests."),
+        ],
+        "related": ["heic-to-jpg", "compress-image", "image-converter", "remove-exif"],
+    },
+    {
+        "slug": "blur-faces",
+        "title": "Blur Faces in a Photo, Free and Offline | Morph",
+        "description": "Blur or pixelate every face in a photo, or black out emails, phone and card numbers in a screenshot, on Mac, Windows, iPhone or Android. Nothing is uploaded.",
+        "h1": "Blur faces in a photo",
+        "lede": "Posting a crowd shot, a classroom photo or a screenshot of a chat? Morph finds the faces, or the emails and phone numbers, and hides them in one tap, without sending the picture anywhere.",
+        "steps": [
+            ("Open the photo in Morph", "On a Mac or Windows PC, start dragging it and tap ⌘ (Ctrl on Windows) for the Tools wheel. On iPhone or Android, share it to Morph."),
+            ("Choose Blur Faces or Hide Personal Info", "Blur Faces pixelates every face it finds; Hide Personal Info blacks out emails, phone, card and ID numbers."),
+            ("Share the redacted copy", "It's saved as a new file without location data. The original isn't touched."),
+        ],
+        "where": [(MAC, "Yes, pixelated or solid."), (WIN, "Yes, pixelated or solid."), (IOS, "Yes."), (AND, "Yes, with Google's on-device face and text models.")],
+        "faq": [
+            ("Can the blur be undone?", "No. The faces are averaged down to a coarse grid and redrawn, so the detail is gone from the copy, not just covered."),
+            ("Does it miss faces?", "Small, turned-away or covered faces can be missed. Check the result before you post it."),
+            ("Is my photo uploaded?", "No. Detection runs on your device and Morph makes no network requests."),
+        ],
+        "related": ["remove-exif", "image-to-text", "compress-image", "image-converter"],
+    },
+    {
         "slug": "heic-to-jpg",
         "title": "HEIC to JPG Converter, Free and Offline | Morph",
         "description": "Convert HEIC photos from your iPhone to JPG on Mac, Windows, iPhone or Android. Free, no upload, no account, and the original stays untouched.",
@@ -52,7 +95,7 @@ PAGES = [
             (MAC, "Yes, plus PNG, WEBP, AVIF, TIFF, GIF, BMP, SVG or PDF."),
             (WIN, "Yes, plus PNG, WEBP, AVIF, TIFF, GIF, BMP, SVG or PDF."),
             (IOS, "Yes, from the Photos picker, the share sheet or Shortcuts."),
-            (AND, "Yes, to JPG, PNG or WEBP."),
+            (AND, "Yes, to JPG, PNG, WEBP or any other format."),
         ],
         "faq": [
             ("Does converting HEIC to JPG lose quality?", "JPG is a lossy format, so a little detail is traded for compatibility, but Morph saves at high quality and you won't see the difference at normal sizes. Choose PNG instead if you need a lossless copy."),
@@ -108,15 +151,15 @@ PAGES = [
     {
         "slug": "merge-pdf",
         "title": "Merge PDF Files Offline, Free | Morph",
-        "description": "Merge several PDFs into one, or split a PDF into pages, on Mac, Windows, iPhone and iPad. Free and private: your documents never leave your device.",
+        "description": "Merge several PDFs into one, or split a PDF into pages, on Mac, Windows, iPhone or Android. Free and private: your documents never leave your device.",
         "h1": "Merge PDFs without uploading them",
         "lede": "Select two or more PDFs and Morph joins them into one, in the order you picked. Split works the other way round, one PDF per page.",
         "steps": [
             ("Select the PDFs", "Two or more, in the order you want them."),
-            ("Choose Merge PDFs", "It's on the Tools wheel, or under Tools in the app on iPhone and iPad."),
+            ("Choose Merge PDFs", "It's on the Tools wheel, or under Tools in the app on iPhone and Android."),
             ("Done", "The merged PDF is saved next to the first file as Merged.pdf."),
         ],
-        "where": [(MAC, "Merge and split."), (WIN, "Merge and split."), (IOS, "Merge and split, and Merge PDFs in Shortcuts."), (AND, "Not yet. Android can turn images into a PDF and PDF pages into images.")],
+        "where": [(MAC, "Merge and split."), (WIN, "Merge and split."), (IOS, "Merge and split, and Merge PDFs in Shortcuts."), (AND, "Merge and split.")],
         "faq": [
             ("Is there a limit on pages or file size?", "No limit is set by Morph; it's only bound by your device's memory."),
             ("Are my PDFs uploaded?", "No. Merging happens on your device."),
@@ -126,7 +169,7 @@ PAGES = [
     {
         "slug": "mp4-to-mp3",
         "title": "MP4 to MP3: Extract Audio from Video, Free | Morph",
-        "description": "Pull the soundtrack out of an MP4 or MOV video as MP3, M4A or WAV. Free and offline on Windows and Mac; M4A on iPhone and Android.",
+        "description": "Pull the soundtrack out of an MP4 or MOV video as MP3, M4A or WAV. Free and offline on Windows and Mac; M4A, WAV, FLAC and more on Android and iPhone.",
         "h1": "MP4 to MP3: get the audio out of a video",
         "lede": "Lectures, songs, voice notes recorded as video: Morph saves just the sound, so the file is a fraction of the size.",
         "steps": [
@@ -138,7 +181,7 @@ PAGES = [
             (WIN, "MP3, M4A, WAV and FLAC built in; AIFF, OGG and OPUS with ffmpeg installed."),
             (MAC, "M4A, WAV and AIFF built in. MP3, FLAC, OGG and OPUS in the download from this site once ffmpeg is installed (Morph shows the one command to run). The Mac App Store version makes M4A, WAV and AIFF."),
             (IOS, "M4A, WAV and AIFF. M4A plays everywhere MP3 does, including WhatsApp, Android and Windows."),
-            (AND, "M4A."),
+            (AND, "M4A, WAV, AIFF, FLAC, OGG and OPUS."),
         ],
         "faq": [
             ("Why M4A instead of MP3 on some devices?", "MP3 encoding isn't built into macOS, iOS or Android. M4A (AAC) is built in, sounds as good or better at the same size, and plays on practically everything."),
@@ -162,7 +205,7 @@ PAGES = [
             (MAC, "MP4 and MOV built in, plus WEBM and MKV with ffmpeg in the download from this site."),
             (WIN, "MP4 built in, plus MOV, WEBM and MKV with ffmpeg."),
             (IOS, "MP4 and MOV, and Compress."),
-            (AND, "MP4, and Compress."),
+            (AND, "MP4 and MOV, and Compress."),
         ],
         "faq": [
             ("Is there a watermark or a length limit?", "No watermark, no limit, no account. Morph is free and open source."),
@@ -173,7 +216,7 @@ PAGES = [
     {
         "slug": "video-to-gif",
         "title": "Video to GIF Converter, Free | Morph",
-        "description": "Turn a short MP4 or MOV clip into a GIF on Mac, Windows, iPhone or iPad. Free, offline and private.",
+        "description": "Turn a short MP4 or MOV clip into a GIF on Mac, Windows, iPhone or Android. Free, offline and private.",
         "h1": "Convert video to GIF",
         "lede": "Screen recordings and short clips become GIFs that play anywhere, from chat apps to bug reports.",
         "steps": [
@@ -181,7 +224,7 @@ PAGES = [
             ("Choose GIF", "It's on the Convert wheel with the video formats."),
             ("Share it", "The GIF is saved next to the video."),
         ],
-        "where": [(MAC, "Yes."), (WIN, "Yes."), (IOS, "Yes."), (AND, "Not yet.")],
+        "where": [(MAC, "Yes."), (WIN, "Yes."), (IOS, "Yes."), (AND, "Yes.")],
         "faq": [
             ("Why is my GIF large?", "GIF is an old format that doesn't compress video well. Keep clips to a few seconds for small files."),
         ],
@@ -198,7 +241,7 @@ PAGES = [
             ("Open the photo and choose Compress", "Drag and tap ⌘ (Ctrl on Windows) for the Tools wheel, or pick Compress on your phone."),
             ("Upload it", "Morph shows the new size, like 2.3 MB → 198 KB. If a JPG is already small enough, it's left alone."),
         ],
-        "where": [(MAC, "Yes, for photos, videos and PDFs."), (WIN, "Yes, for photos, videos and PDFs."), (IOS, "Yes, and in Shortcuts with a size in KB."), (AND, "Yes, for photos and videos.")],
+        "where": [(MAC, "Yes, for photos, videos and PDFs."), (WIN, "Yes, for photos, videos and PDFs."), (IOS, "Yes, and in Shortcuts with a size in KB."), (AND, "Yes, for photos, videos and PDFs.")],
         "faq": [
             ("How do I reduce a photo to exactly 200 KB?", "Set the size limit to 200 KB and use Compress. Morph finds the highest quality that stays under 200 KB; the result is usually just below it, such as 198 KB."),
             ("Will the photo look worse?", "Morph checks each result against the original. Without a size limit it only keeps changes you can't see; with a tight limit like 20 KB it shrinks the photo as needed to fit."),
@@ -261,15 +304,15 @@ PAGES = [
     {
         "slug": "compress-pdf",
         "title": "Compress PDF Offline, Free | Morph",
-        "description": "Make a PDF smaller to email or upload, on Mac, Windows, iPhone and iPad. Text stays selectable. Free, and the PDF never leaves your device.",
+        "description": "Make a PDF smaller to email or upload, on Mac, Windows, iPhone or Android. Text stays selectable. Free, and the PDF never leaves your device.",
         "h1": "Compress a PDF",
         "lede": "Scanned PDFs and documents full of photos get huge. Morph re-saves the images inside at screen resolution, so the file shrinks a lot while text stays sharp and selectable.",
         "steps": [
-            ("Open the PDF in Morph", "Drag it and tap ⌘ (Ctrl on Windows) for the Tools wheel, or share it to Morph on iPhone and iPad."),
+            ("Open the PDF in Morph", "Drag it and tap ⌘ (Ctrl on Windows) for the Tools wheel, or share it to Morph on iPhone and Android."),
             ("Choose Compress", "Morph shows the new size, like 8.4 MB → 1.2 MB."),
             ("Send it", "The smaller PDF is saved next to the original, which stays untouched."),
         ],
-        "where": [(MAC, "Yes."), (WIN, "Yes."), (IOS, "Yes, and in Shortcuts with Compress Files."), (AND, "Not yet. Android compresses photos and videos.")],
+        "where": [(MAC, "Yes."), (WIN, "Yes."), (IOS, "Yes, and in Shortcuts with Compress Files."), (AND, "Yes, along with photos and videos.")],
         "faq": [
             ("Will the text still be selectable?", "Yes. Morph only re-encodes the images inside the PDF; text and vector drawings are kept as they are."),
             ("Why didn't my PDF get smaller?", "PDFs that are mostly text are already small. Morph says so instead of making a bigger file."),
@@ -298,15 +341,15 @@ PAGES = [
     {
         "slug": "split-pdf",
         "title": "Split PDF into Pages, Free and Offline | Morph",
-        "description": "Split a PDF into one file per page on Mac, Windows, iPhone or iPad. Free and private: the document never leaves your device.",
+        "description": "Split a PDF into one file per page on Mac, Windows, iPhone or Android. Free and private: the document never leaves your device.",
         "h1": "Split a PDF into pages",
         "lede": "Pull the pages of a PDF apart: Morph saves one PDF per page in a folder named after the original, ready to send just the page someone needs.",
         "steps": [
             ("Open the PDF in Morph", ""),
-            ("Choose Split PDF", "It's on the Tools wheel, or under Tools in the app on iPhone and iPad."),
+            ("Choose Split PDF", "It's on the Tools wheel, or under Tools in the app on iPhone and Android."),
             ("Pick the pages you need", "Each page is its own PDF, numbered in order."),
         ],
-        "where": [(MAC, "Yes."), (WIN, "Yes."), (IOS, "Yes."), (AND, "Not yet.")],
+        "where": [(MAC, "Yes."), (WIN, "Yes."), (IOS, "Yes."), (AND, "Yes.")],
         "faq": [
             ("Can I put pages back together?", "Yes. Select the page PDFs in the order you want and choose Merge PDFs."),
         ],
@@ -315,7 +358,7 @@ PAGES = [
     {
         "slug": "word-to-pdf",
         "title": "Convert Word to PDF on Mac or Windows, Free | Morph",
-        "description": "Turn DOCX, ODT, RTF, HTML or Markdown into PDF on a Mac or Windows PC, without Word and without uploading. Free and open source.",
+        "description": "Turn DOCX, ODT, RTF, HTML or Markdown into PDF on Mac, Windows, iPhone or Android, without Word and without uploading. Free and open source.",
         "h1": "Convert Word to PDF on Mac or Windows",
         "lede": "No Word installed, or don't want to upload a contract to a website? Morph turns DOCX and other documents into PDF on your own computer, and PDF back into DOCX or text.",
         "steps": [
@@ -326,8 +369,8 @@ PAGES = [
         "where": [
             (MAC, "DOCX, ODT, RTF, HTML, Markdown and TXT to PDF, and back to DOCX, ODT, RTF, HTML, Markdown or TXT."),
             (WIN, "DOCX, ODT, RTF, HTML, Markdown and TXT to PDF, and back."),
-            (IOS, "RTF, HTML, Markdown and TXT to PDF."),
-            (AND, "Not yet."),
+            (IOS, "DOCX, ODT, RTF, HTML, Markdown and TXT to PDF, and back."),
+            (AND, "DOCX, ODT, RTF, HTML, Markdown and TXT to PDF, and back."),
         ],
         "faq": [
             ("Does it keep the formatting?", "Headings, paragraphs, bold and italics, lists and simple tables carry over. Complex layouts with text boxes and floating images may come out simpler; for those, Word's own Save as PDF keeps them exactly."),
@@ -465,7 +508,7 @@ PAGES = [
         "where": [(MAC, "Yes, rendered at twice the page size for sharp text."), (WIN, "Yes."), (IOS, "Yes."), (AND, "Yes.")],
         "faq": [
             ("Why PNG and not JPG?", "PNG keeps text and lines perfectly sharp. If a site only takes JPG, select the PNGs and convert them to JPG in one more step."),
-            ("Can I get the text instead?", "Yes, on Mac, Windows, iPhone and iPad: choose Text to save the PDF's words as a text file."),
+            ("Can I get the text instead?", "Yes, everywhere: choose Text to save the PDF's words as a text file."),
             ("Are my files uploaded?", "No. Morph converts on your own device and makes no network requests, so nothing leaves it."),
         ],
         "related": ["pdf-to-jpg", "png-to-pdf", "pdf-to-text", "pdf-converter"],
@@ -619,7 +662,7 @@ PAGES = [
     {
         "slug": "pdf-to-word",
         "title": "PDF to Word (DOCX) on Mac or Windows, Free | Morph",
-        "description": "Get the text of a PDF into an editable Word document on a Mac or Windows PC, without uploading it. Free and open source.",
+        "description": "Get the text of a PDF into an editable Word document on Mac, Windows, iPhone or Android, without uploading it. Free and open source.",
         "h1": "Convert PDF to Word",
         "lede": "Morph pulls the text and paragraphs out of a PDF into a DOCX you can edit in Word, Pages or Google Docs, on your own computer.",
         "steps": [
@@ -627,7 +670,7 @@ PAGES = [
             ("Drop it on DOCX", "The Convert wheel opens under your cursor."),
             ("Edit it", "The DOCX is saved next to the PDF."),
         ],
-        "where": [(MAC, "Yes."), (WIN, "Yes."), (IOS, "Not yet: iPhone and iPad can save a PDF's text as a text file."), (AND, "Not yet.")],
+        "where": [(MAC, "Yes."), (WIN, "Yes."), (IOS, "Yes."), (AND, "Yes.")],
         "faq": [
             ("Does it keep the layout?", "It keeps the text and paragraphs, which is what you need to edit or reuse the words. Columns, images and exact positions aren't carried over."),
             ("What about scanned PDFs?", "A scan is a picture of text. Use Extract Text first to read the words, then paste them into a document."),
@@ -638,7 +681,7 @@ PAGES = [
     {
         "slug": "pdf-to-text",
         "title": "PDF to Text: Copy the Text out of a PDF | Morph",
-        "description": "Save all the text in a PDF as a plain text file, or read scanned PDFs, on Mac, Windows, iPhone and iPad. Free and offline.",
+        "description": "Save all the text in a PDF as a plain text file, or read scanned PDFs, on Mac, Windows, iPhone or Android. Free and offline.",
         "h1": "Get the text out of a PDF",
         "lede": "Morph saves every word of a PDF as a plain text file you can search, copy or paste anywhere. For scanned PDFs, Extract Text reads the words from the page images.",
         "steps": [
@@ -646,7 +689,7 @@ PAGES = [
             ("Choose Text", "Or Extract Text on the Tools wheel for a scanned PDF."),
             ("Copy what you need", "The text file is saved next to the PDF."),
         ],
-        "where": [(MAC, "Yes, and scanned PDFs too."), (WIN, "Yes, and scanned PDFs too."), (IOS, "Yes, and scanned PDFs too."), (AND, "Not yet: Android reads text from photos and screenshots.")],
+        "where": [(MAC, "Yes, and scanned PDFs too."), (WIN, "Yes, and scanned PDFs too."), (IOS, "Yes, and scanned PDFs too."), (AND, "Yes, and scanned PDFs too.")],
         "faq": [
             ("Does it work on scans?", "Yes, with Extract Text, which uses the text recognition built into your device. It runs offline."),
             ("Are my files uploaded?", "No. Morph converts on your own device and makes no network requests, so nothing leaves it."),
@@ -656,7 +699,7 @@ PAGES = [
     {
         "slug": "mp4-to-gif",
         "title": "MP4 to GIF Converter, Free and Offline | Morph",
-        "description": "Turn a short MP4 or MOV clip into a GIF on Mac, Windows, iPhone or iPad. Free, no watermark, nothing uploaded.",
+        "description": "Turn a short MP4 or MOV clip into a GIF on Mac, Windows, iPhone or Android. Free, no watermark, nothing uploaded.",
         "h1": "Convert MP4 to GIF",
         "lede": "Screen recordings and short clips become GIFs that play anywhere, from Slack and GitHub to chat apps. No watermark, no account.",
         "steps": [
@@ -664,7 +707,7 @@ PAGES = [
             ("Choose GIF", "It's on the Convert wheel next to the video formats."),
             ("Share it", "The GIF is saved next to the video."),
         ],
-        "where": [(MAC, "Yes."), (WIN, "Yes."), (IOS, "Yes."), (AND, "Not yet.")],
+        "where": [(MAC, "Yes."), (WIN, "Yes."), (IOS, "Yes."), (AND, "Yes.")],
         "faq": [
             ("How long can the clip be?", "Morph uses the first 30 seconds. Shorter clips make smaller GIFs."),
             ("Is there a watermark?", "No. Morph is free and open source."),
@@ -687,7 +730,7 @@ PAGES = [
             (MAC, "JPG, PNG, HEIC, AVIF, TIFF, GIF, BMP, SVG and PDF, plus WEBP in the download from this site with the free webp tools."),
             (WIN, "JPG, PNG, WEBP, AVIF, TIFF, GIF, BMP, SVG and PDF, and HEIC where the PC can encode it."),
             (IOS, "JPG, PNG, HEIC, AVIF, TIFF, GIF, BMP, SVG and PDF."),
-            (AND, "JPG, PNG, WEBP, SVG and PDF."),
+            (AND, "JPG, PNG, HEIC, WEBP, TIFF, GIF, BMP, SVG and PDF, and camera RAW in."),
         ],
         "faq": [
             ("Which format should I pick?", "JPG for photos, PNG for screenshots and anything with transparency, SVG for logos, HEIC or AVIF for the smallest photos on newer devices."),
@@ -706,10 +749,10 @@ PAGES = [
             ("Choose Remove Metadata", "It's on the Tools wheel, or under Tools in the app."),
             ("Share the clean copy", "The original keeps its metadata; the copy has none."),
         ],
-        "where": [(MAC, "Photos, videos and audio."), (WIN, "Photos, videos and audio."), (IOS, "Photos, videos and audio, and in Shortcuts."), (AND, "Photos.")],
+        "where": [(MAC, "Photos, videos and audio."), (WIN, "Photos, videos and audio."), (IOS, "Photos, videos and audio, and in Shortcuts."), (AND, "Photos, videos and audio.")],
         "faq": [
             ("What gets removed?", "GPS location, camera make and model, dates, and other EXIF, IPTC and XMP fields. The picture itself is unchanged."),
-            ("Can Morph also hide faces or phone numbers?", "Yes, on Mac, Windows, iPhone and iPad: Blur Faces and Hide Personal Info cover faces, emails, phone and card numbers in screenshots."),
+            ("Can Morph also hide faces or phone numbers?", "Yes, everywhere: Blur Faces and Hide Personal Info cover faces, emails, phone and card numbers in screenshots."),
         ],
         "related": ["compress-image", "heic-to-jpg", "image-to-text"],
     },
@@ -724,7 +767,7 @@ PAGES = [
             ("Choose Extract Text or Read QR", "Both are on the Tools wheel."),
             ("Copy the text", "It's saved next to the original as a .txt file."),
         ],
-        "where": [(MAC, "Extract Text and Read QR."), (WIN, "Extract Text and Read QR."), (IOS, "Extract Text and Read QR, and both in Shortcuts."), (AND, "Extract Text, fully offline.")],
+        "where": [(MAC, "Extract Text and Read QR."), (WIN, "Extract Text and Read QR."), (IOS, "Extract Text and Read QR, and both in Shortcuts."), (AND, "Extract Text and Read QR, fully offline.")],
         "faq": [
             ("Does text recognition need internet?", "No. It uses the recognition built into your device, so nothing is sent anywhere."),
             ("Does Read QR open the link?", "No. Morph only shows what the code says, so you can check a link before visiting it."),
