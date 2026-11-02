@@ -51,6 +51,18 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.AutoAwesome
+import androidx.compose.material.icons.rounded.Gif
+import androidx.compose.material.icons.rounded.Article
+import androidx.compose.material.icons.rounded.ClosedCaption
+import androidx.compose.material.icons.rounded.TableChart
+import androidx.compose.material.icons.rounded.FaceRetouchingOff
+import androidx.compose.material.icons.rounded.Password
+import androidx.compose.material.icons.rounded.QrCodeScanner
+import androidx.compose.material.icons.rounded.MergeType
+import androidx.compose.material.icons.rounded.ContentCut
+import androidx.compose.material.icons.rounded.PhotoCamera
+import androidx.compose.material.icons.rounded.Unarchive
+import androidx.compose.material.icons.automirrored.rounded.VolumeUp
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Collections
@@ -393,6 +405,19 @@ fun iconFor(key: String): ImageVector = when (key) {
     "zip" -> Icons.Rounded.FolderZip
     "mute" -> Icons.AutoMirrored.Rounded.VolumeOff
     "recipe" -> Icons.Rounded.AutoAwesome
+    "gif" -> Icons.Rounded.Gif
+    "document" -> Icons.Rounded.Article
+    "subtitles" -> Icons.Rounded.ClosedCaption
+    "table" -> Icons.Rounded.TableChart
+    "face" -> Icons.Rounded.FaceRetouchingOff
+    "redact" -> Icons.Rounded.Password
+    "qr" -> Icons.Rounded.QrCodeScanner
+    "merge" -> Icons.Rounded.MergeType
+    "split" -> Icons.Rounded.ContentCut
+    "snapshot" -> Icons.Rounded.PhotoCamera
+    "loudness" -> Icons.AutoMirrored.Rounded.VolumeUp
+    "trim" -> Icons.Rounded.ContentCut
+    "unzip" -> Icons.Rounded.Unarchive
     else -> Icons.Rounded.Description
 }
 

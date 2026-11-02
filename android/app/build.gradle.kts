@@ -14,8 +14,9 @@ android {
         applicationId = "app.morph"
         minSdk = 29
         targetSdk = 36
-        versionCode = 3
-        versionName = "1.0.0"
+        versionCode = 4
+        versionName = "1.0.1"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     // Release signing comes from keystore.properties (kept out of git).
@@ -36,7 +37,7 @@ android {
             signingConfig = signingConfigs.findByName("release")
             isMinifyEnabled = true
             isShrinkResources = true
-            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"))
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
     compileOptions {
@@ -44,6 +45,19 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
     buildFeatures { compose = true }
+    // The on-device ML Kit models are native code per CPU, so the APKs on GitHub come one per phone CPU; Google
+    // Play splits the bundle itself.
+    splits {
+        abi {
+            // Bundles can't be built alongside split APKs.
+            isEnable = gradle.startParameter.taskNames.none { it.contains("bundle", ignoreCase = true) }
+            reset()
+            include("arm64-v8a", "armeabi-v7a")
+            isUniversalApk = false
+        }
+    }
+    // PdfBox pulls in Bouncy Castle for encrypted PDFs; its post-quantum signature tables are never used.
+    packaging { resources { excludes += "org/bouncycastle/pqc/**" } }
 }
 
 kotlin { compilerOptions { jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17) } }
@@ -64,8 +78,15 @@ dependencies {
     implementation("androidx.media3:media3-effect:1.8.0")
     implementation("androidx.media3:media3-common:1.8.0")
     implementation("com.google.mlkit:text-recognition:16.0.1")
+    implementation("com.google.mlkit:face-detection:16.1.7")
+    implementation("com.google.mlkit:barcode-scanning:17.3.0")
+    // PDF text, merge, split and compress, offline.
+    implementation("com.tom-roush:pdfbox-android:2.0.27.0")
+    implementation("androidx.heifwriter:heifwriter:1.0.0")
     // Draws SVGs, offline.
     implementation("com.caverock:androidsvg-aar:1.4")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.10.2")
     debugImplementation("androidx.compose.ui:ui-tooling")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    androidTestImplementation("androidx.test:runner:1.6.2")
 }

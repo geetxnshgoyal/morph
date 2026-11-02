@@ -32,17 +32,20 @@ Fit any upload limit
 Exam forms, job portals and government sites often want a photo under 200 KB, 100 KB or even 20 KB. Set a size limit once and Compress makes a JPG that fits, at the best quality that fits.
 
 Convert
-• Photos to JPG, PNG or WEBP, or several into one PDF
-• PDF pages to images
-• Video to MP4, or pull out the soundtrack as M4A
+• Photos to JPG, PNG, HEIC, WEBP, TIFF, GIF or BMP, or several into one PDF
+• Camera RAW (DNG, CR3, NEF, ARW and more) to any of them
 • SVG to PNG, JPG, WEBP or PDF, and any image traced into a sharp SVG
+• Video to MP4, MOV or GIF; audio to M4A, WAV, AIFF, FLAC, OGG or OPUS
+• Documents between DOCX, ODT, RTF, HTML, Markdown, TXT and PDF
+• PDF pages to images or text, subtitles between SRT and VTT, tables between CSV, TSV and JSON
 
 Compress and clean up
-• Shrink photos and videos to a size you can send
-• Resize photos and mute videos
-• Remove location and camera details from photos before you share
-• Read the text in an image
-• Zip files together
+• Shrink photos, videos and PDFs to a size you can send
+• Resize photos, mute videos, grab snapshots, even out loudness, trim silence
+• Remove location and camera details from photos, videos and audio
+• Blur faces and hide emails, phone and card numbers in screenshots
+• Read the text in an image or PDF, and what a QR code or barcode says
+• Merge and split PDFs, zip files and open zip and tar archives
 • One-tap recipes: Web Image, Under 1 MB and Share-Safe Photo
 
 Yours to tune
@@ -73,4 +76,6 @@ Morph's closed test uses the Google Group [morph-tester](https://groups.google.c
 
 ## Release notes (500)
 
-First release on Google Play. Convert, compress and clean up files on your phone, fit photos under any upload limit, and pick your own color. Nothing is uploaded.
+1.0.1: Morph now does everything the Mac app does. New: HEIC, TIFF, GIF and BMP; camera RAW; MOV and GIF from video; WAV, AIFF, FLAC, OGG and OPUS; DOCX, ODT, RTF, HTML, Markdown and PDF documents; subtitles and CSV/JSON; PDF text, merge, split and compress; blur faces, hide personal info, read QR codes; snapshots, loudness and silence tools; extract archives. Still nothing is uploaded.
+
+1.0.0: First release on Google Play. Convert, compress and clean up files on your phone, fit photos under any upload limit, and pick your own color. Nothing is uploaded.

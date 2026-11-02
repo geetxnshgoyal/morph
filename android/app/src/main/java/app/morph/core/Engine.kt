@@ -18,6 +18,15 @@ import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.os.ParcelFileDescriptor
 import androidx.media3.common.MediaItem
+import com.tom_roush.pdfbox.io.MemoryUsageSetting
+import com.tom_roush.pdfbox.multipdf.PDFMergerUtility
+import com.tom_roush.pdfbox.multipdf.Splitter
+import com.tom_roush.pdfbox.pdmodel.PDDocument
+import com.tom_roush.pdfbox.pdmodel.PDResources
+import com.tom_roush.pdfbox.pdmodel.graphics.form.PDFormXObject
+import com.tom_roush.pdfbox.pdmodel.graphics.image.JPEGFactory
+import com.tom_roush.pdfbox.pdmodel.graphics.image.PDImageXObject
+import com.tom_roush.pdfbox.text.PDFTextStripper
 import androidx.media3.common.MimeTypes
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.effect.Presentation
@@ -29,12 +38,8 @@ import androidx.media3.transformer.ExportException
 import androidx.media3.transformer.ExportResult
 import androidx.media3.transformer.Transformer
 import androidx.media3.transformer.VideoEncoderSettings
-import com.google.mlkit.vision.common.InputImage
-import com.google.mlkit.vision.text.TextRecognition
-import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
-import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.zip.ZipEntry
@@ -42,6 +47,7 @@ import java.util.zip.ZipOutputStream
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.math.max
+import kotlin.math.min
 import kotlin.math.roundToInt
 
 // Android port of MorphCore: same actions, same naming, originals never touched.
@@ -49,14 +55,18 @@ import kotlin.math.roundToInt
 class MorphError(message: String) : Exception(message)
 
 enum class FileKind {
-    IMAGE, VIDEO, AUDIO, PDF, OTHER;
+    IMAGE, VIDEO, AUDIO, PDF, DOCUMENT, SUBTITLE, DATA, ARCHIVE, OTHER;
 
     companion object {
-        fun of(file: File): FileKind = when (file.extension.lowercase()) {
-            "jpg", "jpeg", "png", "webp", "heic", "heif", "gif", "bmp", "avif", "svg" -> IMAGE
+        fun of(file: File): FileKind = when (val ext = file.extension.lowercase()) {
+            "jpg", "jpeg", "png", "webp", "heic", "heif", "gif", "bmp", "avif", "svg", "tif", "tiff", in ImageFormats.rawExtensions -> IMAGE
             "mp4", "mov", "m4v", "3gp", "webm", "mkv" -> VIDEO
-            "mp3", "m4a", "aac", "wav", "ogg", "flac", "opus", "amr" -> AUDIO
+            "mp3", "m4a", "aac", "wav", "ogg", "flac", "opus", "amr", "aiff", "aif" -> AUDIO
             "pdf" -> PDF
+            "srt", "vtt" -> SUBTITLE
+            "csv", "tsv", "json" -> DATA
+            "md", "markdown", "docx", "odt", "rtf", "html", "htm", "txt", "text" -> DOCUMENT
+            "zip", "tar", "gz", "tgz" -> ARCHIVE
             else -> OTHER
         }
     }
@@ -158,7 +168,7 @@ class Action(
     val run: suspend (Context, List<File>, Options) -> List<File>,
 ) {
     /** Edits that keep an image in its own format and work on its pixels, which an SVG doesn't have. */
-    private val editsPixels get() = id in setOf("tool.compress", "tool.strip-metadata")
+    private val editsPixels get() = id in setOf("tool.compress", "tool.strip-metadata", "tool.redact-faces", "tool.redact-pii")
 
     fun accepts(files: List<File>): Boolean {
         if (files.size < minimumInputs) return false
@@ -175,53 +185,87 @@ object Library {
         body: suspend (Context, File, Options) -> File,
     ) = Action(id, title, icon, group, kinds, targetExtension = target) { ctx, files, o -> files.map { body(ctx, it, o) } }
 
-    val actions: List<Action> = listOf(
-        // Images
-        one("convert.jpg", "JPG", "photo", Group.CONVERT, setOf(FileKind.IMAGE), "jpg") { _, f, o -> ImageOps.convert(f, ImageFormat.JPG, o) },
-        one("convert.png", "PNG", "photo", Group.CONVERT, setOf(FileKind.IMAGE), "png") { _, f, o -> ImageOps.convert(f, ImageFormat.PNG, o) },
-        one("convert.webp", "WEBP", "photo", Group.CONVERT, setOf(FileKind.IMAGE), "webp") { _, f, o -> ImageOps.convert(f, ImageFormat.WEBP, o) },
-        one("convert.svg", "SVG", "vector", Group.CONVERT, setOf(FileKind.IMAGE), "svg") { _, f, o -> VectorOps.trace(f, o) },
-        Action("convert.images-pdf", "PDF", "pdf", Group.CONVERT, setOf(FileKind.IMAGE), combinesInputs = true) { _, files, o ->
-            listOf(PdfOps.fromImages(files, o))
-        },
-        // PDF
-        Action("convert.pdf-images", "Images", "pages", Group.CONVERT, setOf(FileKind.PDF)) { _, files, o ->
-            files.flatMap { PdfOps.toImages(it, o) }
-        },
-        // Video & audio
-        one("convert.video-mp4", "MP4", "video", Group.CONVERT, setOf(FileKind.VIDEO), "mp4") { ctx, f, o ->
-            MediaOps.transform(ctx, f, Output.file(f, "mp4", null, o))
-        },
-        one("convert.audio-m4a", "M4A", "audio", Group.CONVERT, setOf(FileKind.AUDIO, FileKind.VIDEO), "m4a") { ctx, f, o ->
-            MediaOps.transform(ctx, f, Output.file(f, "m4a", null, o), removeVideo = true)
-        },
+    private fun pdfBox(context: Context) = com.tom_roush.pdfbox.android.PDFBoxResourceLoader.init(context.applicationContext)
+
+    private val image = setOf(FileKind.IMAGE)
+    private val media = setOf(FileKind.AUDIO, FileKind.VIDEO)
+
+    private fun image(format: ImageFormat) =
+        one("convert.${format.ext}", format.ext.uppercase(), "photo", Group.CONVERT, image, format.ext) { _, f, o -> ImageOps.convert(f, format, o) }
+
+    val actions: List<Action> = buildList {
+        // Images: the common formats, SVG and PDF come first, as on the Mac; rarer formats follow.
+        val common = listOf(ImageFormat.JPG, ImageFormat.PNG, ImageFormat.HEIC, ImageFormat.WEBP)
+        common.filter { it.isAvailable }.forEach { add(image(it)) }
+        add(one("convert.svg", "SVG", "vector", Group.CONVERT, image, "svg") { _, f, o -> VectorOps.trace(f, o) })
+        add(Action("convert.images-pdf", "PDF", "pdf", Group.CONVERT, image, combinesInputs = true) { _, files, o -> listOf(PdfOps.fromImages(files, o)) })
+        ImageFormat.entries.filter { it !in common && it.isAvailable }.forEach { add(image(it)) }
+
+        // Video
+        add(one("convert.video-mp4", "MP4", "video", Group.CONVERT, setOf(FileKind.VIDEO), "mp4") { ctx, f, o -> MediaOps.transform(ctx, f, Output.file(f, "mp4", null, o)) })
+        // A MOV is the same ISO media file as an MP4, with QuickTime's name; Media3 writes both.
+        add(one("convert.video-mov", "MOV", "video", Group.CONVERT, setOf(FileKind.VIDEO), "mov") { ctx, f, o -> MediaOps.transform(ctx, f, Output.file(f, "mov", null, o)) })
+        add(one("convert.video-gif", "GIF", "gif", Group.CONVERT, setOf(FileKind.VIDEO)) { _, f, o -> VideoOps.toGif(f, o) })
+
+        // Audio (video inputs give their soundtrack)
+        add(one("convert.audio-m4a", "M4A", "audio", Group.CONVERT, media, "m4a") { ctx, f, o -> MediaOps.transform(ctx, f, Output.file(f, "m4a", null, o), removeVideo = true) })
+        for (ext in listOf("wav", "aiff")) add(one("convert.audio-$ext", ext.uppercase(), "audio", Group.CONVERT, media, ext) { _, f, o -> AudioOps.convert(f, ext, o) })
+        for ((ext, codec) in listOf("flac" to AudioOps.Codec.FLAC, "ogg" to AudioOps.Codec.OGG, "opus" to AudioOps.Codec.OPUS)) {
+            if (codec.isAvailable) add(one("convert.audio-$ext", ext.uppercase(), "audio", Group.CONVERT, media, ext) { _, f, o -> AudioOps.convert(f, ext, o) })
+        }
+
+        // PDF & documents
+        add(Action("convert.pdf-images", "Images", "pages", Group.CONVERT, setOf(FileKind.PDF)) { _, files, o -> files.flatMap { PdfOps.toImages(it, o) } })
+        add(one("convert.pdf-text", "Text", "text", Group.CONVERT, setOf(FileKind.PDF)) { ctx, f, o -> pdfBox(ctx); PdfOps.toText(f, o) })
+        for (ext in DocOps.outputFormats) {
+            val kinds = when (ext) {
+                "pdf" -> setOf(FileKind.DOCUMENT, FileKind.DATA, FileKind.SUBTITLE)
+                "docx" -> setOf(FileKind.DOCUMENT, FileKind.PDF)
+                else -> setOf(FileKind.DOCUMENT)
+            }
+            add(one("convert.doc-$ext", ext.uppercase(), "document", Group.CONVERT, kinds, ext) { ctx, f, o -> pdfBox(ctx); DocOps.convert(f, ext, o) })
+        }
+        for (ext in listOf("srt", "vtt")) add(one("convert.sub-$ext", ext.uppercase(), "subtitles", Group.CONVERT, setOf(FileKind.SUBTITLE), ext) { _, f, o -> DocOps.convertSubtitle(f, ext, o) })
+        for (ext in listOf("csv", "tsv", "json")) add(one("convert.data-$ext", ext.uppercase(), "table", Group.CONVERT, setOf(FileKind.DATA), ext) { _, f, o -> DocOps.convertData(f, ext, o) })
+
         // Tools
-        one("tool.compress", "Compress", "compress", Group.TOOL, setOf(FileKind.IMAGE, FileKind.VIDEO)) { ctx, f, o ->
+        add(one("tool.compress", "Compress", "compress", Group.TOOL, setOf(FileKind.IMAGE, FileKind.VIDEO, FileKind.PDF)) { ctx, f, o ->
             val target = o.targetBytes
             when {
                 FileKind.of(f) == FileKind.VIDEO -> MediaOps.compress(ctx, f, o)
+                FileKind.of(f) == FileKind.PDF -> { pdfBox(ctx); PdfOps.compress(f, o) }
                 target != null -> ImageOps.underSize(f, target, o)
                 else -> ImageOps.compress(f, o)
             }
-        },
-        one("tool.resize", "Resize", "resize", Group.TOOL, setOf(FileKind.IMAGE)) { _, f, o -> o.exactSize?.let { ImageOps.resizeExactly(f, it, o) } ?: ImageOps.resize(f, 2048, o) },
-        one("tool.strip-metadata", "Remove Metadata", "strip", Group.TOOL, setOf(FileKind.IMAGE)) { _, f, o -> ImageOps.stripMetadata(f, o) },
-        one("tool.ocr", "Extract Text", "text", Group.TOOL, setOf(FileKind.IMAGE)) { _, f, o -> VisionOps.ocr(f, o) },
-        one("tool.mute", "Mute", "mute", Group.TOOL, setOf(FileKind.VIDEO)) { ctx, f, o ->
-            MediaOps.transform(ctx, f, Output.file(f, "mp4", "muted", o), removeAudio = true)
-        },
-        Action("tool.zip", "Zip", "zip", Group.TOOL, FileKind.entries.toSet(), combinesInputs = true) { _, files, o ->
-            listOf(ArchiveOps.zip(files, o))
-        },
+        })
+        add(one("tool.resize", "Resize", "resize", Group.TOOL, image) { _, f, o -> o.exactSize?.let { ImageOps.resizeExactly(f, it, o) } ?: ImageOps.resize(f, 2048, o) })
+        add(one("tool.strip-metadata", "Remove Metadata", "strip", Group.TOOL, setOf(FileKind.IMAGE, FileKind.VIDEO, FileKind.AUDIO)) { ctx, f, o ->
+            if (FileKind.of(f) == FileKind.IMAGE) ImageOps.stripMetadata(f, o) else VideoOps.stripMetadata(ctx, f, o)
+        })
+        add(one("tool.redact-faces", "Blur Faces", "face", Group.TOOL, image) { _, f, o -> VisionOps.redactFaces(f, o) })
+        add(one("tool.redact-pii", "Hide Personal Info", "redact", Group.TOOL, image) { _, f, o -> VisionOps.redactPersonalInfo(f, o) })
+        add(one("tool.ocr", "Extract Text", "text", Group.TOOL, setOf(FileKind.IMAGE, FileKind.PDF)) { ctx, f, o -> pdfBox(ctx); VisionOps.ocr(f, o) })
+        add(one("tool.qr", "Read QR", "qr", Group.TOOL, setOf(FileKind.IMAGE, FileKind.PDF)) { _, f, o -> VisionOps.readCodes(f, o) })
+        add(Action("tool.merge-pdf", "Merge PDFs", "merge", Group.TOOL, setOf(FileKind.PDF), combinesInputs = true, minimumInputs = 2) { ctx, files, o ->
+            pdfBox(ctx); listOf(PdfOps.merge(files, o))
+        })
+        add(one("tool.split-pdf", "Split PDF", "split", Group.TOOL, setOf(FileKind.PDF)) { ctx, f, o -> pdfBox(ctx); PdfOps.split(f, o) })
+        add(one("tool.mute", "Mute", "mute", Group.TOOL, setOf(FileKind.VIDEO)) { ctx, f, o -> MediaOps.transform(ctx, f, Output.file(f, "mp4", "muted", o), removeAudio = true) })
+        add(Action("tool.snapshots", "Snapshots", "snapshot", Group.TOOL, setOf(FileKind.VIDEO)) { _, files, o -> files.flatMap { VideoOps.snapshots(it, o) } })
+        add(one("tool.normalize", "Normalize Loudness", "loudness", Group.TOOL, setOf(FileKind.AUDIO)) { _, f, o -> AudioOps.normalize(f, o) })
+        add(one("tool.trim-silence", "Trim Silence", "trim", Group.TOOL, setOf(FileKind.AUDIO)) { _, f, o -> AudioOps.trimSilence(f, o) })
+        add(Action("tool.zip", "Zip", "zip", Group.TOOL, FileKind.entries.toSet(), combinesInputs = true) { _, files, o -> listOf(ArchiveOps.zip(files, o)) })
+        add(one("tool.extract", "Extract", "unzip", Group.TOOL, setOf(FileKind.ARCHIVE)) { _, f, o -> ArchiveOps.extract(f, o) })
+
         // Recipes
-        one("recipe.web", "Web Image", "recipe", Group.RECIPE, setOf(FileKind.IMAGE)) { _, f, o ->
+        add(one("recipe.web", "Web Image", "recipe", Group.RECIPE, image) { _, f, o ->
             ImageOps.write(ImageOps.decode(f, 1600), ImageFormat.WEBP, 80, Output.file(f, "webp", "web", o))
-        },
-        one("recipe.1mb", "Under 1 MB", "recipe", Group.RECIPE, setOf(FileKind.IMAGE)) { _, f, o -> ImageOps.underSize(f, 1_000_000, o) },
-        one("recipe.safe", "Share-Safe Photo", "recipe", Group.RECIPE, setOf(FileKind.IMAGE)) { _, f, o ->
+        })
+        add(one("recipe.1mb", "Under 1 MB", "recipe", Group.RECIPE, image) { _, f, o -> ImageOps.underSize(f, 1_000_000, o) })
+        add(one("recipe.safe", "Share-Safe Photo", "recipe", Group.RECIPE, image) { _, f, o ->
             ImageOps.write(ImageOps.decode(f, 2048), ImageFormat.JPG, 85, Output.file(f, "jpg", "safe", o))
-        },
-    )
+        })
+    }
 
     fun actionsFor(files: List<File>) = actions.filter { it.accepts(files) }
 }
@@ -275,12 +319,24 @@ object Output {
 
 // MARK: - Images
 
-enum class ImageFormat(val ext: String) { JPG("jpg"), PNG("png"), WEBP("webp") }
+enum class ImageFormat(val ext: String) {
+    JPG("jpg"), PNG("png"), HEIC("heic"), WEBP("webp"), TIFF("tiff"), GIF("gif"), BMP("bmp");
+
+    val isAvailable get() = this != HEIC || ImageFormats.canWriteHeic
+}
 
 object ImageOps {
     /** Decodes with EXIF orientation applied; downscales (never upscales) to [maxPixel]. SVGs are drawn at that size. */
-    fun decode(file: File, maxPixel: Int? = null): Bitmap =
-        if (VectorOps.isSvg(file)) VectorOps.render(file, maxPixel) else ImageDecoder.decodeBitmap(ImageDecoder.createSource(file)) { decoder, info, _ ->
+    fun decode(file: File, maxPixel: Int? = null): Bitmap = when {
+        VectorOps.isSvg(file) -> VectorOps.render(file, maxPixel)
+        // Android develops DNG and some other RAW files itself; for the rest, the camera's own full-size preview.
+        file.extension.lowercase() in ImageFormats.rawExtensions ->
+            runCatching { decodeNative(file, maxPixel) }.getOrElse { ImageFormats.rawPreview(file, maxPixel) }
+        else -> decodeNative(file, maxPixel)
+    }
+
+    private fun decodeNative(file: File, maxPixel: Int?): Bitmap =
+        ImageDecoder.decodeBitmap(ImageDecoder.createSource(file)) { decoder, info, _ ->
             decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
             val longest = max(info.size.width, info.size.height)
             if (maxPixel != null && longest > maxPixel) {
@@ -298,6 +354,10 @@ object ImageOps {
             ImageFormat.JPG -> Bitmap.CompressFormat.JPEG
             ImageFormat.PNG -> Bitmap.CompressFormat.PNG
             ImageFormat.WEBP -> Bitmap.CompressFormat.WEBP_LOSSY
+            ImageFormat.HEIC -> return ImageFormats.writeHeic(image, quality, out)
+            ImageFormat.TIFF -> return ImageFormats.writeTiff(image, out)
+            ImageFormat.GIF -> return ImageFormats.writeGif(image, out)
+            ImageFormat.BMP -> return ImageFormats.writeBmp(image, out)
         }
         out.outputStream().use { if (!image.compress(compress, quality, it)) throw MorphError("Couldn't encode ${format.ext.uppercase()}") }
         return out
@@ -310,8 +370,8 @@ object ImageOps {
         return flat
     }
 
-    private fun sameFormat(file: File) = when (file.extension.lowercase()) {
-        "jpg", "jpeg", "heic", "heif", "avif" -> ImageFormat.JPG
+    fun sameFormat(file: File) = when (file.extension.lowercase()) {
+        "jpg", "jpeg", "heic", "heif", "avif", in ImageFormats.rawExtensions -> ImageFormat.JPG
         "webp" -> ImageFormat.WEBP
         else -> ImageFormat.PNG
     }
@@ -464,6 +524,87 @@ object PdfOps {
         }
     }
 
+    /** Pages drawn at [scale] × 72 dpi on white, for OCR and code reading. */
+    fun renderPages(file: File, scale: Float): List<Bitmap> =
+        ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY).use { fd ->
+            PdfRenderer(fd).use { pdf ->
+                (0 until pdf.pageCount).map { i ->
+                    pdf.openPage(i).use { page ->
+                        Bitmap.createBitmap((page.width * scale).toInt(), (page.height * scale).toInt(), Bitmap.Config.ARGB_8888).also {
+                            it.eraseColor(Color.WHITE)
+                            page.render(it, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+                        }
+                    }
+                }
+            }
+        }
+
+    private fun open(file: File): PDDocument = try { PDDocument.load(file) } catch (e: Exception) {
+        throw MorphError("Couldn't open ${file.name}: ${e.message}")
+    }
+
+    /** The text a PDF carries, page by page; scanned pages have none. */
+    fun text(file: File): String = open(file).use { doc -> PDFTextStripper().getText(doc).trim() }
+
+    /** Embedded text where there is some, OCR for scanned pages, as on the Mac. */
+    suspend fun toText(file: File, o: Options): File {
+        val text = text(file)
+        if (text.isNotBlank()) return Output.file(file, "txt", null, o).apply { writeText(text) }
+        return VisionOps.ocr(file, o)
+    }
+
+    fun merge(files: List<File>, o: Options): File {
+        val out = Output.unique(o.outDir, "Merged", "pdf")
+        val merger = PDFMergerUtility().apply { destinationFileName = out.absolutePath; files.forEach { addSource(it) } }
+        try { merger.mergeDocuments(MemoryUsageSetting.setupTempFileOnly()) } catch (e: Exception) {
+            out.delete(); throw MorphError("Couldn't merge the PDFs: ${e.message}")
+        }
+        return out
+    }
+
+    /** One PDF per page in a "<name> pages" folder. */
+    fun split(file: File, o: Options): File {
+        val folder = Output.unique(o.outDir, "${file.nameWithoutExtension} pages", "").also { it.delete(); it.mkdirs() }
+        open(file).use { doc ->
+            Splitter().split(doc).forEachIndexed { i, page -> page.use { it.save(File(folder, "page %03d.pdf".format(i + 1))) } }
+        }
+        return folder
+    }
+
+    /**
+     * Photos inside the PDF re-encoded as JPEG and scaled to screen size (at most 1600 px), like the Mac's
+     * "optimize images for screen". Text and drawings stay vectors; images with transparency are left alone.
+     */
+    fun compress(file: File, o: Options): File {
+        val out = Output.file(file, "pdf", "compressed", o)
+        open(file).use { doc ->
+            val seen = HashMap<PDImageXObject, PDImageXObject>()
+            fun shrink(resources: PDResources?) {
+                resources ?: return
+                for (name in resources.xObjectNames.toList()) {
+                    when (val x = runCatching { resources.getXObject(name) }.getOrNull()) {
+                        is PDImageXObject -> {
+                            if (x.softMask != null || x.isStencil || x.width * x.height < 40_000) continue
+                            val replacement = seen.getOrPut(x) {
+                                val bitmap = runCatching { x.image }.getOrNull() ?: return@getOrPut x
+                                val longest = max(bitmap.width, bitmap.height)
+                                val scaled = if (longest > 1600) Bitmap.createScaledBitmap(bitmap, bitmap.width * 1600 / longest, bitmap.height * 1600 / longest, true) else bitmap
+                                JPEGFactory.createFromImage(doc, scaled, o.compression.quality / 100f)
+                            }
+                            if (replacement !== x) resources.put(name, replacement)
+                        }
+                        is PDFormXObject -> shrink(x.resources)
+                        else -> {}
+                    }
+                }
+            }
+            for (page in doc.pages) shrink(page.resources)
+            doc.save(out)
+        }
+        if (out.length() >= file.length() * 0.95) { out.delete(); throw MorphError("${file.name} is already as small as it can get without losing quality") }
+        return out
+    }
+
     /** Each page as a PNG at 2× (144 dpi), in a "<name> pages" folder. */
     fun toImages(file: File, o: Options): List<File> {
         val folder = Output.unique(o.outDir, "${file.nameWithoutExtension} pages", "").also { it.delete(); it.mkdirs() }
@@ -552,17 +693,7 @@ object MediaOps {
     }
 }
 
-// MARK: - Vision & archives
-
-object VisionOps {
-    suspend fun ocr(file: File, o: Options): File {
-        val bitmap = ImageOps.decode(file, 3000)
-        val client = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
-        val text = try { client.process(InputImage.fromBitmap(bitmap, 0)).await().text } finally { client.close() }
-        if (text.isBlank()) throw MorphError("No text found in ${file.name}")
-        return Output.file(file, "txt", null, o).apply { writeText(text) }
-    }
-}
+// MARK: - Archives
 
 object ArchiveOps {
     fun zip(files: List<File>, o: Options): File {
@@ -579,5 +710,87 @@ object ArchiveOps {
             }
         }
         return out
+    }
+
+    /**
+     * Unpacks a zip, tar, tar.gz or gz into a folder named after it. Entries that would land outside the folder
+     * ("../" paths) are skipped.
+     */
+    fun extract(file: File, o: Options): File {
+        val name = file.name.lowercase()
+        val base = file.name.removeSuffix(".gz").removeSuffix(".GZ").substringBeforeLast(".tar").let { if (it == file.name) file.nameWithoutExtension else it }
+        val folder = Output.unique(o.outDir, base, "").also { it.delete(); it.mkdirs() }
+        val root = folder.canonicalFile
+        fun target(entry: String): File? = File(folder, entry).canonicalFile.takeIf { it.path.startsWith(root.path + File.separator) }
+        try {
+            when {
+                name.endsWith(".zip") -> java.util.zip.ZipInputStream(file.inputStream().buffered()).use { zip ->
+                    generateSequence { zip.nextEntry }.forEach { entry ->
+                        val out = target(entry.name) ?: return@forEach
+                        if (entry.isDirectory) out.mkdirs() else { out.parentFile?.mkdirs(); out.outputStream().use { zip.copyTo(it) } }
+                    }
+                }
+                name.endsWith(".tar") || name.endsWith(".tar.gz") || name.endsWith(".tgz") -> {
+                    val raw = file.inputStream().buffered()
+                    val stream = if (name.endsWith(".tar")) raw else java.util.zip.GZIPInputStream(raw)
+                    stream.use { untar(it, ::target) }
+                }
+                name.endsWith(".gz") -> java.util.zip.GZIPInputStream(file.inputStream().buffered()).use { gz ->
+                    File(folder, file.name.dropLast(3)).outputStream().use { gz.copyTo(it) }
+                }
+                else -> throw MorphError("Android can't open .${file.extension} archives")
+            }
+        } catch (e: MorphError) { folder.deleteRecursively(); throw e } catch (e: Exception) {
+            folder.deleteRecursively(); throw MorphError("Couldn't extract ${file.name}: ${e.message}")
+        }
+        return folder
+    }
+
+    /** POSIX and GNU tar: 512-byte headers, ustar prefixes and GNU long names. */
+    private fun untar(input: java.io.InputStream, target: (String) -> File?) {
+        val header = ByteArray(512)
+        var longName: String? = null
+        fun readFully(buffer: ByteArray): Boolean {
+            var read = 0
+            while (read < buffer.size) { val n = input.read(buffer, read, buffer.size - read); if (n < 0) return false; read += n }
+            return true
+        }
+        fun field(offset: Int, length: Int) = String(header, offset, length, Charsets.UTF_8).substringBefore('\u0000').trim()
+        while (readFully(header)) {
+            if (header.all { it == 0.toByte() }) break
+            val size = field(124, 12).ifEmpty { "0" }.toLong(8)
+            val type = header[156].toInt().toChar()
+            val prefix = if (String(header, 257, 5, Charsets.US_ASCII) == "ustar") field(345, 155) else ""
+            val entry = longName ?: listOf(prefix, field(0, 100)).filter { it.isNotEmpty() }.joinToString("/")
+            longName = null
+            val padded = (size + 511) / 512 * 512
+            when (type) {
+                'L' -> { val bytes = ByteArray(padded.toInt()); readFully(bytes); longName = String(bytes, 0, size.toInt(), Charsets.UTF_8).trimEnd('\u0000'); continue }
+                '5' -> target(entry)?.mkdirs()
+                '0', '\u0000', '7' -> {
+                    val out = target(entry)
+                    if (out != null) {
+                        out.parentFile?.mkdirs()
+                        out.outputStream().use { s ->
+                            var remaining = size
+                            val buffer = ByteArray(8192)
+                            while (remaining > 0) {
+                                val n = input.read(buffer, 0, min(buffer.size.toLong(), remaining).toInt())
+                                if (n <= 0) throw MorphError("The archive is cut short")
+                                s.write(buffer, 0, n); remaining -= n
+                            }
+                        }
+                        input.skipFully(padded - size)
+                        continue
+                    }
+                }
+            }
+            input.skipFully(padded)
+        }
+    }
+
+    private fun java.io.InputStream.skipFully(count: Long) {
+        var left = count
+        while (left > 0) { val n = skip(left); if (n <= 0) { if (read() < 0) return; left-- } else left -= n }
     }
 }

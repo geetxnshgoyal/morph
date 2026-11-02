@@ -35,6 +35,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Audiotrack
+import androidx.compose.material.icons.rounded.Article
+import androidx.compose.material.icons.rounded.ClosedCaption
+import androidx.compose.material.icons.rounded.FolderZip
+import androidx.compose.material.icons.rounded.TableChart
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Description
 import androidx.compose.material.icons.rounded.Image
@@ -236,5 +240,9 @@ private fun kindIcon(kind: FileKind) = when (kind) {
     FileKind.VIDEO -> Icons.Rounded.Movie
     FileKind.AUDIO -> Icons.Rounded.Audiotrack
     FileKind.PDF -> Icons.Rounded.PictureAsPdf
+    FileKind.DOCUMENT -> Icons.Rounded.Article
+    FileKind.SUBTITLE -> Icons.Rounded.ClosedCaption
+    FileKind.DATA -> Icons.Rounded.TableChart
+    FileKind.ARCHIVE -> Icons.Rounded.FolderZip
     FileKind.OTHER -> Icons.Rounded.Description
 }

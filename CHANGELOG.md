@@ -18,12 +18,15 @@
 - The download from the website now uses Liquid Glass on macOS 26 too, like the App Store version.
 
 ### iPhone and iPad
+- **DOCX and ODT**, in and out, like the Mac and Windows apps.
 - Opening two files with the same name works (the second becomes "name 2"), and copies of imported files are cleared at launch.
 
 ### Windows
 - Version 1.0.1, for the Microsoft Store update and the installers.
 
 ### Android
+- **Every Mac action, version 1.0.1.** HEIC, TIFF, GIF and BMP; camera RAW (DNG and others developed by Android, CR3 and the rest from their full-size preview); MOV and GIF from video; WAV, AIFF, FLAC, OGG and OPUS; documents (DOCX, ODT, RTF, HTML, Markdown, TXT, PDF), subtitles and data tables; PDF text, merge, split and compress; Blur Faces, Hide Personal Info and Read QR; Snapshots, Normalize Loudness and Trim Silence; Remove Metadata for video and audio; Extract for zip and tar archives. Everything still runs on the phone, with no internet permission.
+- The APKs on GitHub come one per phone CPU (arm64 for most phones, armv7 for older ones), since the on-device ML Kit models are native code.
 - Recent jobs and settings stay out of Google's cloud backup.
 - A result that can't be written to Downloads is reported instead of leaving an empty or hidden file.
 

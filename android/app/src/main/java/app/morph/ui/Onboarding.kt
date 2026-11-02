@@ -106,7 +106,7 @@ private fun Intro() {
         textAlign = TextAlign.Center)
     Spacer(Modifier.height(24.dp))
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Feature(Icons.Rounded.SwapHoriz, "Convert", "Images, video, audio and PDFs")
+        Feature(Icons.Rounded.SwapHoriz, "Convert", "Images, video, audio, PDFs and documents")
         Feature(Icons.Rounded.Compress, "Compress", "Make big files small enough to send")
         Feature(Icons.Rounded.AutoFixHigh, "Clean up", "Strip location data, read text from photos")
     }

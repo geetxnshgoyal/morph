@@ -7,13 +7,7 @@ import UIKit
 #endif
 
 public enum DocOps {
-    public static let outputFormats: [String] = {
-        #if os(macOS)
-        ["pdf", "docx", "odt", "rtf", "html", "md", "txt"]
-        #else
-        ["pdf", "rtf", "html", "md", "txt"]
-        #endif
-    }()
+    public static let outputFormats = ["pdf", "docx", "odt", "rtf", "html", "md", "txt"]
 
     public static func readString(from url: URL) throws -> String {
         if let text = try? String(contentsOf: url, encoding: .utf8) { return text }
@@ -33,6 +27,10 @@ public enum DocOps {
             return NSAttributedString(attr)
         case "txt", "text", "csv", "tsv", "json", "srt", "vtt":
             return NSAttributedString(string: try readString(from: url))
+        #if !os(macOS)
+        case "docx", "odt":
+            return try OfficeDocs.read(url)
+        #endif
         default:
             return try NSAttributedString(url: url, options: [:], documentAttributes: nil)
         }
@@ -56,6 +54,9 @@ public enum DocOps {
             try attr.data(from: range, documentAttributes: [.documentType: NSAttributedString.DocumentType.officeOpenXML]).write(to: out)
         case "odt":
             try attr.data(from: range, documentAttributes: [.documentType: NSAttributedString.DocumentType.openDocument]).write(to: out)
+        #else
+        case "docx", "odt":
+            try OfficeDocs.write(attr, to: out, ext: ext)
         #endif
         default:
             throw MorphError("Can't write .\(ext) documents")

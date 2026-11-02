@@ -133,7 +133,8 @@ class MorphModel(app: Application) : AndroidViewModel(app) {
             }
             val failures = result.failures.toMutableList()
             val published = withContext(Dispatchers.IO) {
-                result.outputs.mapNotNull { file ->
+                // Folders (PDF pages, video frames, extracted archives) are published file by file, keeping their name.
+                result.outputs.flatMap { if (it.isDirectory) it.walkTopDown().filter(File::isFile).toList() else listOf(it) }.mapNotNull { file ->
                     runCatching { Publisher.publish(app, file, work) }.onFailure { failures += "${file.name}: couldn't save" }.getOrNull()
                 }.also {
                     work.deleteRecursively()
