@@ -15,7 +15,7 @@ import re
 SITE = "https://morph.geetanshgoyal.in"
 DOCS = pathlib.Path(__file__).resolve().parent.parent / "docs"
 LAUNCH = "around 11 November 2026"
-UPDATED = "2026-10-28"
+UPDATED = "2026-11-02"
 TESTFLIGHT = "https://testflight.apple.com/join/6fFuMydz"
 
 # Where each platform's download or status lives, for the "Get Morph" block.
