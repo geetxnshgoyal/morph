@@ -20,8 +20,42 @@ enum Theme {
     static let radius: CGFloat = 26
     static let smallRadius: CGFloat = 18
 
+    /// SF Rounded at [size] for the default text size, scaled with Dynamic Type (up to about 1.8×, so the
+    /// bubbles and pills keep their shape at the largest accessibility sizes).
     static func font(_ size: CGFloat, _ weight: Font.Weight = .regular) -> Font {
-        .system(size: size, weight: weight, design: .rounded)
+        let base = UIFont.systemFont(ofSize: size, weight: uiWeight(weight))
+        let rounded = base.fontDescriptor.withDesign(.rounded).map { UIFont(descriptor: $0, size: size) } ?? base
+        return Font(UIFontMetrics(forTextStyle: textStyle(for: size)).scaledFont(for: rounded, maximumPointSize: size * 1.8))
+    }
+
+    /// The text style whose size is nearest, so each size grows at the same rate as the system's own text.
+    private static func textStyle(for size: CGFloat) -> UIFont.TextStyle {
+        switch size {
+        case ..<12: .caption2
+        case ..<13: .caption1
+        case ..<15: .footnote
+        case ..<16: .subheadline
+        case ..<17: .callout
+        case ..<20: .body
+        case ..<22: .title3
+        case ..<28: .title2
+        case ..<34: .title1
+        default: .largeTitle
+        }
+    }
+
+    private static func uiWeight(_ weight: Font.Weight) -> UIFont.Weight {
+        switch weight {
+        case .ultraLight: .ultraLight
+        case .thin: .thin
+        case .light: .light
+        case .medium: .medium
+        case .semibold: .semibold
+        case .bold: .bold
+        case .heavy: .heavy
+        case .black: .black
+        default: .regular
+        }
     }
 
     fileprivate static func rgb(_ hex: Int) -> UIColor {
@@ -141,7 +175,7 @@ struct PalettePicker: View {
         HStack(spacing: size * 0.3) {
             ForEach(Palette.allCases) { option in
                 let selected = option.rawValue == palette
-                Button { withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { palette = option.rawValue } } label: {
+                Button { withAnimation(Motion.settle) { palette = option.rawValue } } label: {
                     Circle().fill(option.fill)
                         .frame(width: size, height: size)
                         .overlay {
@@ -272,7 +306,7 @@ struct BubbleButtonStyle: ButtonStyle {
             label
                 .background(Capsule().fill(Theme.brand))
                 .scaleEffect(configuration.isPressed ? 0.96 : 1)
-                .animation(.spring(response: 0.25, dampingFraction: 0.7), value: configuration.isPressed)
+                .animation(Motion.press, value: configuration.isPressed)
         }
     }
 }
@@ -290,7 +324,7 @@ struct SoftButtonStyle: ButtonStyle {
             label
                 .background(Capsule().fill(Theme.tint))
                 .scaleEffect(configuration.isPressed ? 0.95 : 1)
-                .animation(.spring(response: 0.25, dampingFraction: 0.7), value: configuration.isPressed)
+                .animation(Motion.press, value: configuration.isPressed)
         }
     }
 }
@@ -300,7 +334,7 @@ struct SquishyButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .scaleEffect(configuration.isPressed ? 0.96 : 1)
-            .animation(.spring(response: 0.25, dampingFraction: 0.65), value: configuration.isPressed)
+            .animation(Motion.press, value: configuration.isPressed)
     }
 }
 
@@ -381,7 +415,7 @@ struct PillPicker<Value: Hashable>: View {
         HStack(spacing: 4) {
             ForEach(options, id: \.self) { option in
                 let selected = option == selection
-                Button { withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { selection = option } } label: {
+                Button { withAnimation(Motion.settle) { selection = option } } label: {
                     Text(label(option))
                         .font(Theme.font(15, .semibold))
                         .foregroundStyle(selected ? Theme.onBrand : .secondary)
@@ -416,4 +450,22 @@ struct MorphGlass<S: Shape>: ViewModifier {
             content.background(shape.fill(.ultraThinMaterial))
         }
     }
+}
+
+/// Morph's motion. State changes settle with critically damped springs (no overshoot); only a finished job gets a
+/// little bounce. With Reduce Motion, movement becomes a short fade and scaling transitions become cross-fades.
+enum Motion {
+    static var reduced: Bool { UIAccessibility.isReduceMotionEnabled }
+
+    /// Pages, sheets, groups and other state changes.
+    static var settle: Animation { reduced ? .easeInOut(duration: 0.2) : .spring(response: 0.4, dampingFraction: 1) }
+
+    /// Press feedback under the finger: quick and without wobble.
+    static var press: Animation { reduced ? .linear(duration: 0.08) : .spring(response: 0.22, dampingFraction: 1) }
+
+    /// The one celebratory moment, a result landing.
+    static var pop: Animation { reduced ? .easeOut(duration: 0.2) : .spring(response: 0.45, dampingFraction: 0.7) }
+
+    /// Fades in or out, with a slight scale unless Reduce Motion is on.
+    static func fade(scale: CGFloat) -> AnyTransition { reduced ? .opacity : .opacity.combined(with: .scale(scale: scale)) }
 }

@@ -809,17 +809,22 @@ CSS = """
   .get div { background: white; border: 1px solid var(--line); border-radius: 20px; padding: 1.1rem 1.3rem; display: grid; gap: .4rem; align-content: start; }
   .get p { margin: 0; color: var(--ink-soft); font-size: .95rem; }
   .button { justify-self: start; display: inline-flex; align-items: center; padding: .7rem 1.2rem; border-radius: 999px;
-            background: var(--brand); color: white; font: 650 .98rem/1 var(--body); text-decoration: none; }
+            background: var(--brand); color: white; font: 650 .98rem/1 var(--body); text-decoration: none;
+            transition: transform 160ms cubic-bezier(.2, .9, .2, 1), background-color 160ms ease; -webkit-tap-highlight-color: transparent; }
   .button:hover { background: #08524E; }
+  .button:active, .related a:active { transform: scale(0.97); transition-duration: 90ms; }
   .button.quiet { background: transparent; color: var(--brand); box-shadow: inset 0 0 0 2px var(--brand); }
   .related { display: flex; flex-wrap: wrap; gap: .5rem; padding: 0; list-style: none; }
   .related li { margin: 0; }
-  .related a { display: inline-block; padding: .45rem .9rem; border-radius: 999px; background: white; border: 1px solid var(--line); text-decoration: none; }
+  .related a { display: inline-block; padding: .45rem .9rem; border-radius: 999px; background: white; border: 1px solid var(--line); text-decoration: none;
+               transition: transform 160ms cubic-bezier(.2, .9, .2, 1), border-color 160ms ease; -webkit-tap-highlight-color: transparent; }
+  .related a:hover { border-color: var(--brand); }
   .promise { margin-top: 2.4rem; padding: 1.2rem 1.4rem; border-radius: 20px; background: var(--brand); color: white; }
   .promise p { margin: 0; max-width: none; }
   footer { padding: 3rem 0 4rem; color: var(--ink-soft); font-size: .92rem; display: flex; gap: 1.4rem; flex-wrap: wrap; }
   footer a { color: inherit; }
   @media (max-width: 640px) { .get { grid-template-columns: 1fr; } .where b { display: block; } }
+  @media (prefers-reduced-motion: reduce) { .button, .related a { transition: none; } .button:active, .related a:active { transform: none; opacity: .75; } }
 """
 
 LOGO = ('<svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="16" fill="#0B6E69"/><g fill="#fff">'

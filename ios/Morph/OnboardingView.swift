@@ -30,7 +30,7 @@ struct OnboardingView: View {
                         }
                     }
                     Button(page == pages - 1 ? "Get Started" : "Continue") {
-                        if page == pages - 1 { onFinish() } else { withAnimation(.spring(response: 0.45, dampingFraction: 0.85)) { page += 1 } }
+                        if page == pages - 1 { onFinish() } else { withAnimation(Motion.settle) { page += 1 } }
                     }
                     .buttonStyle(BubbleButtonStyle(fullWidth: true))
                     Button("Skip", action: onFinish)
@@ -38,7 +38,7 @@ struct OnboardingView: View {
                         .opacity(page == pages - 1 ? 0 : 1)
                 }
                 .padding(.horizontal, 24).padding(.bottom, 12)
-                .animation(.spring(response: 0.35, dampingFraction: 0.8), value: page)
+                .animation(Motion.settle, value: page)
             }
             .background(Theme.canvas.ignoresSafeArea())
         }

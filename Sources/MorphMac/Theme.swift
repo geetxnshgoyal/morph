@@ -152,7 +152,7 @@ struct PalettePicker: View {
         HStack(spacing: size * 0.3) {
             ForEach(Palette.allCases) { option in
                 let selected = option.rawValue == palette
-                Button { withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { palette = option.rawValue } } label: {
+                Button { withAnimation(Motion.settle) { palette = option.rawValue } } label: {
                     Circle().fill(option.fill)
                         .frame(width: size, height: size)
                         .overlay {
@@ -279,7 +279,7 @@ struct BubbleButtonStyle: ButtonStyle {
             label
                 .background(Capsule().fill(Theme.brand))
                 .scaleEffect(configuration.isPressed ? 0.96 : 1)
-                .animation(.spring(response: 0.25, dampingFraction: 0.7), value: configuration.isPressed)
+                .animation(Motion.press, value: configuration.isPressed)
         }
     }
 }
@@ -297,7 +297,7 @@ struct SoftButtonStyle: ButtonStyle {
             label
                 .background(Capsule().fill(Theme.tint))
                 .scaleEffect(configuration.isPressed ? 0.95 : 1)
-                .animation(.spring(response: 0.25, dampingFraction: 0.7), value: configuration.isPressed)
+                .animation(Motion.press, value: configuration.isPressed)
         }
     }
 }
@@ -348,7 +348,7 @@ struct PillPicker<Value: Hashable>: View {
         HStack(spacing: 4) {
             ForEach(options, id: \.self) { option in
                 let selected = option == selection
-                Button { withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { selection = option } } label: {
+                Button { withAnimation(Motion.settle) { selection = option } } label: {
                     Text(label(option))
                         .font(Theme.font(13, .semibold))
                         .foregroundStyle(selected ? Theme.onBrand : .secondary)
@@ -382,4 +382,19 @@ struct MorphGlass<S: Shape>: ViewModifier {
             content.background(shape.fill(.ultraThinMaterial))
         }
     }
+}
+
+/// Morph's motion. State changes settle with critically damped springs (no overshoot); the wheel's bloom keeps a
+/// little life. With Reduce Motion, movement becomes a short fade.
+enum Motion {
+    static var reduced: Bool { NSWorkspace.shared.accessibilityDisplayShouldReduceMotion }
+
+    /// Tabs, pages, selections and other state changes.
+    static var settle: Animation { reduced ? .easeInOut(duration: 0.18) : .spring(response: 0.35, dampingFraction: 1) }
+
+    /// Press and hover feedback: quick and without wobble.
+    static var press: Animation { reduced ? .linear(duration: 0.08) : .spring(response: 0.22, dampingFraction: 1) }
+
+    /// Fades in or out, with a slight scale unless Reduce Motion is on.
+    static func fade(scale: CGFloat) -> AnyTransition { reduced ? .opacity : .opacity.combined(with: .scale(scale: scale)) }
 }

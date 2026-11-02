@@ -218,7 +218,7 @@ final class ToolStatus: ObservableObject {
     func refresh() {
         let found = ExternalTool.ffmpeg != nil
         if found != hasFFmpeg {
-            withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) { hasFFmpeg = found }
+            withAnimation(Motion.settle) { hasFFmpeg = found }
         }
         schedule()
     }

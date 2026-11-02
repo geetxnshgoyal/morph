@@ -28,7 +28,7 @@ struct WelcomeView: View {
                 }
             }
             .id(page)
-            .transition(.asymmetric(insertion: .move(edge: forward ? .trailing : .leading).combined(with: .opacity),
+            .transition(Motion.reduced ? .opacity : .asymmetric(insertion: .move(edge: forward ? .trailing : .leading).combined(with: .opacity),
                                     removal: .move(edge: forward ? .leading : .trailing).combined(with: .opacity)))
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .padding(.horizontal, 40).padding(.top, 44)
@@ -143,12 +143,12 @@ struct WelcomeView: View {
             .keyboardShortcut(.defaultAction)
         }
         .padding(.horizontal, 28).padding(.vertical, 22)
-        .animation(.spring(response: 0.35, dampingFraction: 0.8), value: page)
+        .animation(Motion.settle, value: page)
     }
 
     private func go(_ delta: Int) {
         forward = delta > 0
-        withAnimation(.spring(response: 0.45, dampingFraction: 0.85)) { page += delta }
+        withAnimation(Motion.settle) { page += delta }
     }
 
     private func feature(_ symbol: String, _ title: String, _ detail: String) -> some View {
@@ -183,7 +183,7 @@ struct TryItZone: View {
                 }
             }
             .scaleEffect(targeted ? 1.02 : 1)
-            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: targeted)
+            .animation(Motion.press, value: targeted)
             .dropDestination(for: URL.self) { urls, _ in onFiles(urls); return true } isTargeted: { targeted = $0 }
     }
 }

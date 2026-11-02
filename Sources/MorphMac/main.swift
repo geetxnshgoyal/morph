@@ -289,7 +289,7 @@ struct ShelfView: View {
                     }
                 }
                 .scaleEffect(targeted ? 1.02 : 1)
-                .animation(.spring(response: 0.3, dampingFraction: 0.7), value: targeted)
+                .animation(Motion.press, value: targeted)
                 .dropDestination(for: URL.self) { urls, _ in
                     onFiles(urls); return true
                 } isTargeted: { targeted = $0 }

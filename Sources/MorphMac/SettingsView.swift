@@ -148,7 +148,7 @@ struct FFmpegRow: View {
                 }
             } else {
                 Image(systemName: "checkmark.circle.fill").font(.system(size: 22)).foregroundStyle(Theme.brandText)
-                    .transition(.scale.combined(with: .opacity))
+                    .transition(Motion.fade(scale: 0.9))
             }
         }
         .onAppear { tools.refresh() }
@@ -216,7 +216,7 @@ struct SettingsView: View {
             .frame(width: 520, height: 440)
             .background(Theme.canvas)
             .tint(Theme.brand)
-            .animation(.spring(response: 0.3, dampingFraction: 0.85), value: tab)
+            .animation(Motion.settle, value: tab)
         }
     }
 

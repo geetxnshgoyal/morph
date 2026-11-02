@@ -276,3 +276,8 @@
   .panel-tab { padding: 0 10px; }
   .panel-tab kbd { display: none; }
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .stage-keys.is-ready .keycap:first-child { animation: none; }
+  .island-bar span { animation-duration: 1ms; }
+}

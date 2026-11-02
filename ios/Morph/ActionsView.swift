@@ -32,7 +32,7 @@ final class JobModel: ObservableObject {
 
     func run(_ action: Action) {
         if Prefs.haptics { UIImpactFeedbackGenerator(style: .medium).impactOccurred() }
-        withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) { phase = .running(action, done: 0, total: files.count) }
+        withAnimation(Motion.settle) { phase = .running(action, done: 0, total: files.count) }
         let files = files
         Task {
             let result = await Runner.run(action, inputs: files, options: Prefs.options) { done, total in
@@ -40,7 +40,7 @@ final class JobModel: ObservableObject {
                     if case .running = self.phase { self.phase = .running(action, done: done, total: total) }
                 }
             }
-            withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) { phase = .finished(action, result) }
+            withAnimation(Motion.settle) { phase = .finished(action, result) }
             if Prefs.haptics {
                 UINotificationFeedbackGenerator().notificationOccurred(result.failures.isEmpty ? .success : .error)
             }
@@ -106,11 +106,11 @@ struct ActionsView: View {
                         }
                     }
                     .id(model.group)
-                    .transition(.opacity.combined(with: .scale(scale: 0.95)))
+                    .transition(Motion.fade(scale: 0.95))
                 }
             }
             .padding(.horizontal, 20).padding(.bottom, 30)
-            .animation(.spring(response: 0.35, dampingFraction: 0.85), value: model.group)
+            .animation(Motion.settle, value: model.group)
         }
     }
 
@@ -171,7 +171,7 @@ struct RunningView: View {
                         .stroke(Theme.brand,
                                 style: StrokeStyle(lineWidth: 6, lineCap: .round))
                         .rotationEffect(.degrees(-90))
-                        .animation(.spring, value: done)
+                        .animation(Motion.settle, value: done)
                 }
                 MorphLoader(size: 112)
             }
@@ -207,7 +207,7 @@ struct ResultView: View {
                 ZStack {
                     // A ring ripples out once as the result lands.
                     Circle().stroke(ok ? Theme.brand : Color.red, lineWidth: 3)
-                        .scaleEffect(pop ? 1.9 : 1)
+                        .scaleEffect(pop && !Motion.reduced ? 1.9 : 1)
                         .opacity(pop ? 0 : 0.9)
                         .animation(.easeOut(duration: 0.9), value: pop)
                     Circle().fill(ok ? Theme.brand : Color.red)
@@ -278,7 +278,7 @@ struct ResultView: View {
             .padding(.horizontal, 20).padding(.bottom, 30)
         }
         .quickLookPreview($preview, in: result.outputs)
-        .onAppear { withAnimation(.spring(response: 0.45, dampingFraction: 0.55)) { pop = true } }
+        .onAppear { withAnimation(Motion.pop) { pop = true } }
     }
 
     private func size(of url: URL) -> String {

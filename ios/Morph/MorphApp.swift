@@ -22,11 +22,13 @@ struct MorphApp: App {
                     .scaleEffect(showSplash ? 0.94 : 1)
                     .blur(radius: showSplash ? 10 : 0)
                 if showSplash {
-                    MorphSplash { withAnimation(.spring(response: 0.55, dampingFraction: 0.85)) { showSplash = false } }
+                    MorphSplash { withAnimation(.spring(response: 0.55, dampingFraction: 1)) { showSplash = false } }
                         .transition(.asymmetric(insertion: .identity, removal: .opacity.combined(with: .scale(scale: 2.4))))
                         .zIndex(1)
                 }
             }
+            // Text follows Dynamic Type; past this size the action bubbles would no longer fit a phone's width.
+            .dynamicTypeSize(...DynamicTypeSize.accessibility2)
             .environmentObject(state)
             .tint((Palette(rawValue: palette) ?? .teal).fill)
             .fullScreenCover(isPresented: Binding(get: { !hasSeenWelcome && !showSplash }, set: { hasSeenWelcome = !$0 })) {

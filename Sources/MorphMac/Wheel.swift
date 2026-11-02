@@ -131,6 +131,8 @@ final class WheelModel: ObservableObject {
     @Published var phase: Phase = .choosing
     /// The window is going away: the view plays the wheel's exit.
     @Published var closing = false
+    /// The petals bloom out of the hub once, when the wheel opens; switching wheel or page then swaps them in place.
+    var hasBloomed = false
     @Published var hovered: String? {
         didSet { if hovered != oldValue, hovered != nil { Feedback.shared.tick() } }
     }
@@ -179,7 +181,7 @@ final class WheelModel: ObservableObject {
     }
 
     var motion: Animation? {
-        NSWorkspace.shared.accessibilityDisplayShouldReduceMotion ? nil : .spring(response: 0.42, dampingFraction: 0.82)
+        Motion.reduced ? nil : .spring(response: 0.38, dampingFraction: 1)
     }
 
     // MARK: Navigation
@@ -322,7 +324,7 @@ struct WheelView: View {
                 if case .choosing = model.phase {
                     PetalRing(model: model, items: model.pageItems)
                         .id("\(model.group)-\(model.page)")
-                        .transition(.opacity.combined(with: .scale(scale: 0.94)))
+                        .transition(Motion.fade(scale: 0.97))
                 }
                 WheelHub(model: model)
                     .scaleEffect(present ? 1 : 0.3)
@@ -342,18 +344,25 @@ struct WheelView: View {
         }
         .frame(width: WheelMetrics.width, height: WheelMetrics.height)
         // In: the hub springs out of a drop. Out: everything is pulled back into it.
-        .animation(reduceMotion ? nil : model.closing ? .easeIn(duration: 0.2) : .spring(response: 0.42, dampingFraction: 0.6),
+        .animation(reduceMotion ? nil : model.closing ? .easeIn(duration: 0.2) : .spring(response: 0.42, dampingFraction: 0.75),
                    value: present)
         .onAppear { appeared = true }
     }
 }
 
-/// The petals of one page. Every petal blooms out of the hub when the ring appears, so switching wheel or
-/// page replays the opening; hover, click and drop all find their petal by position, gaps included.
+/// The petals of one page. They bloom out of the hub when the wheel opens; switching wheel or page cross-fades
+/// the new petals in where the old ones were. Hover, click and drop all find their petal by position, gaps included.
 private struct PetalRing: View {
     @ObservedObject var model: WheelModel
+
+    init(model: WheelModel, items: [Action]) {
+        self.model = model
+        self.items = items
+        _bloomed = State(initialValue: model.hasBloomed)
+    }
+
     let items: [Action]
-    @State private var bloomed = false
+    @State private var bloomed: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
@@ -363,7 +372,7 @@ private struct PetalRing: View {
                           highlighted: model.hovered == action.id, bloomed: bloomed)
                     .animation(reduceMotion ? nil : model.closing ? .easeIn(duration: 0.18)
                         : .spring(response: 0.48, dampingFraction: 0.74).delay(Double(index) * 0.022), value: bloomed)
-                    .animation(reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.68),
+                    .animation(reduceMotion ? nil : .spring(response: 0.25, dampingFraction: 1),
                                value: model.hovered == action.id)
             }
         }
@@ -382,7 +391,7 @@ private struct PetalRing: View {
         }
         // Dropping the dragged files on a petal runs it.
         .onDrop(of: [.fileURL], delegate: RingDropDelegate(model: model, centered: centered))
-        .onAppear { bloomed = true }
+        .onAppear { bloomed = true; model.hasBloomed = true }
         .onChange(of: model.closing) { _, closing in if closing { bloomed = false } }
     }
 
@@ -490,7 +499,7 @@ private struct WheelHub: View {
                     .font(Theme.font(14, .semibold))
                     .lineLimit(2).multilineTextAlignment(.center)
                     .contentTransition(.opacity)
-                    .animation(.easeOut(duration: 0.12), value: model.hovered)
+                    .animation(Motion.press, value: model.hovered)
                 Text(caption).font(Theme.font(11)).foregroundStyle(.secondary)
                     .lineLimit(1).minimumScaleFactor(0.8)
                 if model.pages > 1 {
@@ -501,7 +510,7 @@ private struct WheelHub: View {
                         }
                     }
                     .padding(.top, 2)
-                    .animation(.spring(response: 0.3, dampingFraction: 0.8), value: model.page)
+                    .animation(Motion.settle, value: model.page)
                 }
             }
         case let .running(action, done, total):

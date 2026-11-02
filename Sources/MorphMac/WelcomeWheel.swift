@@ -23,11 +23,11 @@ struct WheelTour: View {
             MiniWheel(group: current, highlight: tick % stepsPerWheel)
                 .frame(width: 184, height: 184)
                 .id(current)
-                .transition(.scale(scale: 0.85).combined(with: .opacity))
+                .transition(Motion.fade(scale: 0.85))
             VStack(alignment: .leading, spacing: 9) {
                 ForEach(wheels, id: \.self) { group in
                     KeyRow(group: group, keys: prefs.dragKeys(for: group), active: group == current)
-                        .onTapGesture { withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) { show(group) } }
+                        .onTapGesture { withAnimation(Motion.settle) { show(group) } }
                 }
             }
         }
