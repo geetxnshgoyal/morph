@@ -391,7 +391,8 @@ public class RunnerTests : Scratch
         Assert.Equal(Dir, System.IO.Path.GetDirectoryName(output));
         Assert.Equal(1600u, new MagickImageInfo(output).Width);
 
-        var entry = History.Shared.Entries.Last();
+        // Other test classes run jobs in parallel and share the history, so find this job by its output.
+        var entry = History.Shared.Entries.Last(e => e.Outputs.Contains(output));
         Assert.Equal("Web Image", entry.Title);
         History.Shared.Undo(entry.Id);
         Assert.False(File.Exists(output));
