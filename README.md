@@ -15,14 +15,14 @@ Grab the latest build from [Releases](../../releases/latest):
 
 | Platform | File | Needs |
 | --- | --- | --- |
-| macOS | [`Morph-1.0.0.dmg`](https://github.com/geetxnshgoyal/morph/releases/download/v1.0.0/Morph-1.0.0.dmg), or the Mac App Store beta on [TestFlight](https://testflight.apple.com/join/6fFuMydz) (out around 11 November 2026) | macOS 14 or later, Apple Silicon or Intel |
+| macOS | [`Morph-1.0.0.dmg`](https://github.com/geetxnshgoyal/morph/releases/download/v1.0.0/Morph-1.0.0.dmg), or the Mac App Store beta on [TestFlight](https://testflight.apple.com/join/6fFuMydz) | macOS 14 or later, Apple Silicon or Intel |
 | Windows | [Microsoft Store](https://apps.microsoft.com/detail/9PHWJVRC85DW), or [`Morph-1.0.1-x64-setup.exe`](https://github.com/geetxnshgoyal/morph/releases/download/v1.0.0/Morph-1.0.1-x64-setup.exe) ([`arm64`](https://github.com/geetxnshgoyal/morph/releases/download/v1.0.0/Morph-1.0.1-arm64-setup.exe) for Arm PCs) | Windows 10 version 1809 or later, or Windows 11 |
 | Android | Google Play is in closed testing, out around 11 November 2026: [join the testers](https://morph.geetanshgoyal.in/android.html) to get it now, or use the APK from Releases | Android 10 or later |
-| iOS | the beta on [TestFlight](https://testflight.apple.com/join/6fFuMydz); on the App Store around 11 November 2026 | iOS 17 or later |
+| iOS | [App Store](https://apps.apple.com/in/app/morph-file-converter/id6827647585) (released!), or preview beta on [TestFlight](https://testflight.apple.com/join/6fFuMydz) | iOS 17 or later |
 
-**macOS:** open the DMG and drag Morph into Applications. The build is signed with a Developer ID and notarized by Apple. To try the Mac App Store version instead, install TestFlight and open the [beta link](https://testflight.apple.com/join/6fFuMydz) on your Mac; it saves results to Downloads until you allow saving next to your files in Settings → Output.
+**macOS:** open the DMG and drag Morph into Applications. The build is signed with a Developer ID and notarized by Apple. To try the Mac App Store version instead, install TestFlight and open the [beta link](https://testflight.apple.com/join/6fFuMydz) on your Mac.
 
-**iPhone and iPad:** install TestFlight, then open the [beta link](https://testflight.apple.com/join/6fFuMydz) on your iPhone or iPad.
+**iPhone and iPad:** get Morph now from the [App Store](https://apps.apple.com/in/app/morph-file-converter/id6827647585), or test upcoming preview builds via [TestFlight](https://testflight.apple.com/join/6fFuMydz).
 
 **Betas:** Morph is new and still has bugs, most of all in the TestFlight builds. Please [report](https://github.com/geetxnshgoyal/morph/issues/new) anything that breaks, with your device and the file you used.
 

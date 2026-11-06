@@ -15,19 +15,20 @@ import re
 SITE = "https://morph.geetanshgoyal.in"
 DOCS = pathlib.Path(__file__).resolve().parent.parent / "docs"
 LAUNCH = "around 11 November 2026"
-UPDATED = "2026-11-02"
+UPDATED = "2026-11-06"
 TESTFLIGHT = "https://testflight.apple.com/join/6fFuMydz"
+APPSTORE_IOS = "https://apps.apple.com/in/app/morph-file-converter/id6827647585"
 
 # Where each platform's download or status lives, for the "Get Morph" block.
 GET = [
     ("Mac", f'<a class="button" href="https://github.com/geetxnshgoyal/morph/releases/download/v1.0.0/Morph-1.0.0.dmg">Download for Mac</a> <a class="button quiet" href="{TESTFLIGHT}">Mac App Store beta</a>',
-     f"macOS 14 or later, Apple Silicon or Intel. The App Store beta is on TestFlight; it's early and still has bugs."),
+     "macOS 14 or later, Apple Silicon or Intel. The macOS build has several known bugs and is in active preview; please report issues on GitHub!"),
     ("Windows", '<a class="button quiet" href="https://apps.microsoft.com/detail/9PHWJVRC85DW">Microsoft Store</a>',
      "Windows 10 (1809) or later and Windows 11."),
     ("Android", '<a class="button quiet" href="android.html">Join the Google Play test</a>',
      f"Android 10 or later. Out for everyone on Google Play {LAUNCH}."),
-    ("iPhone and iPad", f'<a class="button quiet" href="{TESTFLIGHT}">Join the TestFlight beta</a>',
-     f"iOS 17 or later. On the App Store {LAUNCH}; try the beta now with TestFlight (expect a few bugs)."),
+    ("iPhone and iPad", f'<a class="button" href="{APPSTORE_IOS}">App Store</a> <a class="button quiet" href="{TESTFLIGHT}">TestFlight beta</a>',
+     "iOS 17 or later. Available now on the App Store; also on TestFlight for beta previews."),
 ]
 
 # Platform notes reused across pages.
@@ -858,6 +859,16 @@ def page(p, by_slug):
         "@context": "https://schema.org", "@type": "SoftwareApplication", "name": "Morph", "url": SITE + "/",
         "applicationCategory": "UtilitiesApplication",
         "operatingSystem": "macOS 14 or later, Windows 10 or later, iOS 17 or later, Android 10 or later",
+        "downloadUrl": [
+            APPSTORE_IOS,
+            "https://github.com/geetxnshgoyal/morph/releases/download/v1.0.0/Morph-1.0.0.dmg",
+            "https://apps.microsoft.com/detail/9PHWJVRC85DW",
+        ],
+        "sameAs": [
+            "https://github.com/geetxnshgoyal/morph",
+            APPSTORE_IOS,
+            "https://apps.microsoft.com/detail/9PHWJVRC85DW",
+        ],
         "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "isAccessibleForFree": True,
     }
     steps = "\n".join(f"      <li><h3>{e(n)}</h3><p>{e(t)}</p></li>" if t else f"      <li><h3>{e(n)}</h3></li>" for n, t in p["steps"])

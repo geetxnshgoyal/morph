@@ -2,7 +2,7 @@
 
 The menu bar app from `Sources/MorphMac`, built as a sandboxed Mac App Store app. It shares the bundle ID `app.morph.Morph` with the iPhone and iPad app, so the App Store sells all three as one universal purchase. The Developer ID download is built from the same sources by [`scripts/bundle.sh`](../scripts/bundle.sh), without the sandbox.
 
-Version 1.0.0 is in App Store review and comes out around 11 November 2026. The beta is on [TestFlight](https://testflight.apple.com/join/6fFuMydz) for the Mac too; it's early, so expect bugs.
+Version 1.0.0 is in active preview and on [TestFlight](https://testflight.apple.com/join/6fFuMydz) for Mac. **Known issues & feedback:** The macOS build has several known bugs and rough edges while under active development; please report any bugs you run into on [GitHub Issues](https://github.com/geetxnshgoyal/morph/issues).
 
 ## What the sandbox changes
 

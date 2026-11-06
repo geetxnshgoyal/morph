@@ -31,7 +31,7 @@ Press and hold the app icon for **Convert Photos** and **Choose Files**.
 
 ## App Store
 
-Version 1.0.0 is in App Store review and comes out around 11 November 2026. Try the beta now: install TestFlight and open [this link](https://testflight.apple.com/join/6fFuMydz) on your iPhone or iPad. It's early, so expect a few bugs and please [report them](https://github.com/geetxnshgoyal/morph/issues/new).
+Morph is officially released on the [App Store](https://apps.apple.com/in/app/morph-file-converter/id6827647585) for iPhone and iPad! You can also join upcoming preview builds via [TestFlight](https://testflight.apple.com/join/6fFuMydz). If you find any issues, please [report them on GitHub](https://github.com/geetxnshgoyal/morph/issues/new).
 
 The app is set up for App Store review: a privacy manifest (`Morph/PrivacyInfo.xcprivacy`, no data collected), `ITSAppUsesNonExemptEncryption` set to `NO`, an opaque 1024 px icon, and Privacy and Help links in Settings. The listing text, screenshots and review notes are in [`marketing/app-store.md`](../marketing/app-store.md).
 

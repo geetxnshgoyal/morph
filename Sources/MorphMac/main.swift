@@ -275,6 +275,8 @@ struct ShelfView: View {
                 .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
             }
 
+            if Festive.isDiwali { DiwaliCard() }
+
             RoundedRectangle(cornerRadius: Theme.radius, style: .continuous)
                 .strokeBorder(style: StrokeStyle(lineWidth: 2, dash: [7, 6]))
                 .foregroundStyle(targeted ? Theme.brandText : .secondary.opacity(0.35))

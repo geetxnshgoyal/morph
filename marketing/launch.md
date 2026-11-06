@@ -5,7 +5,7 @@ Copy for the 1.0.0 launch. App Store Connect fields, screenshots and review note
 Facts to keep straight in every post:
 - Free and open source. No accounts, no uploads, no tracking.
 - Mac: menu bar app, macOS 14 or later, Apple Silicon and Intel. The DMG is signed with Developer ID and notarized by Apple.
-- iPhone and iPad: iOS 17 or later. In internal testing on the App Store, out around 11 November 2026.
+- iPhone and iPad: iOS 17 or later. Released on the App Store (https://apps.apple.com/in/app/morph-file-converter/id6827647585), with preview builds on TestFlight.
 - Android: Android 10 or later. In closed testing on Google Play, out around 11 November 2026; anyone can join through https://morph.geetanshgoyal.in/android.html (APK on GitHub releases too). Google Play listing and policy answers are in [`play-store.md`](play-store.md).
 
 ## Positioning

@@ -1,38 +1,21 @@
-// The live demo in the hero: a small Mac desktop with a Downloads window. Drag a file and tap a wheel's
-// key, as in Morph: ⇧ Convert, ⌘ Tools, ⌃ Recipes, ⌥ Actions (Shift, Ctrl, Ctrl+Shift and Alt on
-// Windows). The wheel opens under the pointer; tap another key to switch. On a phone, tap a file.
-// ⌘-click (Ctrl-click) picks several files to drag together. Nothing leaves the page.
+// The live demo in the hero: a small desktop with a Downloads window. Drag a file and press Shift
+// (or tap it on a phone) and the real wheel opens at the pointer. Ctrl+click picks several files;
+// drag them, or press Ctrl+Shift+Space, for one wheel over all of them. Nothing leaves the page.
 
 import { Wheel, arrange, outerEdge, OUTSIDE, ON_CENTRE } from './wheel.js';
-import { SAMPLE_FILES, SECTIONS, wheelFor, wheelForMany, formatSize } from './content.js';
+import { SAMPLE_FILES, wheelFor, wheelForMany, formatSize } from './content.js';
 import { iconSvg } from './icons.js';
 
 const DRAG_START_PX = 5;
 const MAX_ADDED = 4;
 
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
-const isMac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
-
-// A wheel's key as this visitor's keyboard shows it.
-const keyOf = (group) => {
-  const s = SECTIONS.find((x) => x.key === group);
-  return isMac ? s.mac : s.win;
-};
-
-// The wheel a key opens mid-drag, as in the app.
-function groupFor(e) {
-  if (isMac) return { Shift: 'convert', Meta: 'tools', Control: 'recipes', Alt: 'actions' }[e.key];
-  if (e.key === 'Shift') return e.ctrlKey ? 'recipes' : 'convert';
-  if (e.key === 'Control') return e.shiftKey ? 'recipes' : 'tools';
-  if (e.key === 'Alt') return 'actions';
-  return undefined;
-}
 
 export function startDemo(stage) {
   const grid = stage.querySelector('[data-files]');
   const overlay = stage.querySelector('[data-overlay]');
   const hint = stage.querySelector('[data-hint]');
-  const keys = stage.querySelector('[data-keys]');
+  const keycap = stage.querySelector('[data-keycap]');
   const panel = overlay.querySelector('[data-panel]');
   const card = overlay.querySelector('[data-card]');
   const ghost = overlay.querySelector('[data-ghost]');
@@ -51,7 +34,7 @@ export function startDemo(stage) {
   let file = null;          // the file picked up (the first, when there are several)
   let batch = [];           // every file the wheel works on
   let selected = [];        // names of the selected tiles, in the order picked
-  let anchor = null;        // where a Shift-click range starts
+  let anchor = null;        // where a Shift+click range starts
   let sections = [];        // its wheel
   let section = 0;
   let mode = 'idle';        // idle | pressed | dragging | wheel | closing
@@ -63,7 +46,7 @@ export function startDemo(stage) {
   let scale = 1;
   let islandTimer = 0;
   let isTouch = false;
-  let attract = false;      // the opening pose: photo.jpg on Tools, Compress lit, until someone acts
+  let attract = false;      // the opening pose: photo.jpg on Convert, WebP lit, until someone acts
   let attractHot = -1;
 
   // ---- The Downloads window ---------------------------------------------------------------------
@@ -102,14 +85,7 @@ export function startDemo(stage) {
   function announce(text) {
     live.textContent = text;
   }
-  const idleHint = () => say(isTouch ? 'Tap a file to open its wheel.' : `Drag a file and tap ${keyOf('convert')}.`);
-  const pickMore = isMac ? '⌘-click' : 'Ctrl-click';
-
-  // The wheels' keys, to tap on a phone; they light with the real keys.
-  keys.innerHTML = SECTIONS.map((s) =>
-    `<button type="button" class="keycap" data-group="${s.key}"><kbd>${keyOf(s.key)}</kbd><span>${s.title}</span></button>`
-  ).join('');
-  const keyFor = (group) => keys.querySelector(`[data-group="${group}"]`);
+  const idleHint = () => say(isTouch ? 'Tap a file to open the wheel.' : 'Drag a file and press Shift.');
 
   // ---- Geometry ---------------------------------------------------------------------------------
 
@@ -123,12 +99,11 @@ export function startDemo(stage) {
     const r = overlayRect();
     const layoutEdge = wheel.extent - 26;
     const panelH = panel.offsetHeight || 36;
-    const cardH = 56;
+    const cardH = 64;
     const need = (extra) => 2 * layoutEdge * extra + panelH + cardH + 40;
     scale = Math.min(1, (r.height - 16) / need(1), (r.width - 16) / (2 * layoutEdge + 8));
     const half = layoutEdge * scale;
-    // The wheel bar sits under the ring, as in the app; the result card and progress go above.
-    const top = half + cardH + 28, bottom = half + panelH + 28;
+    const top = half + panelH + 20, bottom = half + cardH + 16;
     const x = Math.max(half + 8, Math.min(r.width - half - 8, atX));
     const y = Math.max(top + 4, Math.min(r.height - bottom - 4, atY));
     centre = { x, y };
@@ -137,9 +112,9 @@ export function startDemo(stage) {
     wrap.style.transform = `translate(${x - size / 2}px, ${y - size / 2}px)`;
     // The top panel and the card stay over the wheel, but never past the desktop's edges.
     const along = (w) => Math.max(w / 2 + 8, Math.min(r.width - w / 2 - 8, x));
-    panel.style.transform = `translate(-50%, 0) translate(${along(panel.offsetWidth)}px, ${y + half + 22}px)`;
-    card.style.transform = `translate(-50%, 0) translate(${along(Math.max(card.offsetWidth, 320))}px, ${y - half - 22 - cardH}px)`;
-    island.style.transform = `translate(-50%, 0) translate(${x}px, ${y - half - 22 - 40}px)`;
+    panel.style.transform = `translate(-50%, 0) translate(${along(panel.offsetWidth)}px, ${y - half - 14 - panelH}px)`;
+    card.style.transform = `translate(-50%, 0) translate(${along(Math.max(card.offsetWidth, 320))}px, ${y + half + 12}px)`;
+    island.style.transform = `translate(-50%, 0) translate(${x}px, ${y - half - 14 - panelH}px)`;
   }
 
   function hitTest(clientX, clientY) {
@@ -148,14 +123,12 @@ export function startDemo(stage) {
     return wheel.slotAt(dx, dy);
   }
 
-  // ---- Wheel bar and result card -------------------------------------------------------------------
+  // ---- Top panel and result card -----------------------------------------------------------------
 
-  // The wheels these files have, each with its key, as in the bar under the app's wheel.
   function renderPanel() {
-    panel.innerHTML = sections.length > 1 ? sections.map((s, i) =>
-      `<button type="button" class="panel-tab${i === section ? ' is-on' : ''}" data-section="${i}" tabindex="-1"><kbd>${keyOf(s.key)}</kbd><span>${s.title}</span></button>`
-    ).join('') : '';
-    panel.classList.toggle('is-empty', sections.length < 2);
+    panel.innerHTML = sections.map((s, i) =>
+      `<button type="button" class="panel-tab${i === section ? ' is-on' : ''}" data-section="${i}" tabindex="-1">${iconSvg(s.icon, 'icon')}<span>${s.title}</span></button>`
+    ).join('') + (sections.length > 1 ? `<span class="panel-hint">${isTouch ? 'Tap a section' : `Scroll or Shift+1–${sections.length}`}</span>` : '');
   }
 
   function renderCard() {
@@ -175,10 +148,8 @@ export function startDemo(stage) {
   function showSection(i, dir = 1, animate = true) {
     section = (i + sections.length) % sections.length;
     const s = sections[section];
-    const centreText = batch.length > 1 ? `${batch.length} files` : `${file.base}.${file.ext}`;
-    const title = byClick ? (isTouch ? 'Tap an action' : 'Click an action') : 'Drop on an action';
-    const hint = byClick ? (isTouch ? 'Tap to run' : 'Click to run') : 'Release to run';
-    wheel.set({ slices: s.slices, centre: centreText, title, hint, sections: sections.length, section }, { animate, dir });
+    const centreText = s.key === 'reduce' ? formatSize(totalMb()) : batch.length > 1 ? `${batch.length} files` : '1 file';
+    wheel.set({ slices: s.slices, centre: centreText, title: s.title, sections: sections.length, section }, { animate, dir });
     renderPanel();
     place(centre.x, centre.y);
     keyHot = false;
@@ -197,11 +168,10 @@ export function startDemo(stage) {
 
   // ---- Open, run, cancel --------------------------------------------------------------------------
 
-  // Opens the wheel for `group`, or, when the files have none, Convert or else Tools, as the app does.
-  function openWheel(atClientX, atClientY, clicked, group = 'convert') {
+  function openWheel(atClientX, atClientY, clicked) {
     if (!batch.includes(file)) batch = [file];
     sections = batch.length > 1 ? wheelForMany(batch) : wheelFor(file);
-    section = Math.max(0, sections.findIndex((s) => s.key === group));
+    section = 0;
     wheel.frameRings = Math.max(...sections.map((s) => arrange(s.slices.length).rings));
     byClick = clicked;
     mode = 'wheel';
@@ -209,11 +179,11 @@ export function startDemo(stage) {
     island.classList.remove('is-on');
     const r = overlayRect();
     centre = { x: atClientX - r.left, y: atClientY - r.top };
-    showSection(section, 1, false);
+    showSection(0, 1, false);
     wheel.open();
     say(clicked
-      ? (isTouch ? 'Tap an action to run it, or another wheel below. Tap the middle to cancel.' : 'Click an action. Tap another wheel\'s key to switch. Esc cancels.')
-      : 'Drop on an action. Tap another wheel\'s key to switch.');
+      ? (isTouch ? 'Tap a slice to run it. Tap the middle to cancel.' : 'Click a slice. Scroll for the other sections. Esc cancels.')
+      : 'Drop on a slice. Scroll for the other sections.');
     stage.focus({ preventScroll: true });
   }
 
@@ -261,7 +231,7 @@ export function startDemo(stage) {
           if (own?.card) addResult(f, own.card);
         }
       }
-      say(slice.card ? 'Saved next to the original, which is untouched. Try another file.' : 'Done. Try another file, or another wheel.');
+      say(slice.card ? 'Saved next to the original, which is untouched. Try another file.' : 'Done. Try another file, or another section.');
       islandTimer = setTimeout(() => island.classList.remove('is-on'), 3200);
     }, reducedMotion ? 300 : 900);
   }
@@ -271,7 +241,7 @@ export function startDemo(stage) {
     const isFolder = c.title === 'Folder';
     const base = isFolder || dot < 0 ? c.file : c.file.slice(0, dot);
     const ext = isFolder || dot < 0 ? '' : c.file.slice(dot + 1);
-    const kind = { svg: 'image', webp: 'image', png: 'image', jpg: 'image', avif: 'image', heic: 'image', tiff: 'image', bmp: 'image', gif: 'image',
+    const kind = { webp: 'image', png: 'image', jpg: 'image', avif: 'image', heic: 'image', tiff: 'image', bmp: 'image', gif: 'image',
       pdf: 'pdf', mp4: 'video', mkv: 'video', webm: 'video', avi: 'video', wmv: 'video', mov: 'video',
       mp3: 'audio', m4a: 'audio', flac: 'audio', ogg: 'audio', opus: 'audio', aiff: 'audio', wma: 'audio', wav: 'audio',
       zip: 'archive', '7z': 'archive', 'tar.gz': 'archive', gz: 'archive' }[ext.toLowerCase()] ?? (isFolder ? 'files' : 'document');
@@ -301,7 +271,7 @@ export function startDemo(stage) {
 
   function beginDrag() {
     mode = 'dragging';
-    // A selected tile carries the whole selection with it, as in Finder.
+    // A selected tile carries the whole selection with it, as in Explorer.
     const name = press.el.dataset.name;
     batch = selected.length > 1 && selected.includes(name)
       ? [file, ...selected.filter((x) => x !== name).map(fileFor).filter(Boolean)]
@@ -313,8 +283,8 @@ export function startDemo(stage) {
     ghost.innerHTML = `${iconSvg(file.icon, 'icon')}<span class="mono">${batch.length > 1 ? `${batch.length} files` : `${file.base}.${file.ext}`}</span>`;
     ghost.classList.add('is-on');
     moveGhost();
-    say(`Now tap a key: ${SECTIONS.map((s) => `${keyOf(s.key)} ${s.title}`).join(', ')}.`);
-    keys.classList.add('is-ready');
+    say('Now press Shift.');
+    keycap.classList.add('is-ready');
   }
 
   function moveGhost() {
@@ -324,7 +294,7 @@ export function startDemo(stage) {
 
   function endDrag() {
     ghost.classList.remove('is-on');
-    keys.classList.remove('is-ready');
+    keycap.classList.remove('is-ready');
     grid.querySelectorAll('.is-dragging').forEach((e) => e.classList.remove('is-dragging'));
     if (press?.el?.hasPointerCapture?.(press.id)) press.el.releasePointerCapture(press.id);
     press = null;
@@ -348,7 +318,7 @@ export function startDemo(stage) {
     if (e.pointerType !== 'touch') {
       el.setPointerCapture(e.pointerId);
       // No preventDefault: the press must move keyboard focus into the page (from the address bar,
-      // say), or the keys never reach it. The stage's user-select: none stops text selection.
+      // say), or the Shift key never reaches it. The stage's user-select: none stops text selection.
       el.focus({ preventScroll: true });
     }
   });
@@ -358,9 +328,9 @@ export function startDemo(stage) {
     if (mode === 'pressed' && press && press.pointerType !== 'touch' &&
         Math.hypot(e.clientX - press.x, e.clientY - press.y) > DRAG_START_PX) {
       beginDrag();
-      // Shift already held when the drag started: Convert opens straight away.
+      // Shift already held when the drag started: open straight away.
       if (e.shiftKey) {
-        openWheel(pointer.x, pointer.y, false, 'convert');
+        openWheel(pointer.x, pointer.y, false);
         updateHot();
       }
     }
@@ -374,8 +344,8 @@ export function startDemo(stage) {
   window.addEventListener('pointerup', (e) => {
     pointer = { x: e.clientX, y: e.clientY };
     if (mode === 'pressed' && press.pointerType !== 'touch') {
-      // A click only selects, as in Finder: ⌘-click (Ctrl-click) adds or removes a file, Shift-click
-      // takes a range. The wheel needs a key tapped during a drag.
+      // A click only selects, as in Explorer: Ctrl+click adds or removes a file, Shift+click takes
+      // a range. The wheel needs Shift during a drag, or Ctrl+Shift+Space.
       const { el, ctrl, shift } = press;
       const name = el.dataset.name;
       endDrag();
@@ -393,12 +363,12 @@ export function startDemo(stage) {
       }
       renderSelection();
       say(selected.length > 1
-        ? `${selected.length} files selected. Drag them and tap ${keyOf('convert')}.`
-        : selected.length ? `Now drag it and tap ${keyOf('convert')}. ${pickMore} picks more files.` : `Drag a file and tap ${keyOf('convert')}.`);
+        ? `${selected.length} files selected. Press Ctrl+Shift+Space, or drag them and press Shift.`
+        : selected.length ? 'Now drag it and press Shift. Ctrl+click picks more files.' : 'Drag a file and press Shift.');
       return;
     }
     if (mode === 'pressed') {
-      // A tap (no keys on a phone): the wheel opens over the file.
+      // A tap (no Shift key on a phone): the wheel opens over the file.
       const el = press.el;
       endDrag();
       const r = el.getBoundingClientRect();
@@ -410,7 +380,7 @@ export function startDemo(stage) {
     if (mode === 'dragging') {
       endDrag();
       mode = 'idle';
-      say(`No key, no wheel: the drop goes wherever you let go, as usual. Try again and tap ${keyOf('convert')}.`);
+      say('No Shift, no wheel: the drop goes wherever you let go, as usual. Try again and press Shift.');
       return;
     }
     if (mode === 'wheel' && !byClick) {
@@ -442,7 +412,7 @@ export function startDemo(stage) {
     else if (slot === ON_CENTRE || slot === OUTSIDE) cancel();
   });
 
-  // The bar's wheels also answer a click during a drag (pointer capture sends it elsewhere).
+  // The top panel's sections also answer a click during a drag (pointer capture sends it elsewhere).
   panel.addEventListener('pointerdown', (e) => {
     const tab = e.target.closest('[data-section]');
     if (!tab || mode !== 'wheel' || !byClick) return;
@@ -451,57 +421,72 @@ export function startDemo(stage) {
 
   // ---- Keyboard ---------------------------------------------------------------------------------
 
-  // Moves the highlight one action round the ring: arrows and the scroll wheel, as in the app.
-  function step(dir) {
-    const n = wheel.slices.length;
-    const next = wheel.hot < 0 ? (dir > 0 ? 0 : n - 1) : (wheel.hot + dir + n) % n;
-    keyHot = true;
-    if (attract) attractHot = next;
-    wheel.setHot(next);
-    renderCard();
-    announce(`${wheel.slices[next].label}: ${wheel.slices[next].title ?? ''}`);
-  }
-
-  // Tapping another wheel's key while one is open switches to it, if these files have it.
-  function switchTo(group) {
-    const i = sections.findIndex((s) => s.key === group);
-    if (i >= 0 && i !== section) showSection(i, i > section ? 1 : -1);
-  }
-
   window.addEventListener('keydown', (e) => {
-    const group = groupFor(e);
-    if (group) {
-      if (e.repeat) return;
-      keyFor(group)?.classList.add('is-down');
+    // Ctrl+Shift+Space: the wheel for the selected files, without dragging (the app's hotkey).
+    if (e.code === 'Space' && (e.ctrlKey || e.metaKey) && e.shiftKey) {
+      e.preventDefault();
+      if (e.repeat || (mode !== 'idle' && !(mode === 'wheel' && attract))) return;
+      if (!selected.length) return say('Select files first: click one, Ctrl+click for more.');
+      if (mode === 'wheel') closeWheel(false);
+      openForSelection();
+      return;
+    }
+    if (e.key === 'Shift' && !e.repeat) {
+      keycap.classList.add('is-down');
       if (mode === 'pressed' && press && press.pointerType !== 'touch') beginDrag();
       if (mode === 'dragging') {
-        openWheel(pointer.x, pointer.y, false, group);
+        openWheel(pointer.x, pointer.y, false);
         updateHot();
-      } else if (mode === 'wheel' && !attract) switchTo(group);
-      // Alt alone would move focus to the browser's menu on Windows.
-      if (mode !== 'idle' && e.key === 'Alt') e.preventDefault();
+      }
       return;
     }
     if (mode !== 'wheel') return;
-    if (e.key === 'Escape') {
+    const digit = /^Digit([1-9])$/.exec(e.code);
+    if (digit && Number(digit[1]) <= sections.length) {
+      const i = Number(digit[1]) - 1;
+      if (i !== section) showSection(i, i > section ? 1 : -1);
+      e.preventDefault();
+    } else if (e.key === 'Escape') {
       cancel();
       e.preventDefault();
     } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-      step(e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : -1);
+      const n = wheel.slices.length;
+      const step = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : -1;
+      const next = wheel.hot < 0 ? (step > 0 ? 0 : n - 1) : (wheel.hot + step + n) % n;
+      keyHot = true;
+      wheel.setHot(next);
+      renderCard();
+      announce(`${wheel.slices[next].label}: ${wheel.slices[next].detail ?? ''}`);
       e.preventDefault();
     } else if (e.key === 'Enter' || e.key === ' ') {
       if (wheel.hot >= 0) run(wheel.hot);
       e.preventDefault();
     } else if (e.key === 'Tab') {
-      const dir = e.shiftKey ? -1 : 1;
-      showSection(section + dir, dir);
+      const step = e.shiftKey ? -1 : 1;
+      showSection(section + step, step);
       e.preventDefault();
     }
   });
 
-  window.addEventListener('keyup', () => {
-    keys.querySelectorAll('.is-down').forEach((k) => k.classList.remove('is-down'));
+  window.addEventListener('keyup', (e) => {
+    if (e.key === 'Shift') keycap.classList.remove('is-down');
   });
+
+  // The wheel opens at the pointer when it is over the desktop, else over the last selected file.
+  function openForSelection() {
+    batch = selected.map(fileFor).filter(Boolean);
+    if (!batch.length) return;
+    file = batch[0];
+    const r = overlayRect();
+    const inside = pointer.x > r.left && pointer.x < r.right && pointer.y > r.top && pointer.y < r.bottom;
+    const el = grid.querySelector(`[data-name="${selected[selected.length - 1]}"]`);
+    const t = el.getBoundingClientRect();
+    openWheel(inside ? pointer.x : t.left + t.width / 2, inside ? pointer.y : t.top + t.height / 2, true);
+    if (!inside) pointer = { x: -1e4, y: -1e4 };
+    updateHot();
+    selected = [];
+    renderSelection();
+  }
 
   // Enter or Space on a focused file opens the wheel over it.
   grid.addEventListener('keydown', (e) => {
@@ -519,13 +504,13 @@ export function startDemo(stage) {
     renderCard();
   });
 
-  // ---- Scrolling moves the highlight -------------------------------------------------------------
+  // ---- Scrolling turns the sections --------------------------------------------------------------
 
   let wheelAcc = 0, wheelAt = 0;
   // Listened for on the whole window, before anything else sees it: while a drag holds the mouse,
   // some browsers send the scroll to the dragged tile or elsewhere rather than to the wheel.
   window.addEventListener('wheel', (e) => {
-    if (mode !== 'wheel') return;
+    if (mode !== 'wheel' || sections.length < 2) return;
     // The opening pose only takes the scroll over the wheel itself, so the page still scrolls.
     if (attract && !e.target.closest?.('[data-wheel], [data-panel]')) return;
     e.preventDefault();
@@ -538,21 +523,18 @@ export function startDemo(stage) {
     if (Math.abs(wheelAcc) >= 40) {
       const dir = Math.sign(wheelAcc);
       wheelAcc = 0;
-      step(dir);
+      showSection(section + dir, dir);
     }
   }, { passive: false, capture: true });
 
-  // The on-screen keys: tap one to open its wheel for the last file picked, or to switch to it.
-  keys.addEventListener('click', (e) => {
-    const group = e.target.closest('[data-group]')?.dataset.group;
-    if (!group) return;
-    if (mode === 'wheel' && !attract) return switchTo(group);
-    if (mode === 'wheel') closeWheel(false);
+  // The on-screen Shift key: tap it with a file picked (touch), or it lights with the real key.
+  keycap.addEventListener('click', () => {
+    if (mode === 'wheel') return cancel();
     if (!file) file = findFile('photo.jpg');
     batch = [file];
     const el = grid.querySelector(`[data-name="${file.base}.${file.ext}"]`) ?? grid.querySelector('.file');
     const r = el.getBoundingClientRect();
-    openWheel(r.left + r.width / 2, r.top + r.height / 2, true, group);
+    openWheel(r.left + r.width / 2, r.top + r.height / 2, true);
   });
 
   document.addEventListener('pointerdown', (e) => {
@@ -568,7 +550,7 @@ export function startDemo(stage) {
   const clock = stage.querySelector('[data-clock]');
   const tick = () => {
     const now = new Date();
-    clock.textContent = `${now.toLocaleDateString([], { weekday: 'short' })} ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    clock.innerHTML = `<span>${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span><span>${now.toLocaleDateString()}</span>`;
   };
   tick();
   setInterval(tick, 15000);
@@ -576,8 +558,8 @@ export function startDemo(stage) {
   isTouch = matchMedia('(hover: none)').matches;
   idleHint();
 
-  // The opening pose: photo.jpg picked up, the Tools wheel open beside the window with Compress lit and
-  // its result card showing. Only where there is room beside it.
+  // The opening pose, as in the brand's hero: photo.jpg picked up, the wheel open beside the window
+  // on Reduce size with -80% lit and its result card showing. Only where there is room beside it.
   function startAttract() {
     const r = overlayRect();
     const explorer = stage.querySelector('.explorer').getBoundingClientRect();
@@ -585,10 +567,13 @@ export function startDemo(stage) {
     if (room < 360 || mode !== 'idle') return;
     file = findFile('photo.jpg');
     batch = [file];
-    openWheel(explorer.right + room / 2, r.top + r.height * 0.5, true, 'tools');
+    openWheel(explorer.right + room / 2, r.top + r.height * 0.47, true);
+    const reduceIdx = sections.findIndex((s) => s.key === 'reduce');
+    if (reduceIdx >= 0) showSection(reduceIdx, 1, false);
     attract = true;
     overlay.classList.add('is-attract');
-    attractHot = Math.max(0, wheel.slices.findIndex((s) => s.label === 'Compress'));
+    attractHot = wheel.slices.findIndex((s) => s.label.includes('80'));
+    if (attractHot < 0) attractHot = wheel.slices.findIndex((s) => s.label === 'WebP');
     keyHot = true;
     wheel.setHot(attractHot);
     renderCard();

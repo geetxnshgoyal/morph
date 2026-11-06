@@ -286,13 +286,13 @@ final class WheelModel: ObservableObject {
             }
             phase = .finished(action, result)
             if result.failures.isEmpty {
-                if prefs.playSounds { NSSound(named: "Glass")?.play() }
+                Feedback.shared.done()
                 if prefs.revealWhenDone, !result.outputs.isEmpty { reveal(result); return }
                 // Long enough to read "171 KB → 144 KB".
                 try? await Task.sleep(for: .seconds(3.5))
                 if case .finished = phase { dismiss() }
-            } else if prefs.playSounds {
-                NSSound.beep()
+            } else {
+                Feedback.shared.failed()
             }
         }
     }
@@ -321,6 +321,10 @@ struct WheelView: View {
                 // Liquid Glass leaves the window's own pixels clear, and macOS hands clicks and drops on clear
                 // pixels to the window behind. A fill too faint to see keeps the ring, gaps included, ours.
                 Circle().fill(.black.opacity(0.01))
+                if Festive.isDiwali {
+                    DiyaRing(radius: WheelMetrics.outerRadius + 10)
+                        .opacity(present ? 1 : 0)
+                }
                 if case .choosing = model.phase {
                     PetalRing(model: model, items: model.pageItems)
                         .id("\(model.group)-\(model.page)")
@@ -340,6 +344,11 @@ struct WheelView: View {
                     .opacity(present ? 1 : 0)
                     .position(x: WheelMetrics.center.x, y: WheelMetrics.center.y + WheelMetrics.outerRadius + WheelMetrics.lift + 42)
                     .transition(.opacity)
+            }
+        }
+        .overlay {
+            if Festive.isDiwali, case .finished(_, let result) = model.phase, result.failures.isEmpty {
+                Crackers()
             }
         }
         .frame(width: WheelMetrics.width, height: WheelMetrics.height)
@@ -486,6 +495,7 @@ private struct WheelHub: View {
                 .overlay(Circle().strokeBorder(LinearGradient(colors: [.white.opacity(0.5), .white.opacity(0.05)],
                                                               startPoint: .top, endPoint: .bottom), lineWidth: 1))
                 .shadow(color: .black.opacity(0.12), radius: 14)
+            if Festive.isDiwali { Rangoli().frame(width: diameter - 6, height: diameter - 6) }
             content.frame(width: diameter - 26)
         }
         .frame(width: diameter, height: diameter)
@@ -549,6 +559,7 @@ private struct WheelHub: View {
     private var caption: String {
         if model.actions.isEmpty { return "Nothing fits these files" }
         if model.hovered != nil { return model.dropMode ? "Release to run" : "Click to run" }
+        if Festive.isDiwali { return "Happy Diwali!" }
         return model.dropMode ? "Drop on an action" : model.group.label
     }
 
