@@ -25,7 +25,7 @@ GET = [
      "macOS 14 or later, Apple Silicon or Intel."),
     ("Windows", '<a href="https://get.microsoft.com/installer/download/9phwjvrc85dw?referrer=appbadge" target="_self"><img src="https://get.microsoft.com/images/en-us%20dark.svg" alt="Get it from Microsoft" width="180" style="display:block; border-radius: 6px;"/></a>',
      'Windows 10 (1809) or later and Windows 11. Also available as an <a href="https://github.com/geetxnshgoyal/morph/releases/download/v1.0.0/Morph-1.0.1-x64-setup.exe">x64</a> or <a href="https://github.com/geetxnshgoyal/morph/releases/download/v1.0.0/Morph-1.0.1-arm64-setup.exe">Arm</a> installer.'),
-    ("Android", '<a class="button quiet" href="android.html">Join the Google Play beta</a>',
+    ("Android", '<a href="android.html"><img src="images/google-play-badge.svg" alt="Get it on Google Play" height="40" style="display:block; height:40px; width:auto; border-radius:6px;"/></a>',
      f"Android 10 or later. Out for everyone on Google Play {LAUNCH}."),
     ("iPhone and iPad", f'<a href="{APPSTORE_IOS}" target="_blank" rel="noopener"><img src="images/app-store-badge.svg" alt="Download on the App Store" height="40" style="display:block; height:40px; width:auto; border-radius:6px;"/></a>',
      "iOS 17 or later. Available now on the App Store."),
