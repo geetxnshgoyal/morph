@@ -278,7 +278,17 @@ struct ResultView: View {
             .padding(.horizontal, 20).padding(.bottom, 30)
         }
         .quickLookPreview($preview, in: result.outputs)
-        .onAppear { withAnimation(Motion.pop) { pop = true } }
+        .overlay {
+            if Festive.isDiwali && ok && !unchanged {
+                Crackers()
+            }
+        }
+        .onAppear {
+            withAnimation(Motion.pop) { pop = true }
+            if ok && !unchanged {
+                UINotificationFeedbackGenerator().notificationOccurred(.success)
+            }
+        }
     }
 
     private func size(of url: URL) -> String {

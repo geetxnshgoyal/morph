@@ -21,7 +21,7 @@ APPSTORE_IOS = "https://apps.apple.com/in/app/morph-file-converter/id6827647585"
 
 # Where each platform's download or status lives, for the "Get Morph" block.
 GET = [
-    ("Mac", f'<a class="button" href="https://github.com/geetxnshgoyal/morph/releases/download/v1.0.0/Morph-1.0.0.dmg">Download for Mac</a> <a class="button quiet" href="{TESTFLIGHT}">Mac App Store beta</a>',
+    ("Mac", '<a class="button" href="https://github.com/geetxnshgoyal/morph/releases/download/v1.0.0/Morph-1.0.0.dmg">Download for Mac</a>',
      "macOS 14 or later, Apple Silicon or Intel. The macOS build has several known bugs and is in active preview; please report issues on GitHub!"),
     ("Windows", '<a class="button quiet" href="https://apps.microsoft.com/detail/9PHWJVRC85DW">Microsoft Store</a>',
      "Windows 10 (1809) or later and Windows 11."),

@@ -17,6 +17,9 @@ struct HomeView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 22) {
                     header
+                    if Festive.isDiwali {
+                        DiwaliCard()
+                    }
                     hero
                     recent
                 }
