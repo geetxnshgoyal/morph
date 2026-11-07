@@ -18,6 +18,7 @@
 - The download from the website now uses Liquid Glass on macOS 26 too, like the App Store version.
 
 ### iPhone and iPad
+- The Diwali crackers stop animating once the sparks have fallen, instead of redrawing for as long as the result stays open.
 - **DOCX and ODT**, in and out, like the Mac and Windows apps.
 - Opening two files with the same name works (the second becomes "name 2"), and copies of imported files are cleared at launch.
 
@@ -25,6 +26,7 @@
 - Version 1.0.1, for the Microsoft Store update and the installers.
 
 ### Android
+- **Version 1.0.3.** TIFF files open: Android has no TIFF decoder, so every action offered for a TIFF used to fail with "invalid input". Morph now reads TIFFs itself (uncompressed, LZW, Deflate and PackBits; grey, RGB and RGBA at 8 or 16 bits). The app icon is the new gold-on-teal icon from the App Store.
 - **Diwali, version 1.0.2.** From 5 to 15 November the home screen's card turns saffron and maroon, wishes you a happy Diwali, and lights a diya with twinkling sparkles (held still when animations are off). The rest of the year it's Morph's usual teal.
 - **Every Mac action, version 1.0.1.** HEIC, TIFF, GIF and BMP; camera RAW (DNG and others developed by Android, CR3 and the rest from their full-size preview); MOV and GIF from video; WAV, AIFF, FLAC, OGG and OPUS; documents (DOCX, ODT, RTF, HTML, Markdown, TXT, PDF), subtitles and data tables; PDF text, merge, split and compress; Blur Faces, Hide Personal Info and Read QR; Snapshots, Normalize Loudness and Trim Silence; Remove Metadata for video and audio; Extract for zip and tar archives. Everything still runs on the phone, with no internet permission.
 - The APKs on GitHub come one per phone CPU (arm64 for most phones, armv7 for older ones), since the on-device ML Kit models are native code.

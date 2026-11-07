@@ -150,6 +150,8 @@ struct DiyaRing: View {
 /// With Reduce Motion, a single soft glow instead.
 struct Crackers: View {
     @State private var start = Date()
+    /// Once the last spark has fallen the animation stops, so a result left open doesn't keep redrawing.
+    @State private var finished = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private struct Burst { let x: CGFloat, y: CGFloat, delay: Double, colors: [Color] }
@@ -163,7 +165,7 @@ struct Crackers: View {
     static let duration = 2.2
 
     var body: some View {
-        TimelineView(.animation) { timeline in
+        TimelineView(.animation(paused: finished)) { timeline in
             let elapsed = timeline.date.timeIntervalSince(start)
             Canvas { ctx, size in
                 if reduceMotion {
@@ -204,6 +206,10 @@ struct Crackers: View {
                     }
                 }
             }
+        }
+        .task {
+            try? await Task.sleep(for: .seconds(Self.duration))
+            finished = true
         }
         .allowsHitTesting(false)
         .accessibilityHidden(true)

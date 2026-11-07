@@ -192,6 +192,179 @@ object ImageFormats {
         return out
     }
 
+    // MARK: TIFF reading
+
+    /**
+     * Android can't decode TIFF, so Morph reads the common kinds itself: strips or tiles, uncompressed, LZW,
+     * Deflate or PackBits, with or without the horizontal predictor, in grey, RGB or RGBA at 8 or 16 bits. Only
+     * the first image of a multi-page TIFF is read.
+     */
+    fun decodeTiff(file: File, maxPixel: Int?): Bitmap {
+        val data = file.readBytes()
+        if (data.size < 8) throw MorphError("${file.name} isn't a TIFF")
+        val order = when {
+            data[0] == 'I'.code.toByte() && data[1] == 'I'.code.toByte() -> ByteOrder.LITTLE_ENDIAN
+            data[0] == 'M'.code.toByte() && data[1] == 'M'.code.toByte() -> ByteOrder.BIG_ENDIAN
+            else -> throw MorphError("${file.name} isn't a TIFF")
+        }
+        val b = ByteBuffer.wrap(data).order(order)
+        fun u16(o: Int) = b.getShort(o).toInt() and 0xFFFF
+        fun u32(o: Int) = b.getInt(o).toLong() and 0xFFFFFFFFL
+        val ifd = u32(4).toInt()
+        val tags = HashMap<Int, IntArray>()
+        for (i in 0 until u16(ifd)) {
+            val e = ifd + 2 + i * 12
+            val tag = u16(e); val type = u16(e + 2); val count = u32(e + 4).toInt()
+            val size = when (type) { 3 -> 2; 4 -> 4; 1, 7 -> 1; else -> 0 }
+            if (size == 0 || count <= 0) continue
+            val at = if (size * count <= 4) e + 8 else u32(e + 8).toInt()
+            tags[tag] = IntArray(count) { k ->
+                when (size) { 2 -> u16(at + k * 2); 4 -> u32(at + k * 4).toInt(); else -> data[at + k].toInt() and 0xFF }
+            }
+        }
+        fun tag(id: Int, default: Int) = tags[id]?.firstOrNull() ?: default
+        val width = tag(256, 0); val height = tag(257, 0)
+        if (width <= 0 || height <= 0) throw MorphError("${file.name} has no image")
+        val compression = tag(259, 1); val photometric = tag(262, 2); val predictor = tag(317, 1)
+        val spp = tag(277, 1); val bits = tags[258]?.firstOrNull() ?: 8
+        if (tag(284, 1) != 1) throw MorphError("${file.name} uses separate colour planes, which Morph can't read yet")
+        if (bits != 8 && bits != 16) throw MorphError("${file.name} uses $bits-bit colour, which Morph can't read yet")
+        if (compression !in setOf(1, 5, 8, 32946, 32773)) throw MorphError("${file.name} uses a TIFF compression Morph can't read yet")
+        val alpha = spp >= 4 || (spp == 2 && photometric <= 1)
+        val associated = tags[338]?.firstOrNull() == 1
+        val bytesPerSample = bits / 8
+        val pixelBytes = spp * bytesPerSample
+
+        fun inflateChunk(chunk: ByteArray, expected: Int): ByteArray = when (compression) {
+            1 -> chunk
+            5 -> lzw(chunk, expected)
+            32773 -> packBits(chunk, expected)
+            else -> java.util.zip.Inflater().run {
+                setInput(chunk); val out = ByteArray(expected); var n = 0
+                while (n < expected && !finished()) { val r = inflate(out, n, expected - n); if (r == 0 && (needsInput() || needsDictionary())) break; n += r }
+                end(); out
+            }
+        }
+        fun unpredict(row: ByteArray, offset: Int, columns: Int) {
+            if (predictor != 2) return
+            if (bytesPerSample == 1) {
+                for (x in 1 until columns) for (c in 0 until spp) {
+                    val i = offset + x * spp + c
+                    row[i] = (row[i] + row[i - spp]).toByte()
+                }
+            } else {
+                val bb = ByteBuffer.wrap(row).order(order)
+                for (x in 1 until columns) for (c in 0 until spp) {
+                    val i = offset + (x * spp + c) * 2
+                    bb.putShort(i, (bb.getShort(i) + bb.getShort(i - spp * 2)).toShort())
+                }
+            }
+        }
+        // The whole image as interleaved samples, row by row.
+        val raster = ByteArray(width * height * pixelBytes)
+        val rowBytes = width * pixelBytes
+        if (tags.containsKey(322)) {
+            val tw = tag(322, 0); val th = tag(323, 0)
+            val offsets = tags[324] ?: throw MorphError("${file.name} has no image data")
+            val counts = tags[325] ?: throw MorphError("${file.name} has no image data")
+            val across = (width + tw - 1) / tw
+            offsets.forEachIndexed { t, off ->
+                val tile = inflateChunk(data.copyOfRange(off, minOf(data.size, off + counts[t])), tw * th * pixelBytes)
+                val tx = t % across * tw; val ty = t / across * th
+                for (r in 0 until th) {
+                    if (ty + r >= height) break
+                    unpredict(tile, r * tw * pixelBytes, tw)
+                    val n = minOf(tw, width - tx) * pixelBytes
+                    if (r * tw * pixelBytes + n <= tile.size) System.arraycopy(tile, r * tw * pixelBytes, raster, (ty + r) * rowBytes + tx * pixelBytes, n)
+                }
+            }
+        } else {
+            val offsets = tags[273] ?: throw MorphError("${file.name} has no image data")
+            val counts = tags[279] ?: throw MorphError("${file.name} has no image data")
+            val rowsPerStrip = tag(278, height)
+            offsets.forEachIndexed { s, off ->
+                val rows = minOf(rowsPerStrip, height - s * rowsPerStrip)
+                if (rows <= 0) return@forEachIndexed
+                val strip = inflateChunk(data.copyOfRange(off, minOf(data.size, off + counts[s])), rows * rowBytes)
+                for (r in 0 until rows) if ((r + 1) * rowBytes <= strip.size) unpredict(strip, r * rowBytes, width)
+                System.arraycopy(strip, 0, raster, s * rowsPerStrip * rowBytes, minOf(strip.size, rows * rowBytes, raster.size - s * rowsPerStrip * rowBytes))
+            }
+        }
+        // Sample k of a pixel as 0–255.
+        val rb = ByteBuffer.wrap(raster).order(order)
+        fun sample(i: Int): Int = if (bytesPerSample == 1) raster[i].toInt() and 0xFF else (rb.getShort(i).toInt() and 0xFFFF) ushr 8
+        val pixels = IntArray(width * height)
+        for (p in pixels.indices) {
+            val o = p * pixelBytes
+            var a = 255
+            val (r, g, bl) = if (photometric <= 1) {
+                var v = sample(o)
+                if (photometric == 0) v = 255 - v
+                if (alpha) a = sample(o + bytesPerSample)
+                Triple(v, v, v)
+            } else {
+                if (alpha) a = sample(o + 3 * bytesPerSample)
+                Triple(sample(o), sample(o + bytesPerSample), sample(o + 2 * bytesPerSample))
+            }
+            // Associated alpha is premultiplied; Android wants it straight.
+            fun straight(c: Int) = if (associated && a in 1..254) minOf(255, c * 255 / a) else c
+            pixels[p] = (a shl 24) or (straight(r) shl 16) or (straight(g) shl 8) or straight(bl)
+        }
+        val full = Bitmap.createBitmap(pixels, width, height, Bitmap.Config.ARGB_8888)
+        val longest = maxOf(width, height)
+        if (maxPixel == null || longest <= maxPixel) return full
+        val scale = maxPixel.toFloat() / longest
+        return Bitmap.createScaledBitmap(full, (width * scale).toInt().coerceAtLeast(1), (height * scale).toInt().coerceAtLeast(1), true)
+    }
+
+    /** TIFF's LZW: MSB-first codes from 9 to 12 bits, with the early change TIFF uses. */
+    private fun lzw(input: ByteArray, expected: Int): ByteArray {
+        val out = ByteArrayOutputStream(expected)
+        val table = arrayOfNulls<ByteArray>(4096)
+        for (i in 0 until 256) table[i] = byteArrayOf(i.toByte())
+        var next = 258; var width = 9
+        var bitPos = 0L
+        val totalBits = input.size * 8L
+        var previous: ByteArray? = null
+        while (bitPos + width <= totalBits) {
+            var code = 0
+            for (k in 0 until width) {
+                val bit = bitPos + k
+                code = (code shl 1) or ((input[(bit ushr 3).toInt()].toInt() ushr (7 - (bit and 7).toInt())) and 1)
+            }
+            bitPos += width
+            if (code == 257) break
+            if (code == 256) {
+                next = 258; width = 9; previous = null
+                continue
+            }
+            val entry = when {
+                code < next && table[code] != null -> table[code]!!
+                code == next && previous != null -> previous + previous[0]
+                else -> break
+            }
+            out.write(entry)
+            if (previous != null && next < 4096) table[next++] = previous + entry[0]
+            previous = entry
+            width = when { next + 1 >= 2048 -> 12; next + 1 >= 1024 -> 11; next + 1 >= 512 -> 10; else -> 9 }
+            if (out.size() >= expected) break
+        }
+        return out.toByteArray()
+    }
+
+    private fun packBits(input: ByteArray, expected: Int): ByteArray {
+        val out = ByteArrayOutputStream(expected)
+        var i = 0
+        while (i < input.size && out.size() < expected) {
+            val n = input[i++].toInt()
+            when {
+                n >= 0 -> { val len = minOf(n + 1, input.size - i); out.write(input, i, len); i += len }
+                n != -128 -> { if (i < input.size) { val v = input[i++].toInt(); repeat(1 - n) { out.write(v) } } }
+            }
+        }
+        return out.toByteArray()
+    }
+
     // MARK: GIF
 
     /** A GIF, still or animated. Frames are paletted one at a time, with ordered dithering to keep gradients smooth. */

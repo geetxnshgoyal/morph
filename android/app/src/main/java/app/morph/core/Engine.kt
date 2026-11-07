@@ -330,6 +330,7 @@ object ImageOps {
     fun decode(file: File, maxPixel: Int? = null): Bitmap = when {
         VectorOps.isSvg(file) -> VectorOps.render(file, maxPixel)
         // Android develops DNG and some other RAW files itself; for the rest, the camera's own full-size preview.
+        file.extension.lowercase() in setOf("tif", "tiff") -> ImageFormats.decodeTiff(file, maxPixel)
         file.extension.lowercase() in ImageFormats.rawExtensions ->
             runCatching { decodeNative(file, maxPixel) }.getOrElse { ImageFormats.rawPreview(file, maxPixel) }
         else -> decodeNative(file, maxPixel)

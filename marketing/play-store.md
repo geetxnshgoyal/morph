@@ -76,6 +76,8 @@ Morph's closed test uses the Google Group [morph-tester](https://groups.google.c
 
 ## Release notes (500)
 
+1.0.3: TIFF images now open and convert. New gold-on-teal app icon. Happy Diwali! 🪔
+
 1.0.2: Happy Diwali! 🪔 Morph lights up for the festival with a diya on the home screen, from 5 to 15 November. Wishing you light, joy and a happy new year.
 
 1.0.1: Morph now does everything the Mac app does. New: HEIC, TIFF, GIF and BMP; camera RAW; MOV and GIF from video; WAV, AIFF, FLAC, OGG and OPUS; DOCX, ODT, RTF, HTML, Markdown and PDF documents; subtitles and CSV/JSON; PDF text, merge, split and compress; blur faces, hide personal info, read QR codes; snapshots, loudness and silence tools; extract archives. Still nothing is uploaded.
