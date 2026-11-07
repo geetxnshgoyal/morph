@@ -21,7 +21,7 @@ APPSTORE_IOS = "https://apps.apple.com/in/app/morph-file-converter/id6827647585"
 
 # Where each platform's download or status lives, for the "Get Morph" block.
 GET = [
-    ("Mac", f'<a href="{APPSTORE_IOS}" target="_blank" rel="noopener"><img src="images/mac-app-store-badge.svg" alt="Download on the Mac App Store" height="40" style="display:block; height:40px; width:auto; border-radius:6px;"/></a>',
+    ("Mac", f'<a href="{APPSTORE_IOS}" target="_blank" rel="noopener"><img src="images/app-store-badge.svg" alt="Download on the App Store" height="40" style="display:block; height:40px; width:auto; border-radius:6px;"/></a>',
      'macOS 14 or later, Apple Silicon or Intel. Or <a href="https://github.com/geetxnshgoyal/morph/releases/download/v1.0.0/Morph-1.0.0.dmg">download the DMG</a> from GitHub.'),
     ("Windows", '<a href="https://get.microsoft.com/installer/download/9phwjvrc85dw?referrer=appbadge" target="_self"><img src="https://get.microsoft.com/images/en-us%20dark.svg" alt="Get it from Microsoft" width="180" style="display:block; border-radius: 6px;"/></a>',
      'Windows 10 (1809) or later and Windows 11. Also available as an <a href="https://github.com/geetxnshgoyal/morph/releases/download/v1.0.0/Morph-1.0.1-x64-setup.exe">x64</a> or <a href="https://github.com/geetxnshgoyal/morph/releases/download/v1.0.0/Morph-1.0.1-arm64-setup.exe">Arm</a> installer.'),
