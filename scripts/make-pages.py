@@ -21,14 +21,14 @@ APPSTORE_IOS = "https://apps.apple.com/in/app/morph-file-converter/id6827647585"
 
 # Where each platform's download or status lives, for the "Get Morph" block.
 GET = [
-    ("Mac", '<a class="button" href="https://github.com/geetxnshgoyal/morph/releases/download/v1.0.0/Morph-1.0.0.dmg">Download for Mac</a>',
-     "macOS 14 or later, Apple Silicon or Intel. The macOS build has several known bugs and is in active preview; please report issues on GitHub!"),
-    ("Windows", '<a class="button quiet" href="https://apps.microsoft.com/detail/9PHWJVRC85DW">Microsoft Store</a>',
-     "Windows 10 (1809) or later and Windows 11."),
-    ("Android", '<a class="button quiet" href="android.html">Join the Google Play test</a>',
+    ("Mac", f'<a class="button" href="{APPSTORE_IOS}">App Store</a>',
+     "macOS 14 or later, Apple Silicon or Intel."),
+    ("Windows", '<a href="https://get.microsoft.com/installer/download/9phwjvrc85dw?referrer=appbadge" target="_self"><img src="https://get.microsoft.com/images/en-us%20dark.svg" alt="Get it from Microsoft" width="180" style="display:block; border-radius: 6px;"/></a>',
+     'Windows 10 (1809) or later and Windows 11. Also available as an <a href="https://github.com/geetxnshgoyal/morph/releases/download/v1.0.0/Morph-1.0.1-x64-setup.exe">x64</a> or <a href="https://github.com/geetxnshgoyal/morph/releases/download/v1.0.0/Morph-1.0.1-arm64-setup.exe">Arm</a> installer.'),
+    ("Android", '<a class="button quiet" href="android.html">Join the Google Play beta</a>',
      f"Android 10 or later. Out for everyone on Google Play {LAUNCH}."),
-    ("iPhone and iPad", f'<a class="button" href="{APPSTORE_IOS}">App Store</a> <a class="button quiet" href="{TESTFLIGHT}">TestFlight beta</a>',
-     "iOS 17 or later. Available now on the App Store; also on TestFlight for beta previews."),
+    ("iPhone and iPad", f'<a class="button" href="{APPSTORE_IOS}">App Store</a>',
+     "iOS 17 or later. Available now on the App Store."),
 ]
 
 # Platform notes reused across pages.
