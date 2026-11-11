@@ -1,16 +1,24 @@
 import SwiftUI
 
-/// Seasonal touches for the menu bar panel. For Diwali (8 November 2026) a saffron and maroon card with a lit diya
+// Shared by the Mac and iPhone apps (ios/project.yml lists this file).
+
+/// Seasonal touches for the menu bar panel. For Diwali a saffron and maroon card with a lit diya
 /// wishes a happy Diwali above the drop area, as on Android; the rest of the year the panel is Morph's own.
 enum Festive {
-    private static let diwali: ClosedRange<Date> = {
-        let cal = Calendar(identifier: .gregorian)
-        let start = cal.date(from: DateComponents(year: 2026, month: 11, day: 5))!
-        let end = cal.date(from: DateComponents(year: 2026, month: 11, day: 15, hour: 23, minute: 59, second: 59))!
-        return start...end
-    }()
+    /// Diwali (Lakshmi Puja) for the next few years; add a line when these run out.
+    private static let diwaliDays: [DateComponents] = [
+        .init(year: 2026, month: 11, day: 8), .init(year: 2027, month: 10, day: 29), .init(year: 2028, month: 10, day: 17),
+        .init(year: 2029, month: 11, day: 5), .init(year: 2030, month: 10, day: 26),
+    ]
 
-    static var isDiwali: Bool { diwali.contains(Date()) }
+    /// From three days before Diwali to a week after.
+    static var isDiwali: Bool {
+        let cal = Calendar(identifier: .gregorian)
+        let today = cal.startOfDay(for: Date())
+        return diwaliDays.compactMap(cal.date(from:)).contains { day in
+            (-3...7).contains(cal.dateComponents([.day], from: day, to: today).day ?? .max)
+        }
+    }
 }
 
 struct DiwaliCard: View {

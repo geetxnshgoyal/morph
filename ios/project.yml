@@ -11,7 +11,11 @@ targets:
   Morph:
     type: application
     platform: iOS
-    sources: [Morph]
+    sources:
+      - path: Morph
+      # One copy of the festival art and the loader, kept with the Mac app.
+      - path: ../Sources/MorphMac/Festive.swift
+      - path: ../Sources/MorphMac/MorphLoader.swift
     dependencies:
       - package: Morph
         product: MorphCore

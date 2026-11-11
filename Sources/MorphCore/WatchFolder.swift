@@ -53,11 +53,13 @@ public final class WatchFolder: @unchecked Sendable {
         // Wait until writers (screenshots, downloads) finish: size must be stable across two reads.
         let sizes = fresh.map { (try? $0.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? -1 }
         Thread.sleep(forTimeInterval: 1)
-        let stable = zip(fresh, sizes).filter { url, size in
+        let settled = zip(fresh, sizes).filter { url, size in
             ((try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? -2) == size && !url.lastPathComponent.hasSuffix(".download")
-        }.map(\.0).filter { action.accepts([$0]) }
-        if stable.count < fresh.count { scheduleScan() }
-        for url in stable { known.insert(url.path) }
+        }.map(\.0)
+        if settled.count < fresh.count { scheduleScan() }
+        // Files the action can't take are remembered too, or they would be rescanned forever.
+        for url in settled { known.insert(url.path) }
+        let stable = settled.filter { action.accepts([$0]) }
         guard !stable.isEmpty else { return }
         try? FileManager.default.createDirectory(at: outputFolder, withIntermediateDirectories: true)
         var options = Options()

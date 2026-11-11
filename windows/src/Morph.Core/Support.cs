@@ -314,7 +314,6 @@ public static class ExternalTool
             yield return Path.Combine(profile, @"scoop\shims");
             yield return @"C:\ProgramData\chocolatey\bin";
             yield return Path.Combine(programFiles, @"ffmpeg\bin");
-            yield return @"C:\ffmpeg\bin";
         }
         else
         {

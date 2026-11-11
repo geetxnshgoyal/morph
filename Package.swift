@@ -17,6 +17,7 @@ let package = Package(
         .target(name: "MorphCore", dependencies: [.product(name: "SwiftDraw", package: "SwiftDraw")]),
         .executableTarget(name: "morph", dependencies: ["MorphCore"]),
         .executableTarget(name: "MorphMac", dependencies: ["MorphCore"]),
+        .testTarget(name: "MorphCoreTests", dependencies: ["MorphCore"]),
     ],
     swiftLanguageModes: [.v5]
 )

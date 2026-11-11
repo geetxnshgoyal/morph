@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Everywhere
+- The Diwali look returns each year through 2030, from three days before the festival to a week after.
 - **SVG in and out.** Drop an SVG to get PNG, JPG, WEBP, HEIC, PDF or any other image format. It renders at its own size (at least 1024 px on the long side, so icons come out usable), or exactly at Max size when one is set. PDFs from SVGs stay vectors on the Mac, iPhone and Android.
 - **Image to SVG.** The new SVG action traces a PNG, JPG or any other image into real vector shapes: a small palette, specks cleaned up, outlines smoothed into curves with sharp corners kept. Logos, icons and screenshots come out clean and usually smaller than the PNG. Compression level sets the detail (light keeps more colors and finer edges, strong makes the smallest files); the CLI's `--colors` picks the palette size.
 - Nothing goes online: images an SVG links to on the web are skipped.
@@ -11,6 +12,10 @@
 - Text, CSV and subtitle files in older encodings (Windows-1252, Latin-1, UTF-16) open, CSVs with old Mac line endings parse, and duplicate column names no longer stop a JSON export. Zip copes with two files of the same name, and empty videos and PDFs give a clear error.
 
 ### Mac
+- **Sizes on the wheel.** Compress (on photos) and Resize now open a second ring of sizes, starting on the one saved in Settings, so each job can have its own size limit or photo size without a trip to Settings. Esc goes back to the actions.
+- VoiceOver can read and press every petal on the wheel.
+- tar.gz archives a folder whose name starts with a dash; it used to be read as an option, and Morph reported an archive that was never written.
+- A watch folder no longer rescans every few seconds while it holds a file its action can't use.
 - **Mac App Store version.** The menu bar app, sandboxed. Results go to Downloads until you allow saving next to the originals, once, in Settings → Output or the welcome guide; the wheel never stops to ask. Homebrew extras (MP3, WebM, FLAC; WebP) and the command-line tool stay in the download from the website.
 - The download from the website is signed with a Developer ID and notarized by Apple, so it opens without a warning.
 - Undo works after a relaunch in the App Store version.
@@ -18,14 +23,17 @@
 - The download from the website now uses Liquid Glass on macOS 26 too, like the App Store version.
 
 ### iPhone and iPad
+- A damaged or cut-off DOCX or ODT is refused instead of closing the app.
 - The Diwali crackers stop animating once the sparks have fallen, instead of redrawing for as long as the result stays open.
 - **DOCX and ODT**, in and out, like the Mac and Windows apps.
 - Opening two files with the same name works (the second becomes "name 2"), and copies of imported files are cleared at launch.
 
 ### Windows
+- ffmpeg is no longer looked for in `C:\ffmpeg\bin`, a folder any user of a shared PC can create.
 - Version 1.0.1, for the Microsoft Store update and the installers.
 
 ### Android
+- **Version 1.0.4.** Deleting a job's results asks first, and the Share and Delete buttons are easier to hit. A file too large for the phone's memory fails on its own instead of closing the app, and one unreadable file no longer cancels a whole share. The themes no longer set the status and navigation bar colours Android 15 deprecates.
 - **Version 1.0.3.** TIFF files open: Android has no TIFF decoder, so every action offered for a TIFF used to fail with "invalid input". Morph now reads TIFFs itself (uncompressed, LZW, Deflate and PackBits; grey, RGB and RGBA at 8 or 16 bits). The app icon is the new gold-on-teal icon from the App Store.
 - **Diwali, version 1.0.2.** From 5 to 15 November the home screen's card turns saffron and maroon, wishes you a happy Diwali, and lights a diya with twinkling sparkles (held still when animations are off). The rest of the year it's Morph's usual teal.
 - **Every Mac action, version 1.0.1.** HEIC, TIFF, GIF and BMP; camera RAW (DNG and others developed by Android, CR3 and the rest from their full-size preview); MOV and GIF from video; WAV, AIFF, FLAC, OGG and OPUS; documents (DOCX, ODT, RTF, HTML, Markdown, TXT, PDF), subtitles and data tables; PDF text, merge, split and compress; Blur Faces, Hide Personal Info and Read QR; Snapshots, Normalize Loudness and Trim Silence; Remove Metadata for video and audio; Extract for zip and tar archives. Everything still runs on the phone, with no internet permission.

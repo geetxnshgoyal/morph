@@ -262,6 +262,7 @@ private fun HeroButton(title: String, icon: ImageVector, modifier: Modifier, onC
 private fun RecentRow(entry: HistoryEntry, model: MorphModel) {
     val context = LocalContext.current
     val usable = !entry.deleted && entry.outputs.isNotEmpty()
+    var confirmDelete by remember { mutableStateOf(false) }
     MorphCard(Modifier.tap { if (usable) view(context, entry.outputs.first()) }, padding = 14.dp) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
             SymbolBubble(if (entry.deleted) Icons.Rounded.DeleteOutline else if (entry.outputs.isEmpty()) Icons.Rounded.Close else Icons.Rounded.Check)
@@ -274,15 +275,27 @@ private fun RecentRow(entry: HistoryEntry, model: MorphModel) {
             }
             if (usable) {
                 RoundIcon(Icons.Rounded.Share, "Share") { share(context, entry.outputs) }
-                RoundIcon(Icons.Rounded.DeleteOutline, "Delete results") { model.deleteResults(entry) }
+                RoundIcon(Icons.Rounded.DeleteOutline, "Delete results") { confirmDelete = true }
             }
         }
+    }
+    // Deleting is permanent and sits next to Share, so it asks first.
+    if (confirmDelete) {
+        val n = entry.outputs.size
+        AlertDialog(
+            onDismissRequest = { confirmDelete = false },
+            title = { Text("Delete ${if (n == 1) "this file" else "these $n files"}?", style = rounded(20, FontWeight.Bold)) },
+            text = { Text("The results are removed from Downloads. Your originals stay where they are.", style = rounded(15)) },
+            confirmButton = { TextButton({ confirmDelete = false; model.deleteResults(entry) }) { Text("Delete") } },
+            dismissButton = { TextButton({ confirmDelete = false }) { Text("Cancel") } },
+        )
     }
 }
 
 @Composable
 fun RoundIcon(icon: ImageVector, label: String, onClick: () -> Unit) {
-    Box(Modifier.size(38.dp).clip(CircleShape).background(colors.tint).tap(onClick), contentAlignment = Alignment.Center) {
+    Box(Modifier.size(48.dp).tap(onClick), contentAlignment = Alignment.Center) {
+        Box(Modifier.size(38.dp).clip(CircleShape).background(colors.tint))
         Icon(icon, label, tint = colors.brandText, modifier = Modifier.size(18.dp))
     }
 }

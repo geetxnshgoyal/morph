@@ -283,10 +283,12 @@ object Runner {
         val failures = mutableListOf<String>()
         if (action.combinesInputs) {
             try { outputs += action.run(context, inputs, options) } catch (e: Exception) { failures += e.readable() }
+            catch (e: OutOfMemoryError) { failures += "Too large to open on this phone" }
             progress(inputs.size, inputs.size)
         } else {
             inputs.forEachIndexed { i, file ->
                 try { outputs += action.run(context, listOf(file), options) } catch (e: Exception) { failures += "${file.name}: ${e.readable()}" }
+                catch (e: OutOfMemoryError) { failures += "${file.name}: too large to open on this phone" }
                 progress(i + 1, inputs.size)
             }
         }

@@ -22,7 +22,9 @@ object Inbox {
             var i = 2
             while (!used.add(name)) name = "${name.substringBeforeLast('.')} ${i++}.${name.substringAfterLast('.', "")}".trimEnd('.')
             val dest = File(dir, name)
-            context.contentResolver.openInputStream(uri)?.use { input -> dest.outputStream().use { input.copyTo(it) } } ?: return@mapNotNull null
+            // One unreadable file is skipped, not allowed to cancel the rest.
+            runCatching { context.contentResolver.openInputStream(uri)?.use { input -> dest.outputStream().use { input.copyTo(it) } } }
+                .getOrNull() ?: return@mapNotNull null
             dest
         }
     }

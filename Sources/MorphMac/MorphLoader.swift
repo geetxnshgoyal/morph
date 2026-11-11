@@ -1,7 +1,7 @@
 import SwiftUI
 
 // Morph's liquid motion: drops that orbit, stretch and merge like mercury, in Teal Ink.
-// This file is shared word for word with ios/Morph/MorphLoader.swift.
+// Shared by the Mac and iPhone apps (ios/project.yml lists this file).
 
 /// One circle of liquid.
 struct Drop {

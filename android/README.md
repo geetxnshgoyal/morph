@@ -6,7 +6,7 @@ Needs Android 10 (API 29) or later.
 
 ## Install
 
-Morph is in closed testing on Google Play and comes out around 11 November 2026. To test it: join the [Morph testers group](https://groups.google.com/g/morph-tester), tap **Become a tester** on the [opt-in page](https://play.google.com/apps/testing/app.morph) with the same Google account, then install it from the [Play Store](https://play.google.com/store/apps/details?id=app.morph). Without Play, download `Morph-1.0.3-arm64.apk` (or `-armv7` for older phones) from [Releases](../../../releases/latest), open it on your phone, and allow installs from that source when Android asks.
+Morph is in closed testing on Google Play and comes out around 11 November 2026. To test it: join the [Morph testers group](https://groups.google.com/g/morph-tester), tap **Become a tester** on the [opt-in page](https://play.google.com/apps/testing/app.morph) with the same Google account, then install it from the [Play Store](https://play.google.com/store/apps/details?id=app.morph). Without Play, download `Morph-1.0.4-arm64.apk` (or `-armv7` for older phones) from [Releases](../../../releases/latest), open it on your phone, and allow installs from that source when Android asks.
 
 The Play bundle is built with `./gradlew bundleRelease` and the per-CPU APKs with `./gradlew assembleRelease` (signed with the upload key in `keystore.properties`); the listing, graphics and policy answers are in [`marketing/play-store.md`](../marketing/play-store.md).
 

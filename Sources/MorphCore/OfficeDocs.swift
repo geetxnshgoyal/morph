@@ -247,7 +247,11 @@ enum OfficeDocs {
 enum Zip {
     static func read(_ url: URL) throws -> [String: Data] {
         let data = try Data(contentsOf: url)
-        func u16(_ o: Int) -> Int { Int(data[data.startIndex + o]) | Int(data[data.startIndex + o + 1]) << 8 }
+        // Offsets come from the file, so a broken or crafted one reads as zero instead of crashing.
+        func u16(_ o: Int) -> Int {
+            guard o >= 0, o + 1 < data.count else { return 0 }
+            return Int(data[data.startIndex + o]) | Int(data[data.startIndex + o + 1]) << 8
+        }
         func u32(_ o: Int) -> Int { u16(o) | u16(o + 2) << 16 }
         // The end-of-central-directory record is within the last 64 KB (its comment is at most that long).
         guard data.count >= 22,
@@ -259,10 +263,12 @@ enum Zip {
             guard p + 46 <= data.count, u32(p) == 0x0201_4b50 else { break }
             let method = u16(p + 10), compressed = u32(p + 20), size = u32(p + 24)
             let nameLength = u16(p + 28), extra = u16(p + 30), comment = u16(p + 32), local = u32(p + 42)
+            guard p + 46 + nameLength <= data.count else { break }
             let name = String(decoding: data[(data.startIndex + p + 46)..<(data.startIndex + p + 46 + nameLength)], as: UTF8.self)
             p += 46 + nameLength + extra + comment
             let start = local + 30 + u16(local + 26) + u16(local + 28)
-            guard start + compressed <= data.count else { continue }
+            // Office text parts are small; anything claiming more than 256 MB is skipped rather than allocated.
+            guard start + compressed <= data.count, size <= 256 << 20 else { continue }
             let raw = data[(data.startIndex + start)..<(data.startIndex + start + compressed)]
             switch method {
             case 0: entries[name] = Data(raw)

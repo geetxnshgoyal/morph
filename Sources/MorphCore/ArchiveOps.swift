@@ -38,7 +38,8 @@ public enum ArchiveOps {
         let base = urls.count == 1 ? first.deletingPathExtension().lastPathComponent : "Archive"
         let out = Output.unique(in: options.outputDirectory ?? parent, base: base, ext: "tar.gz")
         try await ExternalTool.run(URL(fileURLWithPath: "/usr/bin/tar"),
-                                   ["-czf", out.path, "-C", parent.path] + urls.map(\.lastPathComponent))
+                                   // "--" so a folder named like an option ("--version") is archived, not obeyed.
+                                   ["-czf", out.path, "-C", parent.path, "--"] + urls.map(\.lastPathComponent))
         return out
     }
 

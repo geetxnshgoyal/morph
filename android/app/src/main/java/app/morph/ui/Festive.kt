@@ -27,13 +27,16 @@ import kotlin.math.PI
 import kotlin.math.sin
 
 /**
- * Seasonal touches for the home screen's hero card. For Diwali (8 November 2026) the card turns saffron and
+ * Seasonal touches for the home screen's hero card. For Diwali the card turns saffron and
  * maroon, says Happy Diwali, and lights a diya with twinkling sparkles; the rest of the year it is Morph's own.
  */
 object Festive {
-    private val diwali = LocalDate.of(2026, 11, 5)..LocalDate.of(2026, 11, 15)
+    /** Diwali (Lakshmi Puja) for the next few years; add a line when these run out. */
+    private val diwaliDays = listOf(LocalDate.of(2026, 11, 8), LocalDate.of(2027, 10, 29), LocalDate.of(2028, 10, 17),
+        LocalDate.of(2029, 11, 5), LocalDate.of(2030, 10, 26))
 
-    val isDiwali: Boolean get() = LocalDate.now() in diwali
+    /** From three days before Diwali to a week after. */
+    val isDiwali: Boolean get() = LocalDate.now().let { today -> diwaliDays.any { today in it.minusDays(3)..it.plusDays(7) } }
 
     /** Deep maroon into saffron, like a sky lit by diyas. */
     val diwaliBrush = Brush.linearGradient(listOf(Color(0xFF5B1236), Color(0xFFB4371F), Color(0xFFF08A1C)))

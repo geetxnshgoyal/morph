@@ -42,6 +42,7 @@ final class WheelPanel: NSPanel {
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
 
         model.dismiss = { [weak self] in self?.close() }
+        model.focus = { [weak self] in self?.makeKeyAndOrderFront(nil); NSApp.activate(ignoringOtherApps: true) }
         let host = NSHostingView(rootView: WheelView(model: model))
         host.frame = contentRect(forFrameRect: frame)
         contentView = host
@@ -88,7 +89,7 @@ final class WheelPanel: NSPanel {
             case kVK_LeftArrow, kVK_UpArrow: model.step(-1); return
             case kVK_Return, kVK_ANSI_KeypadEnter, kVK_Space: model.runHighlighted(); return
             case kVK_Tab: model.cycleGroup(event.modifierFlags.contains(.shift) ? -1 : 1); return
-            case kVK_Escape: close(); return
+            case kVK_Escape: if !model.leaveSizes() { close() }; return
             default: break
             }
         default: break
@@ -120,8 +121,22 @@ final class WheelPanel: NSPanel {
 final class WheelModel: ObservableObject {
     enum Phase { case choosing, running(Action, done: Int, total: Int), finished(Action, RunResult) }
 
-    /// Petals per ring; more actions than this page around with a turn of the wheel.
-    static let perPage = 8
+    /// Petals per ring; more actions than this page around with a turn of the wheel. The size ring fits nine,
+    /// so every size limit shows at once.
+    var perPage: Int { sizing != nil && visible.count <= 9 ? 9 : 8 }
+
+    /// One size on the ring Compress and Resize open: its petal, its full name for the hub, and what it sets.
+    struct SizeChoice {
+        let petal: Action
+        let name: String
+        let adjust: @Sendable (inout Options) -> Void
+    }
+
+    /// Set while the ring shows sizes for this action instead of the actions themselves.
+    @Published private(set) var sizing: (action: Action, choices: [SizeChoice])?
+    /// The dragged files have landed, so the wheel now waits for a click.
+    @Published private(set) var dropped = false
+    var focus: () -> Void = {}
 
     private(set) var files: [URL]
     let actions: [Action]
@@ -153,9 +168,15 @@ final class WheelModel: ObservableObject {
         Preferences.wheels.filter { g in actions.contains { $0.group == g } }
     }
 
-    var visible: [Action] { actions.filter { $0.group == group } }
-    var pages: Int { max(1, (visible.count + Self.perPage - 1) / Self.perPage) }
-    var pageItems: [Action] { Array(visible.dropFirst(page * Self.perPage).prefix(Self.perPage)) }
+    var visible: [Action] { sizing?.choices.map(\.petal) ?? actions.filter { $0.group == group } }
+    var pages: Int { max(1, (visible.count + perPage - 1) / perPage) }
+    var pageItems: [Action] { Array(visible.dropFirst(page * perPage).prefix(perPage)) }
+
+    /// What the hub and VoiceOver call a petal.
+    func title(for action: Action) -> String {
+        if let choice = sizing?.choices.first(where: { $0.petal.id == action.id }) { return choice.name }
+        return action.group == .convert ? "Convert to \(action.title)" : action.title
+    }
 
     var summary: String {
         let kinds = Set(files.map { FileKind(url: $0) })
@@ -187,8 +208,10 @@ final class WheelModel: ObservableObject {
     // MARK: Navigation
 
     func select(_ newGroup: Action.Group) {
+        if newGroup == group { leaveSizes() }
         guard newGroup != group, groups.contains(newGroup) else { return }
         withAnimation(motion) {
+            sizing = nil
             group = newGroup
             page = 0
             hovered = nil
@@ -257,6 +280,7 @@ final class WheelModel: ObservableObject {
     func takeDropped(_ pasteboard: NSPasteboard) {
         let urls = pasteboard.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL] ?? []
         if !urls.isEmpty { files = urls.map(\.standardizedFileURL) }
+        dropped = true
     }
 
     func runHighlighted() {
@@ -265,7 +289,66 @@ final class WheelModel: ObservableObject {
 
     // MARK: Running
 
+    // MARK: Sizes
+
+    /// The sizes to offer before running `action`, or nil to run it straight away. Only Compress (on photos, the
+    /// only files a size limit applies to) and Resize have any.
+    private func sizes(for action: Action) -> [SizeChoice]? {
+        func petal(_ key: String, _ title: String, _ symbol: String) -> Action {
+            Action(id: "size.\(key)", title: title, symbol: symbol, group: action.group, kinds: action.kinds, combinesInputs: false,
+                   minimumInputs: 1, targetExtension: nil, needsFFmpeg: false) { urls, _ in urls }
+        }
+        switch action.id {
+        case "tool.compress" where files.allSatisfy({ FileKind(url: $0) == .image }):
+            return ([0] + SizeLimit.presets).map { bytes in
+                SizeChoice(petal: petal("\(bytes)", bytes == 0 ? "Smallest" : SizeLimit.label(bytes), bytes == 0 ? "sparkles" : "scalemass"),
+                           name: bytes == 0 ? "Smallest that looks the same" : "Under \(SizeLimit.label(bytes))",
+                           adjust: { $0.targetBytes = bytes == 0 ? nil : bytes })
+            }
+        case "tool.resize":
+            var seen = Set<PixelSize>()
+            let exact = PixelSize.presets.flatMap(\.items).filter { seen.insert($0.size).inserted }.map { item in
+                SizeChoice(petal: petal("\(item.size.width)x\(item.size.height)", item.size.label, "aspectratio"),
+                           name: item.name, adjust: { $0.exactSize = item.size })
+            }
+            return [SizeChoice(petal: petal("fit", "Keep shape", "arrow.up.left.and.down.right.magnifyingglass"),
+                               name: "Keep shape, 2048 px", adjust: { $0.exactSize = nil })] + exact
+        default:
+            return nil
+        }
+    }
+
+    /// Back from the size ring to the actions; false if the size ring wasn't showing.
+    @discardableResult
+    func leaveSizes() -> Bool {
+        guard sizing != nil else { return false }
+        withAnimation(motion) { sizing = nil; page = 0; hovered = nil }
+        return true
+    }
+
     func run(_ action: Action) {
+        if let sizing {
+            guard let choice = sizing.choices.first(where: { $0.petal.id == action.id }) else { return }
+            start(sizing.action, adjust: choice.adjust)
+        } else if let choices = sizes(for: action) {
+            let prefs = Preferences.shared
+            // Start on the size saved in Settings, so Return still runs what it always did.
+            let saved = action.id == "tool.compress" ? "size.\(prefs.sizeLimit)"
+                : prefs.photoSize.map { "size.\($0.width)x\($0.height)" } ?? "size.fit"
+            withAnimation(motion) {
+                sizing = (action, choices)
+                page = (choices.firstIndex { $0.petal.id == saved } ?? 0) / perPage
+                hovered = choices.contains { $0.petal.id == saved } ? saved : nil
+            }
+            Feedback.shared.tick()
+            // After a drop the wheel isn't key yet; the size is picked with a click or the keyboard.
+            if dropMode { focus() }
+        } else {
+            start(action)
+        }
+    }
+
+    private func start(_ action: Action, adjust: (@Sendable (inout Options) -> Void)? = nil) {
         let files = files
         let prefs = Preferences.shared
         if action.group == .file {
@@ -276,7 +359,8 @@ final class WheelModel: ObservableObject {
             }
             return
         }
-        guard let options = prefs.options(for: files) else { dismiss(); return }
+        guard var options = prefs.options(for: files) else { dismiss(); return }
+        adjust?(&options)
         phase = .running(action, done: 0, total: files.count)
         Task {
             let result = await Runner.run(action, inputs: files, options: options) { done, total in
@@ -327,7 +411,7 @@ struct WheelView: View {
                 }
                 if case .choosing = model.phase {
                     PetalRing(model: model, items: model.pageItems)
-                        .id("\(model.group)-\(model.page)")
+                        .id("\(model.group)-\(model.page)-\(model.sizing?.action.id ?? "")")
                         .transition(Motion.fade(scale: 0.97))
                 }
                 WheelHub(model: model)
@@ -383,6 +467,11 @@ private struct PetalRing: View {
                         : .spring(response: 0.48, dampingFraction: 0.74).delay(Double(index) * 0.022), value: bloomed)
                     .animation(reduceMotion ? nil : .spring(response: 0.25, dampingFraction: 1),
                                value: model.hovered == action.id)
+                    // The ring finds petals by position, which VoiceOver can't do: each petal is also a button.
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(model.title(for: action))
+                    .accessibilityAddTraits(.isButton)
+                    .accessibilityAction { model.run(action) }
             }
         }
         .frame(width: WheelMetrics.side, height: WheelMetrics.side)
@@ -505,7 +594,7 @@ private struct WheelHub: View {
         switch model.phase {
         case .choosing:
             VStack(spacing: 5) {
-                Text(hoverTitle ?? model.summary)
+                Text(hoverTitle ?? model.sizing?.action.title ?? model.summary)
                     .font(Theme.font(14, .semibold))
                     .lineLimit(2).multilineTextAlignment(.center)
                     .contentTransition(.opacity)
@@ -558,15 +647,15 @@ private struct WheelHub: View {
 
     private var caption: String {
         if model.actions.isEmpty { return "Nothing fits these files" }
-        if model.hovered != nil { return model.dropMode ? "Release to run" : "Click to run" }
+        let waitsForDrop = model.dropMode && !model.dropped
+        if model.hovered != nil { return waitsForDrop ? "Release to run" : "Click to run" }
+        if model.sizing != nil { return "Pick a size" }
         if Festive.isDiwali { return "Happy Diwali!" }
-        return model.dropMode ? "Drop on an action" : model.group.label
+        return waitsForDrop ? "Drop on an action" : model.group.label
     }
 
     private var hoverTitle: String? {
-        model.hovered.flatMap { id in model.actions.first { $0.id == id } }.map { action in
-            action.group == .convert ? "Convert to \(action.title)" : action.title
-        }
+        model.hovered.flatMap { id in model.visible.first { $0.id == id } }.map(model.title(for:))
     }
 }
 
