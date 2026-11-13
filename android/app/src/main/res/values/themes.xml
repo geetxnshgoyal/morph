@@ -2,4 +2,12 @@
     <style name="Theme.Morph" parent="android:Theme.Material.Light.NoActionBar">
         <item name="android:windowBackground">@color/canvas</item>
     </style>
+
+    <!-- The share sheet's window: see-through, so the app the share came from stays visible behind the sheet. -->
+    <style name="Theme.Morph.Overlay">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowAnimationStyle">@null</item>
+    </style>
 </resources>

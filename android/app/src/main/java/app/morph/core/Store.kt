@@ -39,15 +39,21 @@ object Inbox {
         return if (ext != null) "$name.$ext" else name
     }
 
-    /** Clears imports and work files from earlier sessions. */
+    /** Clears imports and work files from earlier sessions. Recent ones may belong to a job still running elsewhere
+     *  (the app and the share sheet each have their own), so only folders over an hour old go. */
     fun clean(context: Context) {
-        File(context.cacheDir, "inbox").deleteRecursively()
-        File(context.cacheDir, "work").deleteRecursively()
+        val cutoff = System.currentTimeMillis() - 3_600_000
+        for (name in listOf("inbox", "work")) {
+            File(context.cacheDir, name).listFiles()?.filter { it.lastModified() < cutoff }?.forEach { it.deleteRecursively() }
+        }
     }
 }
 
-/** A result published to Downloads/Morph, where the Files app and any file manager can see it. */
-data class Published(val uri: Uri, val name: String, val mime: String, val size: Long)
+/** A result published where the phone looks for it: photos and videos in the gallery (Pictures/Morph, Movies/Morph),
+ *  everything else in Downloads/Morph. */
+data class Published(val uri: Uri, val name: String, val mime: String, val size: Long) {
+    val inGallery: Boolean get() = uri.path.orEmpty().let { "/images/" in it || "/video/" in it }
+}
 
 object Publisher {
     const val FOLDER = "Download/Morph"
@@ -55,22 +61,30 @@ object Publisher {
     fun mime(name: String): String =
         MimeTypeMap.getSingleton().getMimeTypeFromExtension(name.substringAfterLast('.', "").lowercase()) ?: "application/octet-stream"
 
-    /** Moves [file] (written under [root]) into Downloads/Morph, keeping any subfolder. */
+    /** Photo formats every gallery shows; SVG, TIFF and the like stay with the documents in Downloads. */
+    private val galleryImages = setOf("image/jpeg", "image/png", "image/webp", "image/heic", "image/heif", "image/gif", "image/avif")
+
+    /** Moves [file] (written under [root]) into the gallery or Downloads/Morph, keeping any subfolder. */
     fun publish(context: Context, file: File, root: File): Published {
         val sub = file.parentFile?.relativeTo(root)?.path.orEmpty()
         val mime = mime(file.name)
         val resolver = context.contentResolver
-        val values = ContentValues().apply {
-            put(MediaStore.Downloads.DISPLAY_NAME, file.name)
-            put(MediaStore.Downloads.MIME_TYPE, mime)
-            put(MediaStore.Downloads.RELATIVE_PATH, if (sub.isEmpty()) FOLDER else "$FOLDER/$sub")
-            put(MediaStore.Downloads.IS_PENDING, 1)
+        fun insert(collection: Uri, folder: String): Uri? = resolver.insert(collection, ContentValues().apply {
+            put(MediaStore.MediaColumns.DISPLAY_NAME, file.name)
+            put(MediaStore.MediaColumns.MIME_TYPE, mime)
+            put(MediaStore.MediaColumns.RELATIVE_PATH, if (sub.isEmpty()) folder else "$folder/$sub")
+            put(MediaStore.MediaColumns.IS_PENDING, 1)
+        })
+        val gallery = when {
+            mime in galleryImages -> runCatching { insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, "Pictures/Morph") }.getOrNull()
+            mime.startsWith("video/") -> runCatching { insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, "Movies/Morph") }.getOrNull()
+            else -> null
         }
-        val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values) ?: throw MorphError("Couldn't save ${file.name}")
+        val uri = gallery ?: insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, FOLDER) ?: throw MorphError("Couldn't save ${file.name}")
         try {
             val stream = resolver.openOutputStream(uri) ?: throw MorphError("Couldn't save ${file.name}")
             stream.use { out -> file.inputStream().use { it.copyTo(out) } }
-            resolver.update(uri, ContentValues().apply { put(MediaStore.Downloads.IS_PENDING, 0) }, null, null)
+            resolver.update(uri, ContentValues().apply { put(MediaStore.MediaColumns.IS_PENDING, 0) }, null, null)
         } catch (e: Exception) {
             // Don't leave a half-written, hidden entry in Downloads; the result stays in cache for the error.
             runCatching { resolver.delete(uri, null, null) }

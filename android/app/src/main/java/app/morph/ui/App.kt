@@ -232,7 +232,7 @@ fun HomeScreen(model: MorphModel, openSettings: () -> Unit) {
                     verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     SymbolBubble(Icons.Rounded.AutoAwesome, 56.dp)
                     Text("Nothing yet", style = rounded(17, FontWeight.Bold), color = colors.text)
-                    Text("Files you convert show up here, and in Downloads › Morph.", style = rounded(14), color = colors.secondary,
+                    Text("Files you convert show up here. Photos and videos also go to your gallery, the rest to Downloads › Morph.", style = rounded(14), color = colors.secondary,
                         textAlign = TextAlign.Center)
                 }
             }
@@ -285,7 +285,7 @@ private fun RecentRow(entry: HistoryEntry, model: MorphModel) {
         AlertDialog(
             onDismissRequest = { confirmDelete = false },
             title = { Text("Delete ${if (n == 1) "this file" else "these $n files"}?", style = rounded(20, FontWeight.Bold)) },
-            text = { Text("The results are removed from Downloads. Your originals stay where they are.", style = rounded(15)) },
+            text = { Text("The results are deleted from your phone. Your originals stay where they are.", style = rounded(15)) },
             confirmButton = { TextButton({ confirmDelete = false; model.deleteResults(entry) }) { Text("Delete") } },
             dismissButton = { TextButton({ confirmDelete = false }) { Text("Cancel") } },
         )
@@ -370,7 +370,7 @@ fun SettingsScreen(model: MorphModel, back: () -> Unit) {
         SettingRow(Icons.Rounded.Vibration, "Haptics", "A gentle buzz when a job finishes.") {
             Switch(model.haptics, model::updateHaptics, colors = SwitchDefaults.colors(checkedTrackColor = colors.brand))
         }
-        SettingRow(Icons.Rounded.Folder, "Your results", "Saved in Downloads › Morph, visible in any file manager.") {
+        SettingRow(Icons.Rounded.Folder, "Your results", "Photos and videos go to your gallery; everything else to Downloads › Morph.") {
             SoftButton("Open") { openDownloads(context) }
         }
         SettingRow(Icons.Rounded.IosShare, "Share to Morph", "In any app, tap Share, then Morph.") {}

@@ -106,6 +106,7 @@ class MorphModel(app: Application) : AndroidViewModel(app) {
             val files = runCatching { withContext(Dispatchers.IO) { Inbox.copy(getApplication(), uris) } }
                 .onFailure { error = "Morph couldn't read that file." }
                 .getOrDefault(emptyList())
+            if (files.isEmpty() && error == null) error = "Morph couldn't read that file."
             importing = false
             if (files.isNotEmpty()) {
                 val newJob = Job(files)

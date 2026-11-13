@@ -25,6 +25,15 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+        </activity>
+
+        <!-- Shares and "Open with" get just the actions sheet, floating over the app they came from. -->
+        <activity
+            android:name=".ShareActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
+            android:theme="@style/Theme.Morph.Overlay">
             <!-- Puts Morph in every share sheet, for one file or many. -->
             <intent-filter android:label="@string/share_label">
                 <action android:name="android.intent.action.SEND" />

@@ -81,7 +81,7 @@ enum class Compression(val label: String, val detail: String, val quality: Int, 
 }
 
 /**
- * Knobs shared by every action. Results are written under [outDir], then published to Downloads/Morph.
+ * Knobs shared by every action. Results are written under [outDir], then published to the gallery or Downloads/Morph.
  * [targetBytes] makes Compress fit under a size, for upload forms. [colors] is the palette size when tracing an
  * image into an SVG; unset picks one from [compression]. [exactSize] makes Resize crop to exactly that size for
  * passport, visa and exam forms, with [caption] and the date printed under the photo when set.

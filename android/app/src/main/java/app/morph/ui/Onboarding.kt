@@ -118,7 +118,7 @@ private fun HowItWorks() {
         Text("How it works", style = rounded(32, FontWeight.ExtraBold), color = colors.text, modifier = Modifier.padding(top = 60.dp))
         Step(1, "Pick some files", "Tap Photos or Files on the home screen, or share to Morph from any app.")
         Step(2, "Choose what to make", "Only actions that fit your files show up.")
-        Step(3, "Share or save the result", "Results land in Downloads › Morph. Your originals never change.")
+        Step(3, "Share or save the result", "Photos and videos land in your gallery, the rest in Downloads › Morph. Your originals never change.")
     }
 }
 
@@ -129,7 +129,7 @@ private fun Everywhere() {
             modifier = Modifier.padding(top = 60.dp, bottom = 8.dp))
         Feature(Icons.Rounded.IosShare, "Share to Morph", "In Photos, Files or any app, tap Share, then Morph.")
         Feature(Icons.Rounded.PhotoLibrary, "Pick photos privately", "Android's photo picker hands Morph only the photos you choose.")
-        Feature(Icons.Rounded.Folder, "Results in Downloads", "Everything you make lands in Downloads › Morph, in any file manager.")
+        Feature(Icons.Rounded.Folder, "Results where you look", "Photos and videos land in your gallery; everything else in Downloads › Morph.")
     }
 }
 

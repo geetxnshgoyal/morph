@@ -208,7 +208,7 @@ private fun Finished(phase: Phase.Finished, model: MorphModel) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(if (ok) "All done!" else if (phase.outputs.isEmpty()) "That didn't work" else "Partly done",
                 style = rounded(24, FontWeight.ExtraBold), color = colors.text)
-            Text(if (ok) "Saved to Downloads › Morph." else phase.failures.first(), style = rounded(15), color = colors.secondary,
+            Text(if (!ok) phase.failures.first() else if (phase.outputs.all { it.inGallery }) "Saved to your gallery." else "Saved to Downloads › Morph.", style = rounded(15), color = colors.secondary,
                 textAlign = TextAlign.Center)
         }
 
@@ -229,7 +229,7 @@ private fun Finished(phase: Phase.Finished, model: MorphModel) {
             BubbleButton("Share", Modifier.fillMaxWidth(), icon = Icons.Rounded.Share) { share(context, phase.outputs) }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            if (phase.outputs.isNotEmpty()) SoftButton("Open Downloads") { openDownloads(context) }
+            if (phase.outputs.any { !it.inGallery }) SoftButton("Open Downloads") { openDownloads(context) }
             SoftButton("Done") { model.closeJob() }
         }
     }

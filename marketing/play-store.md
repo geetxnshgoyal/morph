@@ -76,6 +76,8 @@ Morph's closed test uses the Google Group [morph-tester](https://groups.google.c
 
 ## Release notes (500)
 
+1.0.4: Share a photo or file to Morph from any app and pick what to make without leaving it. Converted photos and videos now go straight to your gallery. Deleting results asks first, and big files no longer close the app.
+
 1.0.3: TIFF images now open and convert. New gold-on-teal app icon. Happy Diwali! 🪔
 
 1.0.2: Happy Diwali! 🪔 Morph lights up for the festival with a diya on the home screen, from 5 to 15 November. Wishing you light, joy and a happy new year.
