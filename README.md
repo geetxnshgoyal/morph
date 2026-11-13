@@ -6,7 +6,7 @@ Morph is a free file converter and toolbox for macOS, Windows, iOS and Android. 
 
 <p>
   <img src="docs/images/mac-wheel-convert.png" width="49%" alt="The Convert wheel open over a file, with HEIC highlighted">
-  <img src="docs/images/mac-wheel-tools-dark.png" width="49%" alt="The Tools wheel in dark mode with Compress highlighted">
+  <img src="docs/images/mac-wheel-sizes.png" width="49%" alt="The Tools wheel with its size ring fanned out around Compress">
 </p>
 
 ## Download

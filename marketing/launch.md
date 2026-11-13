@@ -119,7 +119,7 @@ Source and builds: https://github.com/geetxnshgoyal/morph
 
 1. I made Morph: drag a file, tap a key, drop it on the wheel. A free file converter for Mac, iPhone and Android that never uploads anything. [video of the wheel opening mid-drag]
 2. On the Mac, tap ⇧ while dragging any file and a wheel of conversions opens under your cursor. ⌘ is tools, ⌃ is recipes, ⌥ is actions like AirDrop. Tap another key to switch wheels. [mac-wheel-convert.png]
-3. Only what fits shows up. Drag a video and you get MP4, MOV, GIF, compress, mute. Drag a PDF and you get merge, split, text. [mac-wheel-tools-dark.png]
+3. Only what fits shows up. Drag a video and you get MP4, MOV, GIF, compress, mute. Drag a PDF and you get merge, split, text. [mac-wheel-sizes.png]
 4. On iPhone, every action is in Shortcuts: convert to JPG, remove location, extract text, read QR codes, merge PDFs. "Remove location from photos with Morph" works with Siri. [ios-home.png]
 5. All on device. Results land next to the original, and any job can be undone. Free and open source: https://github.com/geetxnshgoyal/morph
 
@@ -170,7 +170,7 @@ Morph is a free, open-source file converter for Mac, iPhone and Android that wor
 | File | Use |
 | --- | --- |
 | `docs/images/mac-wheel-convert.png` | Hero image, Product Hunt gallery 1 |
-| `docs/images/mac-wheel-tools-dark.png` | Dark mode, gallery 2 |
+| `docs/images/mac-wheel-sizes.png` | Size ring, gallery 2 |
 | `docs/images/mac-wheel-actions.png` | Actions wheel, gallery 3 |
 | `docs/images/mac-welcome.png` | Onboarding, gallery 4 |
 | `docs/images/ios-home.png` | iPhone home |
