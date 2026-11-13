@@ -69,7 +69,7 @@ public static class Snapshots
         Theme.Apply(false);
         Store(store, "1-wheel", "Drag a file, tap a key, drop it on the wheel", "Convert, compress and clean up files right where they are.",
             WheelElement([photo], ActionGroup.Convert, 2), WheelGeometry.Width, WheelGeometry.Height);
-        Store(store, "2-size-limit", "Fit any upload limit", "Set 200 KB or 50 KB once, and Compress makes a JPG that fits.",
+        Store(store, "2-size-limit", "Pick a size right on the wheel", "Rest on Compress and every size limit fans out, or type your own.",
             WheelElement([photo], ActionGroup.Tool, 0), WheelGeometry.Width, WheelGeometry.Height);
         Store(store, "3-actions", "Share, copy or move in one drop", "The Actions wheel works on the files themselves.",
             WheelElement([photo, pdf], ActionGroup.File, 3), WheelGeometry.Width, WheelGeometry.Height);

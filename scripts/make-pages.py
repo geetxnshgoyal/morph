@@ -236,10 +236,10 @@ PAGES = [
         "title": "Compress Image to 200 KB, 100 KB, 50 KB or 20 KB | Morph",
         "description": "Make a photo fit an upload limit like 200 KB, 100 KB, 50 KB or 20 KB for exam forms and job portals. Free and offline on every device.",
         "h1": "Compress a photo to 200 KB, 100 KB, 50 KB or 20 KB",
-        "lede": "Exam forms, job portals and government sites keep asking for photos under a size limit. Set the limit once and Morph makes a JPG that fits, at the best quality that fits.",
+        "lede": "Exam forms, job portals and government sites keep asking for photos under a size limit. Pick the limit and Morph makes a JPG that fits, at the best quality that fits.",
         "steps": [
-            ("Set a size limit", "In Morph's Settings, pick 20 KB to 5 MB, or type any size."),
-            ("Open the photo and choose Compress", "Drag and tap ⌘ (Ctrl on Windows) for the Tools wheel, or pick Compress on your phone."),
+            ("Open the photo's Tools wheel", "On a Mac or Windows PC, drag the photo and tap ⌘ (Ctrl on Windows). On a phone, share it to Morph."),
+            ("Pick the size", "On the wheel, rest on Compress and choose 20 KB to 5 MB, or Custom for any size. On a phone, set the limit in Settings, then tap Compress."),
             ("Upload it", "Morph shows the new size, like 2.3 MB → 198 KB. If a JPG is already small enough, it's left alone."),
         ],
         "where": [(MAC, "Yes, for photos, videos and PDFs."), (WIN, "Yes, for photos, videos and PDFs."), (IOS, "Yes, and in Shortcuts with a size in KB."), (AND, "Yes, for photos, videos and PDFs.")],
