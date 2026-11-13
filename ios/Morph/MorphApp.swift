@@ -193,14 +193,3 @@ enum Prefs {
         return options
     }
 }
-
-extension Action.Group {
-    var label: String {
-        switch self {
-        case .convert: "Convert"
-        case .tool: "Tools"
-        case .recipe: "Recipes"
-        case .file: "Actions"
-        }
-    }
-}

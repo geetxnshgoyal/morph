@@ -46,8 +46,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             if let wheel = self?.wheel, wheel.model.dropMode, case .choosing = wheel.model.phase { wheel.close() }
         }
         dragShortcut.onDragEnded = { [weak self] in
-            // A drop on Compress or Resize leaves the wheel open on its sizes.
-            if let wheel = self?.wheel, wheel.model.dropMode, !wheel.model.dropped, case .choosing = wheel.model.phase { wheel.close() }
+            if let wheel = self?.wheel, wheel.model.dropMode, case .choosing = wheel.model.phase { wheel.close() }
         }
         dragShortcut.start()
 
@@ -275,8 +274,6 @@ struct ShelfView: View {
                 }
                 .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
             }
-
-            if Festive.isDiwali { DiwaliCard() }
 
             RoundedRectangle(cornerRadius: Theme.radius, style: .continuous)
                 .strokeBorder(style: StrokeStyle(lineWidth: 2, dash: [7, 6]))

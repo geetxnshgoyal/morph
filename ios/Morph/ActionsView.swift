@@ -1,3 +1,4 @@
+import ImageIO
 import Photos
 import QuickLook
 import SwiftUI
@@ -52,14 +53,20 @@ struct ActionsView: View {
     @StateObject private var model: JobModel
     @Environment(\.dismiss) private var dismiss
 
-    init(files: [URL]) { _model = StateObject(wrappedValue: JobModel(files: files)) }
+    /// Done, where there's no sheet to dismiss (the share extension's own card).
+    private let close: (() -> Void)?
+
+    init(files: [URL], close: (() -> Void)? = nil) {
+        _model = StateObject(wrappedValue: JobModel(files: files))
+        self.close = close
+    }
 
     var body: some View {
         VStack(spacing: 0) {
             switch model.phase {
             case .choosing: choosing
             case let .running(action, done, total): RunningView(action: action, done: done, total: total)
-            case let .finished(action, result): ResultView(action: action, result: result) { dismiss() }
+            case let .finished(action, result): ResultView(action: action, result: result) { close?() ?? dismiss() }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
@@ -88,6 +95,14 @@ struct ActionsView: View {
                 }
                 .padding(.top, 26)
 
+                // iOS gives the share card a fixed, tall height; the photo being shared fills the top of it.
+                if Host.isShareSheet, model.kind == .image, model.files.count == 1, let preview = Self.preview(of: model.files[0]) {
+                    Image(uiImage: preview).resizable().scaledToFit()
+                        .frame(maxWidth: .infinity, maxHeight: 300)
+                        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                        .accessibilityHidden(true)
+                }
+
                 if model.actions.isEmpty {
                     VStack(spacing: 8) {
                         SymbolBubble(symbol: "questionmark", size: 56)
@@ -112,6 +127,16 @@ struct ActionsView: View {
             .padding(.horizontal, 20).padding(.bottom, 30)
             .animation(Motion.settle, value: model.group)
         }
+    }
+
+    /// A small decode of the photo: a share extension gets little memory, so the full image is never loaded.
+    private static func preview(of url: URL) -> UIImage? {
+        guard let source = CGImageSourceCreateWithURL(url as CFURL, nil),
+              let image = CGImageSourceCreateThumbnailAtIndex(source, 0, [
+                  kCGImageSourceCreateThumbnailFromImageAlways: true, kCGImageSourceCreateThumbnailWithTransform: true,
+                  kCGImageSourceThumbnailMaxPixelSize: 900,
+              ] as CFDictionary) else { return nil }
+        return UIImage(cgImage: image)
     }
 
     private func symbol(for kind: FileKind) -> String {
@@ -195,6 +220,7 @@ struct ResultView: View {
     @State private var savedToPhotos = false
     @State private var saveError: String?
     @State private var pop = false
+    @Environment(\.openURL) private var openURL
 
     private var ok: Bool { result.failures.isEmpty }
     /// Nothing made and nothing failed: every file was already as small as it can usefully get.
@@ -223,7 +249,9 @@ struct ResultView: View {
                     Text(unchanged ? "Already small" : ok ? "All done!" : result.outputs.isEmpty ? "That didn't work" : "Partly done")
                         .font(Theme.font(24, .bold))
                     Text(unchanged ? "Any smaller would look worse, so nothing was changed."
-                         : ok ? "Saved to Morph in the Files app." : result.failures.first ?? "")
+                         : !ok ? result.failures.first ?? ""
+                         : !Host.isShareSheet ? "Saved to Morph in the Files app."
+                         : savedToPhotos ? "Saved to your Photos." : "Tap Share to save it or send it on.")
                         .font(Theme.font(15)).foregroundStyle(.secondary).multilineTextAlignment(.center)
                 }
 
@@ -266,7 +294,7 @@ struct ResultView: View {
                             Button(savedToPhotos ? "Saved!" : "Save to Photos", action: saveToPhotos)
                                 .buttonStyle(SoftButtonStyle()).disabled(savedToPhotos)
                         }
-                        if !result.outputs.isEmpty {
+                        if !result.outputs.isEmpty, !Host.isShareSheet {
                             Button("Show in Files", action: showInFiles).buttonStyle(SoftButtonStyle())
                         }
                         Button("Done", action: onDone).buttonStyle(SoftButtonStyle())
@@ -278,16 +306,13 @@ struct ResultView: View {
             .padding(.horizontal, 20).padding(.bottom, 30)
         }
         .quickLookPreview($preview, in: result.outputs)
-        .overlay {
-            if Festive.isDiwali && ok && !unchanged {
-                Crackers()
-            }
-        }
         .onAppear {
             withAnimation(Motion.pop) { pop = true }
             if ok && !unchanged {
                 UINotificationFeedbackGenerator().notificationOccurred(.success)
             }
+            // From the share sheet a photo goes back where it came from, without a trip through Files.
+            if Host.isShareSheet, !media.isEmpty { saveToPhotos() }
         }
     }
 
@@ -320,7 +345,18 @@ struct ResultView: View {
     }
 
     private func showInFiles() {
-        let folder = result.outputs.first?.deletingLastPathComponent() ?? AppState.results
-        if let url = URL(string: "shareddocuments://" + folder.path) { UIApplication.shared.open(url) }
+        guard let folder = result.outputs.first?.deletingLastPathComponent() else { return }
+        if let url = URL(string: "shareddocuments://" + folder.path) { openURL(url) }
+    }
+}
+
+extension Action.Group {
+    var label: String {
+        switch self {
+        case .convert: "Convert"
+        case .tool: "Tools"
+        case .recipe: "Recipes"
+        case .file: "Actions"
+        }
     }
 }

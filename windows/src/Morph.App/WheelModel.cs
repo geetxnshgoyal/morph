@@ -24,6 +24,15 @@ public sealed class WheelModel
     public int Total { get; private set; }
     public RunResult? Result { get; private set; }
 
+    /// One size on the ring Compress and Resize fan out. Custom has no setting of its own: it asks.
+    public sealed record SizeChoice(string Id, string Label, string Name, Func<Options, Options>? Adjust);
+
+    /// The size ring showing around the wheel, for the petal the pointer is on.
+    public (MorphAction Action, IReadOnlyList<SizeChoice> Choices)? Sizing { get; private set; }
+
+    /// Asks for a size of one's own; the window supplies the dialog.
+    public Func<MorphAction, Func<Options, Options>?>? AskCustomSize;
+
     public event Action? Changed;
     /// The page or wheel turned: the petals bloom again.
     public event Action? Turned;
@@ -49,6 +58,7 @@ public sealed class WheelModel
         Group = Groups.Contains(want) ? want : Actions.Any(a => a.Group == ActionGroup.Convert) ? ActionGroup.Convert : ActionGroup.Tool;
         Page = 0;
         Hovered = null;
+        Sizing = null;
         Turned?.Invoke();
         Changed?.Invoke();
     }
@@ -78,14 +88,17 @@ public sealed class WheelModel
         {
             if (!KnowsFiles) return "Drop on the wheel";
             if (Actions.Count == 0) return "Nothing fits these files";
+            if (Hovered is not null && Hovered == Sizing?.Action.Id) return "Or pick a size";
             if (Hovered is not null) return DropMode ? "Release to run" : "Click to run";
             return DropMode ? "Drop on an action" : Group.Label();
         }
     }
 
-    public string? HoverTitle => Actions.FirstOrDefault(a => a.Id == Hovered) is { } action
-        ? action.Group == ActionGroup.Convert ? $"Convert to {action.Title}" : action.Title
-        : null;
+    public string? HoverTitle =>
+        Sizing?.Choices.FirstOrDefault(c => c.Id == Hovered) is { } choice ? choice.Name
+        : Actions.FirstOrDefault(a => a.Id == Hovered) is { } action
+            ? action.Group == ActionGroup.Convert ? $"Convert to {action.Title}" : action.Title
+            : null;
 
     // MARK: Navigation
 
@@ -105,6 +118,7 @@ public sealed class WheelModel
         Group = group;
         Page = 0;
         Hovered = null;
+        Sizing = null;
         Feedback.Shared.Tick();
         Turned?.Invoke();
         Changed?.Invoke();
@@ -118,11 +132,15 @@ public sealed class WheelModel
         Select(groups[(i + delta + groups.Count) % groups.Count]);
     }
 
-    /// Highlights the petal under a point relative to the ring's centre.
+    /// Highlights the petal or size under a point relative to the ring's centre. Resting on Compress or Resize
+    /// fans out its sizes; any other petal folds them away.
     public void Hover(double x, double y)
     {
+        if (SizeAt(x, y) is { } choice) { SetHovered(choice.Id); return; }
         var items = PageItems;
-        SetHovered(WheelGeometry.Slot(x, y, items.Count) is int slot ? items[slot].Id : null);
+        if (WheelGeometry.Slot(x, y, items.Count) is not int slot) { SetHovered(null); return; }
+        ShowSizes(items[slot]);
+        SetHovered(items[slot].Id);
     }
 
     public MorphAction? ActionAt(double x, double y)
@@ -131,8 +149,107 @@ public sealed class WheelModel
         return WheelGeometry.Slot(x, y, items.Count) is int slot ? items[slot] : null;
     }
 
-    /// Moves the highlight around the ring, turning to the next page at the ends.
+    public bool CanDrop(double x, double y) => SizeAt(x, y) is not null || ActionAt(x, y) is not null;
+
+    /// A click or a drop at a point: a size runs its action at that size, a petal runs as set in Settings.
+    public bool Pick(double x, double y)
+    {
+        if (SizeAt(x, y) is { } choice) { Choose(choice); return true; }
+        if (ActionAt(x, y) is { } action) { Run(action); return true; }
+        return false;
+    }
+
+    /// Where the size ring sits, for the drawing.
+    public (double Start, double Step)? SizeArc
+    {
+        get
+        {
+            if (Sizing is not { } sizing) return null;
+            var items = PageItems.ToList();
+            var index = items.FindIndex(a => a.Id == sizing.Action.Id);
+            return index < 0 ? null : WheelGeometry.SizeArc(index, items.Count, sizing.Choices.Count);
+        }
+    }
+
+    SizeChoice? SizeAt(double x, double y) =>
+        Sizing is { } sizing && SizeArc is { } arc && WheelGeometry.SizeSlot(x, y, arc, sizing.Choices.Count) is int i ? sizing.Choices[i] : null;
+
+    void ShowSizes(MorphAction action)
+    {
+        if (Sizing?.Action.Id == action.Id) return;
+        var choices = SizesFor(action);
+        if (choices is null && Sizing is null) return;
+        Sizing = choices is null ? null : (action, choices);
+        Changed?.Invoke();
+    }
+
+    /// The sizes Compress (on photos, the only files a size limit applies to) and Resize fan out, or null.
+    IReadOnlyList<SizeChoice>? SizesFor(MorphAction action)
+    {
+        var custom = new SizeChoice("size.custom", "Custom…", "A size of your own", null);
+        if (action.Id == "tool.compress" && Files.Count > 0 && Files.All(f => FileKinds.Of(f) == FileKind.Image))
+            return [.. new long[] { 0 }.Concat(SizeLimit.Presets).Select(bytes => new SizeChoice($"size.{bytes}",
+                bytes == 0 ? "Smallest" : SizeLimit.Label(bytes), bytes == 0 ? "Smallest that looks the same" : $"Under {SizeLimit.Label(bytes)}",
+                o => o with { TargetBytes = bytes == 0 ? null : bytes })), custom];
+        if (action.Id == "tool.resize")
+            return [new SizeChoice("size.fit", "Keep shape", "Keep shape, 2048 px", o => o with { ExactSize = null }),
+                .. PixelSize.Presets.SelectMany(g => g.Items).DistinctBy(i => i.Size)
+                    .Select(i => new SizeChoice($"size.{i.Size.Key}", i.Size.Label, i.Name, o => o with { ExactSize = i.Size })), custom];
+        return null;
+    }
+
+    /// Runs the size ring's action at `choice`, or asks for a size of one's own.
+    public void Choose(SizeChoice choice)
+    {
+        if (Sizing is not { } sizing) return;
+        if ((choice.Adjust ?? AskCustomSize?.Invoke(sizing.Action)) is { } adjust) Run(sizing.Action, adjust);
+    }
+
+    /// Folds the size ring away; false if it wasn't showing.
+    public bool LeaveSizes()
+    {
+        if (Sizing is not { } sizing) return false;
+        if (Hovered?.StartsWith("size.") == true) Hovered = sizing.Action.Id;
+        Sizing = null;
+        Changed?.Invoke();
+        return true;
+    }
+
+    /// Up arrow: from Compress or Resize into its sizes, starting on the one saved in Settings.
+    public bool StepOut()
+    {
+        if (Sizing is not { } sizing || Hovered != sizing.Action.Id) return false;
+        var prefs = Preferences.Shared;
+        var saved = sizing.Action.Id == "tool.compress" ? $"size.{prefs.SizeLimit}" : prefs.PhotoSize is { } size ? $"size.{size.Key}" : "size.fit";
+        SetHovered(sizing.Choices.Any(c => c.Id == saved) ? saved : sizing.Choices[0].Id);
+        return true;
+    }
+
+    /// Down arrow: from a size back to its petal.
+    public bool StepIn()
+    {
+        if (Sizing is not { } sizing || !sizing.Choices.Any(c => c.Id == Hovered)) return false;
+        SetHovered(sizing.Action.Id);
+        return true;
+    }
+
+    /// Moves the highlight around the ring, turning to the next page at the ends; among sizes, along the sizes.
     public void Step(int delta)
+    {
+        if (Sizing is { } sizing)
+        {
+            var at = sizing.Choices.ToList().FindIndex(c => c.Id == Hovered);
+            if (at >= 0)
+            {
+                SetHovered(sizing.Choices[(at + delta + sizing.Choices.Count) % sizing.Choices.Count].Id);
+                return;
+            }
+        }
+        StepPetals(delta);
+        if (PageItems.FirstOrDefault(a => a.Id == Hovered) is { } hovered) ShowSizes(hovered);
+    }
+
+    void StepPetals(int delta)
     {
         var items = PageItems;
         if (items.Count == 0) return;
@@ -158,22 +275,25 @@ public sealed class WheelModel
         if (Pages < 2) return;
         Page = (Page + delta + Pages) % Pages;
         Hovered = null;
+        Sizing = null;
         Turned?.Invoke();
         Changed?.Invoke();
     }
 
     public void RunHighlighted()
     {
-        if (PageItems.FirstOrDefault(a => a.Id == Hovered) is { } action) Run(action);
+        if (Sizing?.Choices.FirstOrDefault(c => c.Id == Hovered) is { } choice) Choose(choice);
+        else if (PageItems.FirstOrDefault(a => a.Id == Hovered) is { } action) Run(action);
     }
 
     // MARK: Running
 
-    public async void Run(MorphAction action)
+    public async void Run(MorphAction action, Func<Options, Options>? adjust = null)
     {
         if (Phase != WheelPhase.Choosing) return;
         var files = Files;
         var prefs = Preferences.Shared;
+        var options = adjust is null ? prefs.Options : adjust(prefs.Options);
         if (action.Group == ActionGroup.File)
         {
             // Acts on the files themselves and may open its own window, so get out of the way first.
@@ -187,7 +307,7 @@ public sealed class WheelModel
         (Done, Total) = (0, files.Count);
         Changed?.Invoke();
         var dispatcher = System.Windows.Threading.Dispatcher.CurrentDispatcher;
-        var result = await Task.Run(() => Runner.Run(action, files, prefs.Options, progress: (done, total) =>
+        var result = await Task.Run(() => Runner.Run(action, files, options, progress: (done, total) =>
             dispatcher.BeginInvoke(() =>
             {
                 if (Phase != WheelPhase.Running) return;

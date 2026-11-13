@@ -78,8 +78,8 @@ public sealed class WheelRing : FrameworkElement
     {
         const double c = Side / 2;
         // Catches the pointer and drags everywhere on the ring, gaps included.
-        dc.DrawEllipse(new SolidColorBrush(Color.FromArgb(1, 0, 0, 0)), null, new Point(c, c),
-            WheelGeometry.OuterRadius + WheelGeometry.Lift + 24, WheelGeometry.OuterRadius + WheelGeometry.Lift + 24);
+        var catcher = model.Sizing is null ? WheelGeometry.OuterRadius + WheelGeometry.Lift + 24 : WheelGeometry.SizeOuter + WheelGeometry.Lift + 16;
+        dc.DrawEllipse(new SolidColorBrush(Color.FromArgb(1, 0, 0, 0)), null, new Point(c, c), catcher, catcher);
         if (model.Phase != WheelPhase.Choosing) return;
 
         var glass = Theme.BrushOf("Glass");
@@ -134,6 +134,31 @@ public sealed class WheelRing : FrameworkElement
                 dc.Pop();
             }
             dc.Pop();
+        }
+        DrawSizes(dc, new Point(c, c), glass, brand, onBrand, primary, rim, stroke, dpi);
+    }
+
+    /// Sizes for Compress or Resize, fanned out in a second ring around the wheel.
+    void DrawSizes(DrawingContext dc, Point c, Brush glass, Brush brand, Brush onBrand, Brush primary, Pen rim, Pen stroke, double dpi)
+    {
+        if (model.Sizing is not { } sizing || model.SizeArc is not { } arc) return;
+        for (var i = 0; i < sizing.Choices.Count; i++)
+        {
+            var choice = sizing.Choices[i];
+            var highlighted = choice.Id == model.Hovered;
+            var angle = arc.Start + arc.Step * (i + 0.5);
+            var shape = Petal(c, angle, arc.Step, WheelGeometry.GapWidth, WheelGeometry.SizeInner,
+                WheelGeometry.SizeOuter + (highlighted ? 8 : 0), 7);
+            dc.DrawGeometry(highlighted ? brand : glass, stroke, shape);
+            if (!highlighted) dc.DrawGeometry(null, rim, shape);
+            var radians = angle * Math.PI / 180;
+            var radius = (WheelGeometry.SizeInner + WheelGeometry.SizeOuter) / 2 + (highlighted ? 4 : 0);
+            var label = Text(choice.Label, "UiFont", 10.5, FontWeights.SemiBold, highlighted ? onBrand : primary, dpi);
+            label.MaxTextWidth = Math.Max(40, 2 * radius * Math.Sin(arc.Step * Math.PI / 360) - WheelGeometry.GapWidth - 8);
+            label.MaxLineCount = 2;
+            label.TextAlignment = TextAlignment.Center;
+            label.Trimming = TextTrimming.CharacterEllipsis;
+            dc.DrawText(label, new Point(c.X + Math.Cos(radians) * radius - label.MaxTextWidth / 2, c.Y + Math.Sin(radians) * radius - label.Height / 2));
         }
     }
 

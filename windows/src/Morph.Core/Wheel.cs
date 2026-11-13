@@ -120,10 +120,11 @@ public static class Wheels
 /// The wheel's measurements and hit testing, shared by the window, the drawing and the tests.
 public static class WheelGeometry
 {
-    public const double Width = 440;
-    public const double Height = 496;
+    /// Room for the size ring Compress and Resize fan out around the wheel.
+    public const double Width = Side;
+    public const double Height = CenterY + OuterRadius + Lift + 76;
     /// Centre of the ring from the window's top-left; the wheel bar hangs below the ring.
-    public const double CenterX = 220, CenterY = 220;
+    public const double CenterX = Side / 2, CenterY = Side / 2;
     public const double OuterRadius = 168;
     public const double InnerRadius = 88;
     public const double HubRadius = 76;
@@ -131,8 +132,10 @@ public static class WheelGeometry
     public const double GapWidth = 7;
     /// How far a highlighted petal grows outward.
     public const double Lift = 12;
-    /// Square the ring is drawn in, with room for a lifted petal and its glow.
-    public const double Side = (OuterRadius + Lift + 12) * 2;
+    /// The size ring, a band just outside the petals.
+    public const double SizeInner = OuterRadius + 22, SizeOuter = OuterRadius + 92;
+    /// Square everything is drawn in, size ring included, with room for a lifted petal and its glow.
+    public const double Side = (SizeOuter + Lift + 12) * 2;
     public const double LabelRadius = (InnerRadius + OuterRadius) / 2 + 2;
     /// Petals per ring; more actions than this page around with a turn of the wheel.
     public const int PerPage = 8;
@@ -149,5 +152,25 @@ public static class WheelGeometry
         var degrees = (Math.Atan2(y, x) * 180 / Math.PI + 90) % 360;
         if (degrees < 0) degrees += 360;
         return (int)((degrees + sector / 2) / sector) % count;
+    }
+
+    /// Where `count` sizes sit for the petal at `index` of `petals`, in degrees clockwise from three o'clock:
+    /// centred on that petal, but kept above the wheel bar.
+    public static (double Start, double Step) SizeArc(int index, int petals, int count)
+    {
+        var span = Math.Min(240, count * 18.0);
+        var center = Math.Clamp(Angle(index, petals), -210 + span / 2, 30 - span / 2);
+        return (center - span / 2, span / Math.Max(count, 1));
+    }
+
+    /// The size under a point relative to the ring's centre, or null off the size ring.
+    public static int? SizeSlot(double x, double y, (double Start, double Step) arc, int count)
+    {
+        var distance = Math.Sqrt(x * x + y * y);
+        if (count <= 0 || distance < SizeInner - 8 || distance > SizeOuter + Lift + 16) return null;
+        var offset = (Math.Atan2(y, x) * 180 / Math.PI - arc.Start) % 360;
+        if (offset < 0) offset += 360;
+        var i = (int)(offset / arc.Step);
+        return i < count ? i : null;
     }
 }

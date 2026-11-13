@@ -22,6 +22,8 @@ public sealed class WheelWindow : Window
     readonly Border bar;
     readonly Native.POINT anchor;
     bool closing;
+    /// The Custom… size dialog is up: the wheel losing focus to it isn't clicking away.
+    bool asking;
     double scrollAccumulator;
 
     const double CenterX = WheelGeometry.CenterX, CenterY = WheelGeometry.CenterY;
@@ -86,6 +88,7 @@ public sealed class WheelWindow : Window
 
         model.Changed += Refresh;
         model.Dismiss = CloseAnimated;
+        model.AskCustomSize = AskCustomSize;
         Refresh();
 
         ring.MouseMove += (_, e) => { var p = Centered(e.GetPosition(ring)); Model.Hover(p.X, p.Y); };
@@ -93,11 +96,11 @@ public sealed class WheelWindow : Window
         ring.MouseLeftButtonUp += (_, e) =>
         {
             var p = Centered(e.GetPosition(ring));
-            if (Model.ActionAt(p.X, p.Y) is { } action) Model.Run(action);
+            Model.Pick(p.X, p.Y);
         };
         MouseWheel += (_, e) => Scroll(e.Delta);
         PreviewKeyDown += OnKey;
-        Deactivated += (_, _) => { if (!Model.DropMode) CloseAnimated(); };
+        Deactivated += (_, _) => { if (!Model.DropMode && !asking) CloseAnimated(); };
         DragEnter += OnDrag;
         DragOver += OnDrag;
         DragLeave += (_, _) => Model.ClearHover();
@@ -113,6 +116,28 @@ public sealed class WheelWindow : Window
     }
 
     static Point Centered(Point p) => new(p.X - WheelGeometry.Side / 2, p.Y - WheelGeometry.Side / 2);
+
+    /// Custom…: a size typed in, the same dialogs Settings uses.
+    Func<Options, Options>? AskCustomSize(MorphAction action)
+    {
+        asking = true;
+        try
+        {
+            var prefs = Preferences.Shared;
+            if (action.Id == "tool.compress")
+            {
+                if (CustomSize.Ask(this, prefs.SizeLimit) is not long bytes) return null;
+                return o => o with { TargetBytes = bytes };
+            }
+            if (CustomPhotoSize.Ask(this, prefs.PhotoSize) is not { } size) return null;
+            return o => o with { ExactSize = size };
+        }
+        finally
+        {
+            asking = false;
+            if (!Model.DropMode) Activate();
+        }
+    }
 
     /// Shows the wheel with its ring centred on the cursor, kept on the cursor's screen.
     public void Present()
@@ -183,13 +208,16 @@ public sealed class WheelWindow : Window
         if (Model.Phase != WheelPhase.Choosing) { if (e.Key == Key.Escape) CloseAnimated(); return; }
         switch (e.Key)
         {
-            case Key.Right or Key.Down: Model.Step(1); break;
-            case Key.Left or Key.Up: Model.Step(-1); break;
+            case Key.Right: Model.Step(1); break;
+            case Key.Left: Model.Step(-1); break;
+            // Up goes out into the size ring, down comes back to the petal.
+            case Key.Up: if (!Model.StepOut()) Model.Step(-1); break;
+            case Key.Down: if (!Model.StepIn()) Model.Step(1); break;
             case Key.Enter or Key.Space: Model.RunHighlighted(); break;
             case Key.Tab: Model.CycleGroup(Keyboard.Modifiers.HasFlag(ModifierKeys.Shift) ? -1 : 1); break;
             case Key.PageDown: Model.TurnPage(1); break;
             case Key.PageUp: Model.TurnPage(-1); break;
-            case Key.Escape: CloseAnimated(); break;
+            case Key.Escape: if (!Model.LeaveSizes()) CloseAnimated(); break;
             default: return;
         }
         e.Handled = true;
@@ -222,7 +250,7 @@ public sealed class WheelWindow : Window
         Model.SetFiles(files);
         var p = Centered(e.GetPosition(ring));
         Model.Hover(p.X, p.Y);
-        e.Effects = Model.ActionAt(p.X, p.Y) is null ? DragDropEffects.None : CopyEffect(e);
+        e.Effects = Model.CanDrop(p.X, p.Y) ? CopyEffect(e) : DragDropEffects.None;
     }
 
     void OnDrop(object sender, DragEventArgs e)
@@ -231,10 +259,10 @@ public sealed class WheelWindow : Window
         if (DraggedFiles(e) is not { Length: > 0 } files || Model.Phase != WheelPhase.Choosing) { e.Effects = DragDropEffects.None; return; }
         Model.SetFiles(files);
         var p = Centered(e.GetPosition(ring));
-        if (Model.ActionAt(p.X, p.Y) is not { } action) { e.Effects = DragDropEffects.None; return; }
+        if (!Model.CanDrop(p.X, p.Y)) { e.Effects = DragDropEffects.None; return; }
         e.Effects = CopyEffect(e);
         // Run after the drop returns: the source app waits on it, and some actions open dialogs.
-        Dispatcher.BeginInvoke(() => Model.Run(action));
+        Dispatcher.BeginInvoke(() => Model.Pick(p.X, p.Y));
     }
 
     // MARK: Hub and bar

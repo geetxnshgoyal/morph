@@ -98,4 +98,21 @@ public class WheelShortcutTests
         Assert.Null(WheelGeometry.Slot(400, 0, 8));
         Assert.Equal(-90, WheelGeometry.Angle(0, 5));
     }
+
+    [Fact]
+    public void SizesFanOutAboveTheBar()
+    {
+        // Compress at the top: ten sizes over 180°, centred on it.
+        var top = WheelGeometry.SizeArc(0, 8, 10);
+        Assert.Equal(-180, top.Start, 6);
+        Assert.Equal(18, top.Step, 6);
+        Assert.Equal(5, WheelGeometry.SizeSlot(0, -225, top, 10));
+        Assert.Equal(0, WheelGeometry.SizeSlot(-225, -10, top, 10));
+        Assert.Null(WheelGeometry.SizeSlot(0, 225, top, 10));       // below the wheel, where no size is
+        Assert.Null(WheelGeometry.SizeSlot(0, -130, top, 10));      // on the petals
+        // Resize, off to one side with fourteen sizes: pulled back up so the ring ends above the bar.
+        var side = WheelGeometry.SizeArc(1, 8, 14);
+        Assert.Equal(-210, side.Start, 6);
+        Assert.True(side.Start + side.Step * 14 <= 30);
+    }
 }

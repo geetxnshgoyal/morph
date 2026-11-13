@@ -454,6 +454,11 @@ struct MorphGlass<S: Shape>: ViewModifier {
 
 /// Morph's motion. State changes settle with critically damped springs (no overshoot); only a finished job gets a
 /// little bounce. With Reduce Motion, movement becomes a short fade and scaling transitions become cross-fades.
+/// Where this code is running: the app, or its share sheet extension.
+enum Host {
+    static let isShareSheet = Bundle.main.bundlePath.hasSuffix(".appex")
+}
+
 enum Motion {
     static var reduced: Bool { UIAccessibility.isReduceMotionEnabled }
 

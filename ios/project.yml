@@ -7,24 +7,27 @@ options:
 packages:
   Morph:
     path: ..
+# One version for the app and its share sheet; the App Store requires them to match.
+settings:
+  base:
+    MARKETING_VERSION: 1.0.3
+    CURRENT_PROJECT_VERSION: 10
 targets:
   Morph:
     type: application
     platform: iOS
     sources:
       - path: Morph
-      # One copy of the festival art and the loader, kept with the Mac app.
-      - path: ../Sources/MorphMac/Festive.swift
+      # One copy of the loader, kept with the Mac app.
       - path: ../Sources/MorphMac/MorphLoader.swift
     dependencies:
       - package: Morph
         product: MorphCore
+      - target: MorphShare
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: app.morph.Morph
         PRODUCT_NAME: Morph
-        MARKETING_VERSION: 1.0.2
-        CURRENT_PROJECT_VERSION: 9
         TARGETED_DEVICE_FAMILY: "1,2"
         SWIFT_VERSION: "5.0"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
@@ -65,3 +68,39 @@ targets:
             CFBundleTypeRole: Viewer
             LSHandlerRank: Alternate
             LSItemContentTypes: [public.item, public.content, public.data]
+  # Morph in the share sheet: the actions sheet over the app the share came from.
+  MorphShare:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Share
+      - path: Morph/ActionsView.swift
+      - path: Morph/Theme.swift
+      - path: ../Sources/MorphMac/MorphLoader.swift
+    dependencies:
+      - package: Morph
+        product: MorphCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.morph.Morph.Share
+        PRODUCT_NAME: MorphShare
+        TARGETED_DEVICE_FAMILY: "1,2"
+        SWIFT_VERSION: "5.0"
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: 675A56FHGZ
+    info:
+      path: Share/Info.plist
+      properties:
+        CFBundleDisplayName: Morph
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        NSPhotoLibraryAddUsageDescription: Morph saves the photos and videos you convert to your library.
+        ITSAppUsesNonExemptEncryption: false
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.share-services
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).ShareViewController
+          NSExtensionAttributes:
+            NSExtensionActivationRule:
+              NSExtensionActivationSupportsImageWithMaxCount: 50
+              NSExtensionActivationSupportsMovieWithMaxCount: 10
+              NSExtensionActivationSupportsFileWithMaxCount: 50

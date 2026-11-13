@@ -15,7 +15,7 @@ ARCHS="--arch arm64 --arch x86_64"
 swift build -c release $ARCHS --product MorphMac
 swift build -c release $ARCHS --product morph
 BIN=$(swift build -c release $ARCHS --show-bin-path)
-VERSION=1.0.1
+VERSION=1.0.2
 DMG="dist/Morph-$VERSION.dmg"
 SIGN_ID="${MORPH_SIGN_ID:-$(security find-identity -v -p codesigning | sed -n 's/.*"\(Developer ID Application: [^"]*\)".*/\1/p' | head -1)}"
 SIGN_ID="${SIGN_ID:--}"
@@ -50,7 +50,7 @@ cat > "$APP/Contents/Info.plist" <<PLIST
   <key>NSHighResolutionCapable</key><true/>
   <key>NSHumanReadableCopyright</key><string>Free file converter and toolbox</string>
   <key>CFBundleShortVersionString</key><string>$VERSION</string>
-  <key>CFBundleVersion</key><string>7</string>
+  <key>CFBundleVersion</key><string>8</string>
   <key>LSMinimumSystemVersion</key><string>14.0</string>
   <key>LSUIElement</key><true/>
   <key>CFBundleDocumentTypes</key><array><dict>

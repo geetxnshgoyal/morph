@@ -7,10 +7,11 @@ import MorphCore
 
 /// The wheel's measurements, shared by the panel (to centre the wheel on the cursor) and the view.
 enum WheelMetrics {
-    static let width: CGFloat = 440
-    static let height: CGFloat = 496
+    /// Room for the size ring Compress and Resize fan out around the wheel.
+    static let width: CGFloat = side
+    static let height: CGFloat = center.y + outerRadius + lift + 76
     /// Centre of the ring, from the panel's top-left; the wheel bar hangs below the ring.
-    static let center = CGPoint(x: 220, y: 220)
+    static let center = CGPoint(x: side / 2, y: side / 2)
     static let outerRadius: CGFloat = 168
     static let innerRadius: CGFloat = 88
     static let hubRadius: CGFloat = 76
@@ -18,8 +19,13 @@ enum WheelMetrics {
     static let gapWidth: CGFloat = 7
     /// How far a highlighted petal grows outward.
     static let lift: CGFloat = 12
-    /// Square the ring is drawn in, with room for a lifted petal.
-    static let side: CGFloat = (outerRadius + lift + 12) * 2
+    /// The size ring, a band just outside the petals.
+    static let sizeInner: CGFloat = outerRadius + 22
+    static let sizeOuter: CGFloat = outerRadius + 92
+    /// Square of the petals alone, with room for a lifted petal; clicks outside it fall through to what's behind.
+    static let ringSide: CGFloat = (outerRadius + lift + 12) * 2
+    /// Square everything is drawn in, size ring included.
+    static let side: CGFloat = (sizeOuter + lift + 12) * 2
     static let labelRadius: CGFloat = (innerRadius + outerRadius) / 2 + 2
 }
 
@@ -42,7 +48,6 @@ final class WheelPanel: NSPanel {
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
 
         model.dismiss = { [weak self] in self?.close() }
-        model.focus = { [weak self] in self?.makeKeyAndOrderFront(nil); NSApp.activate(ignoringOtherApps: true) }
         let host = NSHostingView(rootView: WheelView(model: model))
         host.frame = contentRect(forFrameRect: frame)
         contentView = host
@@ -85,8 +90,11 @@ final class WheelPanel: NSPanel {
             return
         case .keyDown:
             switch Int(event.keyCode) {
-            case kVK_RightArrow, kVK_DownArrow: model.step(1); return
-            case kVK_LeftArrow, kVK_UpArrow: model.step(-1); return
+            case kVK_RightArrow: model.step(1); return
+            case kVK_LeftArrow: model.step(-1); return
+            // Up goes out into the size ring, down comes back to the petal.
+            case kVK_UpArrow: if !model.stepOut() { model.step(-1) }; return
+            case kVK_DownArrow: if !model.stepIn() { model.step(1) }; return
             case kVK_Return, kVK_ANSI_KeypadEnter, kVK_Space: model.runHighlighted(); return
             case kVK_Tab: model.cycleGroup(event.modifierFlags.contains(.shift) ? -1 : 1); return
             case kVK_Escape: if !model.leaveSizes() { close() }; return
@@ -121,22 +129,20 @@ final class WheelPanel: NSPanel {
 final class WheelModel: ObservableObject {
     enum Phase { case choosing, running(Action, done: Int, total: Int), finished(Action, RunResult) }
 
-    /// Petals per ring; more actions than this page around with a turn of the wheel. The size ring fits nine,
-    /// so every size limit shows at once.
-    var perPage: Int { sizing != nil && visible.count <= 9 ? 9 : 8 }
+    /// Petals per ring; more actions than this page around with a turn of the wheel.
+    static let perPage = 8
 
-    /// One size on the ring Compress and Resize open: its petal, its full name for the hub, and what it sets.
+    /// One size on the ring Compress and Resize fan out: its petal's label, its full name for the hub, and what it
+    /// sets. Custom has no setting of its own: it asks.
     struct SizeChoice {
-        let petal: Action
+        let id: String
+        let label: String
         let name: String
-        let adjust: @Sendable (inout Options) -> Void
+        let adjust: (@Sendable (inout Options) -> Void)?
     }
 
-    /// Set while the ring shows sizes for this action instead of the actions themselves.
+    /// The size ring showing around the wheel, for the petal the pointer is on.
     @Published private(set) var sizing: (action: Action, choices: [SizeChoice])?
-    /// The dragged files have landed, so the wheel now waits for a click.
-    @Published private(set) var dropped = false
-    var focus: () -> Void = {}
 
     private(set) var files: [URL]
     let actions: [Action]
@@ -168,14 +174,20 @@ final class WheelModel: ObservableObject {
         Preferences.wheels.filter { g in actions.contains { $0.group == g } }
     }
 
-    var visible: [Action] { sizing?.choices.map(\.petal) ?? actions.filter { $0.group == group } }
-    var pages: Int { max(1, (visible.count + perPage - 1) / perPage) }
-    var pageItems: [Action] { Array(visible.dropFirst(page * perPage).prefix(perPage)) }
+    var visible: [Action] { actions.filter { $0.group == group } }
+    var pages: Int { max(1, (visible.count + Self.perPage - 1) / Self.perPage) }
+    var pageItems: [Action] { Array(visible.dropFirst(page * Self.perPage).prefix(Self.perPage)) }
 
     /// What the hub and VoiceOver call a petal.
     func title(for action: Action) -> String {
-        if let choice = sizing?.choices.first(where: { $0.petal.id == action.id }) { return choice.name }
-        return action.group == .convert ? "Convert to \(action.title)" : action.title
+        action.group == .convert ? "Convert to \(action.title)" : action.title
+    }
+
+    /// The name of whatever is highlighted, petal or size.
+    var hoveredName: String? {
+        guard let id = hovered else { return nil }
+        if let choice = sizing?.choices.first(where: { $0.id == id }) { return choice.name }
+        return actions.first { $0.id == id }.map(title(for:))
     }
 
     var summary: String {
@@ -208,7 +220,6 @@ final class WheelModel: ObservableObject {
     // MARK: Navigation
 
     func select(_ newGroup: Action.Group) {
-        if newGroup == group { leaveSizes() }
         guard newGroup != group, groups.contains(newGroup) else { return }
         withAnimation(motion) {
             sizing = nil
@@ -224,10 +235,14 @@ final class WheelModel: ObservableObject {
         select(groups[(i + delta + groups.count) % groups.count])
     }
 
-    /// Highlights the petal under `point`, as the pointer or a drag moves over the ring.
+    /// Highlights the petal or size under `point`, as the pointer or a drag moves over the wheel. Resting on
+    /// Compress or Resize fans out its sizes; any other petal folds them away.
     func hover(at point: CGPoint) {
+        if let choice = sizeChoice(at: point) { hovered = choice.id; return }
         let items = pageItems
-        hovered = Self.slot(at: point, count: items.count).map { items[$0].id }
+        guard let index = Self.slot(at: point, count: items.count) else { hovered = nil; return }
+        hovered = items[index].id
+        showSizes(for: items[index])
     }
 
     func action(at point: CGPoint) -> Action? {
@@ -235,8 +250,63 @@ final class WheelModel: ObservableObject {
         return Self.slot(at: point, count: items.count).map { items[$0] }
     }
 
-    /// Moves the highlight around the ring, turning to the next page at the ends.
+    /// A click or a drop at `point`: a size runs its action at that size, a petal runs as set in Settings.
+    func pick(at point: CGPoint) -> Bool {
+        if let choice = sizeChoice(at: point) { choose(choice); return true }
+        if let action = action(at: point) { run(action); return true }
+        return false
+    }
+
+    /// Where the size ring sits: centred on its petal, but kept above the wheel bar, in degrees clockwise from
+    /// three o'clock like the petals.
+    var sizeArc: (start: Double, step: Double)? {
+        guard let sizing, let index = pageItems.firstIndex(where: { $0.id == sizing.action.id }) else { return nil }
+        let span = min(240, Double(sizing.choices.count) * 18)
+        let center = min(max(Self.angle(of: index, count: pageItems.count), -210 + span / 2), 30 - span / 2)
+        return (center - span / 2, span / Double(sizing.choices.count))
+    }
+
+    private func sizeChoice(at point: CGPoint) -> SizeChoice? {
+        guard let sizing, let arc = sizeArc else { return nil }
+        let distance = hypot(point.x, point.y)
+        guard distance >= WheelMetrics.sizeInner - 8, distance <= WheelMetrics.sizeOuter + WheelMetrics.lift + 16 else { return nil }
+        var offset = (atan2(point.y, point.x) * 180 / .pi - arc.start).truncatingRemainder(dividingBy: 360)
+        if offset < 0 { offset += 360 }
+        let index = Int(offset / arc.step)
+        return index < sizing.choices.count ? sizing.choices[index] : nil
+    }
+
+    private func showSizes(for action: Action) {
+        guard sizing?.action.id != action.id else { return }
+        let choices = sizes(for: action)
+        guard choices != nil || sizing != nil else { return }
+        withAnimation(motion) { sizing = choices.map { (action, $0) } }
+    }
+
+    /// Up arrow: from Compress or Resize into its sizes, starting on the one saved in Settings.
+    func stepOut() -> Bool {
+        guard let sizing, hovered == sizing.action.id else { return false }
+        let prefs = Preferences.shared
+        let saved = sizing.action.id == "tool.compress" ? "size.\(prefs.sizeLimit)"
+            : prefs.photoSize.map { "size.\($0.width)x\($0.height)" } ?? "size.fit"
+        hovered = sizing.choices.contains { $0.id == saved } ? saved : sizing.choices.first?.id
+        return true
+    }
+
+    /// Down arrow: from a size back to its petal.
+    func stepIn() -> Bool {
+        guard let sizing, sizing.choices.contains(where: { $0.id == hovered }) else { return false }
+        hovered = sizing.action.id
+        return true
+    }
+
+    /// Moves the highlight around the ring, turning to the next page at the ends; among sizes, along the sizes.
     func step(_ delta: Int) {
+        if let choices = sizing?.choices, let i = choices.firstIndex(where: { $0.id == hovered }) {
+            hovered = choices[(i + delta + choices.count) % choices.count].id
+            return
+        }
+        defer { if let action = pageItems.first(where: { $0.id == hovered }) { showSizes(for: action) } }
         let items = pageItems
         guard !items.isEmpty else { return }
         guard let id = hovered, let i = items.firstIndex(where: { $0.id == id }) else {
@@ -258,7 +328,7 @@ final class WheelModel: ObservableObject {
 
     func turnPage(_ delta: Int) {
         guard pages > 1 else { return }
-        withAnimation(motion) { page = (page + delta + pages) % pages }
+        withAnimation(motion) { page = (page + delta + pages) % pages; sizing = nil }
     }
 
     /// Mouse wheel: one notch per step. Trackpad: a step every few points of travel.
@@ -280,73 +350,83 @@ final class WheelModel: ObservableObject {
     func takeDropped(_ pasteboard: NSPasteboard) {
         let urls = pasteboard.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL] ?? []
         if !urls.isEmpty { files = urls.map(\.standardizedFileURL) }
-        dropped = true
     }
 
     func runHighlighted() {
-        if let action = pageItems.first(where: { $0.id == hovered }) { run(action) }
+        if let choice = sizing?.choices.first(where: { $0.id == hovered }) { choose(choice) }
+        else if let action = pageItems.first(where: { $0.id == hovered }) { run(action) }
     }
 
     // MARK: Running
 
     // MARK: Sizes
 
-    /// The sizes to offer before running `action`, or nil to run it straight away. Only Compress (on photos, the
-    /// only files a size limit applies to) and Resize have any.
+    /// The sizes Compress (on photos, the only files a size limit applies to) and Resize fan out, or nil.
     private func sizes(for action: Action) -> [SizeChoice]? {
-        func petal(_ key: String, _ title: String, _ symbol: String) -> Action {
-            Action(id: "size.\(key)", title: title, symbol: symbol, group: action.group, kinds: action.kinds, combinesInputs: false,
-                   minimumInputs: 1, targetExtension: nil, needsFFmpeg: false) { urls, _ in urls }
-        }
+        let custom = SizeChoice(id: "size.custom", label: "Custom…", name: "A size of your own", adjust: nil)
         switch action.id {
         case "tool.compress" where files.allSatisfy({ FileKind(url: $0) == .image }):
             return ([0] + SizeLimit.presets).map { bytes in
-                SizeChoice(petal: petal("\(bytes)", bytes == 0 ? "Smallest" : SizeLimit.label(bytes), bytes == 0 ? "sparkles" : "scalemass"),
+                SizeChoice(id: "size.\(bytes)", label: bytes == 0 ? "Smallest" : SizeLimit.label(bytes),
                            name: bytes == 0 ? "Smallest that looks the same" : "Under \(SizeLimit.label(bytes))",
                            adjust: { $0.targetBytes = bytes == 0 ? nil : bytes })
-            }
+            } + [custom]
         case "tool.resize":
             var seen = Set<PixelSize>()
             let exact = PixelSize.presets.flatMap(\.items).filter { seen.insert($0.size).inserted }.map { item in
-                SizeChoice(petal: petal("\(item.size.width)x\(item.size.height)", item.size.label, "aspectratio"),
+                SizeChoice(id: "size.\(item.size.width)x\(item.size.height)", label: item.size.label,
                            name: item.name, adjust: { $0.exactSize = item.size })
             }
-            return [SizeChoice(petal: petal("fit", "Keep shape", "arrow.up.left.and.down.right.magnifyingglass"),
-                               name: "Keep shape, 2048 px", adjust: { $0.exactSize = nil })] + exact
+            return [SizeChoice(id: "size.fit", label: "Keep shape", name: "Keep shape, 2048 px", adjust: { $0.exactSize = nil })]
+                + exact + [custom]
         default:
             return nil
         }
     }
 
-    /// Back from the size ring to the actions; false if the size ring wasn't showing.
+    /// Folds the size ring away; false if it wasn't showing.
     @discardableResult
     func leaveSizes() -> Bool {
-        guard sizing != nil else { return false }
-        withAnimation(motion) { sizing = nil; page = 0; hovered = nil }
+        guard let sizing else { return false }
+        withAnimation(motion) { self.sizing = nil; if hovered?.hasPrefix("size.") == true { hovered = sizing.action.id } }
         return true
     }
 
-    func run(_ action: Action) {
-        if let sizing {
-            guard let choice = sizing.choices.first(where: { $0.petal.id == action.id }) else { return }
-            start(sizing.action, adjust: choice.adjust)
-        } else if let choices = sizes(for: action) {
-            let prefs = Preferences.shared
-            // Start on the size saved in Settings, so Return still runs what it always did.
-            let saved = action.id == "tool.compress" ? "size.\(prefs.sizeLimit)"
-                : prefs.photoSize.map { "size.\($0.width)x\($0.height)" } ?? "size.fit"
-            withAnimation(motion) {
-                sizing = (action, choices)
-                page = (choices.firstIndex { $0.petal.id == saved } ?? 0) / perPage
-                hovered = choices.contains { $0.petal.id == saved } ? saved : nil
-            }
-            Feedback.shared.tick()
-            // After a drop the wheel isn't key yet; the size is picked with a click or the keyboard.
-            if dropMode { focus() }
+    /// Runs the size ring's action at `choice`, or asks for a size of one's own.
+    func choose(_ choice: SizeChoice) {
+        guard let action = sizing?.action else { return }
+        if let adjust = choice.adjust { start(action, adjust: adjust) } else { askCustomSize(for: action) }
+    }
+
+    /// Custom…: a size typed in, "300 KB" for Compress, "800 × 600" (or one number for the long side) for Resize.
+    private func askCustomSize(for action: Action) {
+        let compress = action.id == "tool.compress"
+        let alert = NSAlert()
+        alert.messageText = compress ? "Compress under what size?" : "Resize to what size?"
+        alert.informativeText = compress ? "Type a size such as 300 KB or 1.5 MB."
+            : "Type width × height, such as 800 × 600, or one number for the longest side."
+        let field = NSTextField(frame: NSRect(x: 0, y: 0, width: 240, height: 24))
+        field.placeholderString = compress ? "300 KB" : "800 × 600"
+        alert.accessoryView = field
+        alert.addButton(withTitle: compress ? "Compress" : "Resize")
+        alert.addButton(withTitle: "Cancel")
+        alert.window.initialFirstResponder = field
+        NSApp.activate(ignoringOtherApps: true)
+        guard alert.runModal() == .alertFirstButtonReturn else { return }
+        let text = field.stringValue.trimmingCharacters(in: .whitespaces)
+        if compress, let bytes = Options.parseSize(text), bytes >= 1_000 {
+            start(action) { $0.targetBytes = bytes }
+        } else if !compress, let size = PixelSize(text) {
+            start(action) { $0.exactSize = size }
+        } else if !compress, let side = Int(text), (16...8000).contains(side) {
+            start(action) { $0.exactSize = nil; $0.maxPixel = side }
         } else {
-            start(action)
+            NSSound.beep()
         }
     }
+
+    /// A click on a petal runs it as set in Settings.
+    func run(_ action: Action) { start(action) }
 
     private func start(_ action: Action, adjust: (@Sendable (inout Options) -> Void)? = nil) {
         let files = files
@@ -405,14 +485,16 @@ struct WheelView: View {
                 // Liquid Glass leaves the window's own pixels clear, and macOS hands clicks and drops on clear
                 // pixels to the window behind. A fill too faint to see keeps the ring, gaps included, ours.
                 Circle().fill(.black.opacity(0.01))
-                if Festive.isDiwali {
-                    DiyaRing(radius: WheelMetrics.outerRadius + 10)
-                        .opacity(present ? 1 : 0)
+                    .frame(width: WheelMetrics.ringSide, height: WheelMetrics.ringSide)
+                if model.sizing != nil {
+                    Circle().fill(.black.opacity(0.01))
+                        .frame(width: (WheelMetrics.sizeOuter + WheelMetrics.lift) * 2, height: (WheelMetrics.sizeOuter + WheelMetrics.lift) * 2)
                 }
                 if case .choosing = model.phase {
                     PetalRing(model: model, items: model.pageItems)
-                        .id("\(model.group)-\(model.page)-\(model.sizing?.action.id ?? "")")
+                        .id("\(model.group)-\(model.page)")
                         .transition(Motion.fade(scale: 0.97))
+                    SizeRing(model: model)
                 }
                 WheelHub(model: model)
                     .scaleEffect(present ? 1 : 0.3)
@@ -428,11 +510,6 @@ struct WheelView: View {
                     .opacity(present ? 1 : 0)
                     .position(x: WheelMetrics.center.x, y: WheelMetrics.center.y + WheelMetrics.outerRadius + WheelMetrics.lift + 42)
                     .transition(.opacity)
-            }
-        }
-        .overlay {
-            if Festive.isDiwali, case .finished(_, let result) = model.phase, result.failures.isEmpty {
-                Crackers()
             }
         }
         .frame(width: WheelMetrics.width, height: WheelMetrics.height)
@@ -485,7 +562,7 @@ private struct PetalRing: View {
             }
         }
         .onTapGesture(coordinateSpace: .local) { location in
-            if let action = model.action(at: centered(location)) { model.run(action) }
+            _ = model.pick(at: centered(location))
         }
         // Dropping the dragged files on a petal runs it.
         .onDrop(of: [.fileURL], delegate: RingDropDelegate(model: model, centered: centered))
@@ -515,11 +592,64 @@ private struct RingDropDelegate: DropDelegate {
 
     func performDrop(info: DropInfo) -> Bool {
         MainActor.assumeIsolated {
-            guard let action = model.action(at: centered(info.location)) else { return false }
+            let point = centered(info.location)
+            guard model.action(at: point) != nil || model.sizing != nil else { return false }
             model.takeDropped(NSPasteboard(name: .drag))
-            model.run(action)
-            return true
+            return model.pick(at: point)
         }
+    }
+}
+
+/// Sizes for Compress or Resize, fanned out in a second ring around the wheel while the pointer rests on that
+/// petal. The ring is only drawn here; the petal ring under it finds sizes by position, as it does petals.
+private struct SizeRing: View {
+    @ObservedObject var model: WheelModel
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private typealias M = WheelMetrics
+
+    var body: some View {
+        ZStack {
+            if let sizing = model.sizing, let arc = model.sizeArc {
+                ZStack {
+                    ForEach(Array(sizing.choices.enumerated()), id: \.element.id) { index, choice in
+                        sizePetal(choice, angle: arc.start + arc.step * (Double(index) + 0.5), sector: arc.step)
+                    }
+                }
+                .id(sizing.action.id)
+                .transition(Motion.fade(scale: 0.96))
+            }
+        }
+        .frame(width: M.side, height: M.side)
+        .compositingGroup()
+        .shadow(color: .black.opacity(0.18), radius: 14, y: 5)
+        .animation(reduceMotion ? nil : .spring(response: 0.25, dampingFraction: 1), value: model.hovered)
+        .allowsHitTesting(false)
+    }
+
+    private func sizePetal(_ choice: WheelModel.SizeChoice, angle: Double, sector: Double) -> some View {
+        let highlighted = model.hovered == choice.id
+        let shape = PetalShape(centerAngle: angle, sectorAngle: sector, gapWidth: M.gapWidth, innerRadius: M.sizeInner,
+                               outerRadius: highlighted ? M.sizeOuter + 8 : M.sizeOuter, cornerRadius: 7)
+        let radians = angle * .pi / 180
+        let radius = (M.sizeInner + M.sizeOuter) / 2 + (highlighted ? 4 : 0)
+        let width = max(40, 2 * radius * sin(sector * .pi / 360) - M.gapWidth - 8)
+        return ZStack {
+            Color.clear.wheelGlass(in: shape)
+            shape.fill(highlighted ? Theme.brand : Color.clear)
+            shape.stroke(LinearGradient(colors: [.white.opacity(0.5), .white.opacity(highlighted ? 0.25 : 0.06)],
+                                        startPoint: .top, endPoint: .bottom), lineWidth: highlighted ? 1.5 : 1)
+            Text(choice.label).font(Theme.font(10.5, .semibold))
+                .lineLimit(2).multilineTextAlignment(.center).minimumScaleFactor(0.7)
+                .frame(width: width)
+                .foregroundStyle(highlighted ? Theme.onBrand : Color.primary)
+                .offset(x: cos(radians) * radius, y: sin(radians) * radius)
+        }
+        .frame(width: M.side, height: M.side)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(choice.name)
+        .accessibilityAddTraits(.isButton)
+        .accessibilityAction { model.choose(choice) }
     }
 }
 
@@ -584,7 +714,6 @@ private struct WheelHub: View {
                 .overlay(Circle().strokeBorder(LinearGradient(colors: [.white.opacity(0.5), .white.opacity(0.05)],
                                                               startPoint: .top, endPoint: .bottom), lineWidth: 1))
                 .shadow(color: .black.opacity(0.12), radius: 14)
-            if Festive.isDiwali { Rangoli().frame(width: diameter - 6, height: diameter - 6) }
             content.frame(width: diameter - 26)
         }
         .frame(width: diameter, height: diameter)
@@ -594,7 +723,7 @@ private struct WheelHub: View {
         switch model.phase {
         case .choosing:
             VStack(spacing: 5) {
-                Text(hoverTitle ?? model.sizing?.action.title ?? model.summary)
+                Text(model.hoveredName ?? model.summary)
                     .font(Theme.font(14, .semibold))
                     .lineLimit(2).multilineTextAlignment(.center)
                     .contentTransition(.opacity)
@@ -647,15 +776,10 @@ private struct WheelHub: View {
 
     private var caption: String {
         if model.actions.isEmpty { return "Nothing fits these files" }
-        let waitsForDrop = model.dropMode && !model.dropped
+        let waitsForDrop = model.dropMode
+        if model.hovered == model.sizing?.action.id { return "Or pick a size" }
         if model.hovered != nil { return waitsForDrop ? "Release to run" : "Click to run" }
-        if model.sizing != nil { return "Pick a size" }
-        if Festive.isDiwali { return "Happy Diwali!" }
         return waitsForDrop ? "Drop on an action" : model.group.label
-    }
-
-    private var hoverTitle: String? {
-        model.hovered.flatMap { id in model.visible.first { $0.id == id } }.map(model.title(for:))
     }
 }
 

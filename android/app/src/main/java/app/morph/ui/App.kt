@@ -163,7 +163,6 @@ fun HomeScreen(model: MorphModel, openSettings: () -> Unit) {
     val context = LocalContext.current
     val photos = rememberLauncherForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(50)) { model.open(it) }
     val files = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { model.open(it) }
-    val diwali = remember { Festive.isDiwali }
 
     Column(
         Modifier
@@ -188,25 +187,15 @@ fun HomeScreen(model: MorphModel, openSettings: () -> Unit) {
                 .fillMaxWidth()
                 .shadow(12.dp, RoundedCornerShape(32.dp), ambientColor = Color.Black.copy(alpha = 0.1f), spotColor = Color.Black.copy(alpha = 0.15f))
                 .clip(RoundedCornerShape(32.dp))
-                .then(if (diwali) Modifier.background(Festive.diwaliBrush) else Modifier.background(colors.brand)),
+                .background(colors.brand),
         ) {
-            if (diwali) {
-                DiwaliLights()
-            } else {
-                Box(Modifier.size(160.dp).align(Alignment.TopEnd).offset(50.dp, (-50).dp).clip(CircleShape).background(Color.White.copy(alpha = 0.12f)))
-                Box(Modifier.size(90.dp).align(Alignment.BottomEnd).offset((-30).dp, 30.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.10f)))
-            }
-            val onHero = if (diwali) Festive.diwaliText else colors.onBrand
+            Box(Modifier.size(160.dp).align(Alignment.TopEnd).offset(50.dp, (-50).dp).clip(CircleShape).background(Color.White.copy(alpha = 0.12f)))
+            Box(Modifier.size(90.dp).align(Alignment.BottomEnd).offset((-30).dp, 30.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.10f)))
+            val onHero = colors.onBrand
             Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    if (diwali) {
-                        Text("Happy Diwali!", style = rounded(28, FontWeight.ExtraBold), color = onHero)
-                        Text("Wishing you light, joy and a happy new year. What are we making today?",
-                            style = rounded(15, FontWeight.SemiBold), color = onHero.copy(alpha = 0.9f), modifier = Modifier.padding(end = 72.dp))
-                    } else {
-                        Text("What are we\nmaking today?", style = rounded(28, FontWeight.ExtraBold), color = onHero)
-                        Text("Convert, shrink and clean up any file.", style = rounded(15, FontWeight.SemiBold), color = onHero.copy(alpha = 0.85f))
-                    }
+                    Text("What are we\nmaking today?", style = rounded(28, FontWeight.ExtraBold), color = onHero)
+                    Text("Convert, shrink and clean up any file.", style = rounded(15, FontWeight.SemiBold), color = onHero.copy(alpha = 0.85f))
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     HeroButton("Photos", Icons.Rounded.PhotoLibrary, Modifier.weight(1f)) {
@@ -251,7 +240,7 @@ private fun HeroButton(title: String, icon: ImageVector, modifier: Modifier, onC
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        val tint = if (Festive.isDiwali) Festive.diwaliButton else colors.brandOnWhite
+        val tint = colors.brandOnWhite
         Icon(icon, null, tint = tint, modifier = Modifier.size(20.dp))
         Spacer(Modifier.width(8.dp))
         Text(title, style = rounded(16, FontWeight.Bold), color = tint)
