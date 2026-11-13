@@ -17,7 +17,7 @@ Grab the latest build from [Releases](../../releases/latest):
 | --- | --- | --- |
 | macOS | [App Store](https://apps.apple.com/in/app/morph-file-converter/id6827647585) | macOS 14 or later, Apple Silicon or Intel |
 | Windows | [Microsoft Store](https://apps.microsoft.com/detail/9PHWJVRC85DW), or [`Morph-1.0.1-x64-setup.exe`](https://github.com/geetxnshgoyal/morph/releases/download/v1.0.0/Morph-1.0.1-x64-setup.exe) ([`arm64`](https://github.com/geetxnshgoyal/morph/releases/download/v1.0.0/Morph-1.0.1-arm64-setup.exe) for Arm PCs) | Windows 10 version 1809 or later, or Windows 11 |
-| Android | Google Play is in beta, out around 11 November 2026: [join the beta](https://morph.geetanshgoyal.in/android.html) to get it now, or use the APK from Releases | Android 10 or later |
+| Android | [Google Play](https://play.google.com/store/apps/details?id=app.morph), or the APK from Releases | Android 10 or later |
 | iOS | [App Store](https://apps.apple.com/in/app/morph-file-converter/id6827647585) | iOS 17 or later |
 
 **macOS:** install Morph from the [App Store](https://apps.apple.com/in/app/morph-file-converter/id6827647585). It's the same listing as the iOS app — available for Mac, iPhone and iPad.
@@ -28,7 +28,7 @@ Grab the latest build from [Releases](../../releases/latest):
 
 **Windows:** get Morph from the [Microsoft Store](https://apps.microsoft.com/detail/9PHWJVRC85DW), or run the setup file. If something breaks, please [report it](https://github.com/geetxnshgoyal/morph/issues/new). It installs for your user only, with no admin prompt. The installer isn't code-signed yet, so SmartScreen may say it doesn't recognise the app: click **More info**, then **Run anyway**. Morph then sits in the taskbar corner; see [windows/README.md](windows/README.md).
 
-**Android:** to get Morph from Google Play now, join the [Morph testers group](https://groups.google.com/g/morph-tester), tap **Become a tester** on the [opt-in page](https://play.google.com/apps/testing/app.morph) with the same Google account, then install it from the [Play Store](https://play.google.com/store/apps/details?id=app.morph). Or open the APK on your phone and allow installs from that source when asked. See [android/README.md](android/README.md).
+**Android:** install Morph from [Google Play](https://play.google.com/store/apps/details?id=app.morph). Or open the APK on your phone and allow installs from that source when asked. See [android/README.md](android/README.md).
 
 ## The Mac app
 
