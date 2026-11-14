@@ -15,7 +15,7 @@ import re
 SITE = "https://morph.geetanshgoyal.in"
 DOCS = pathlib.Path(__file__).resolve().parent.parent / "docs"
 PLAY = "https://play.google.com/store/apps/details?id=app.morph"
-UPDATED = "2026-11-06"
+UPDATED = "2026-11-14"
 TESTFLIGHT = "https://testflight.apple.com/join/6fFuMydz"
 APPSTORE_IOS = "https://apps.apple.com/in/app/morph-file-converter/id6827647585"
 
@@ -863,11 +863,13 @@ def page(p, by_slug):
             APPSTORE_IOS,
             "https://github.com/geetxnshgoyal/morph/releases/download/v1.0.0/Morph-1.0.0.dmg",
             "https://apps.microsoft.com/detail/9PHWJVRC85DW",
+            PLAY,
         ],
         "sameAs": [
             "https://github.com/geetxnshgoyal/morph",
             APPSTORE_IOS,
             "https://apps.microsoft.com/detail/9PHWJVRC85DW",
+            PLAY,
         ],
         "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "isAccessibleForFree": True,
     }
@@ -895,6 +897,7 @@ def page(p, by_slug):
 <meta property="og:site_name" content="Morph">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#0B6E69">
+<meta name="apple-itunes-app" content="app-id=6827647585">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/icon-512.png" type="image/png" sizes="512x512">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
