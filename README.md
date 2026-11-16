@@ -16,7 +16,7 @@ Grab the latest build from [Releases](../../releases/latest):
 | Platform | File | Needs |
 | --- | --- | --- |
 | macOS | [App Store](https://apps.apple.com/in/app/morph-file-converter/id6827647585) | macOS 14 or later, Apple Silicon or Intel |
-| Windows | [Microsoft Store](https://apps.microsoft.com/detail/9PHWJVRC85DW), or [`Morph-1.0.1-x64-setup.exe`](https://github.com/geetxnshgoyal/morph/releases/download/v1.0.0/Morph-1.0.1-x64-setup.exe) ([`arm64`](https://github.com/geetxnshgoyal/morph/releases/download/v1.0.0/Morph-1.0.1-arm64-setup.exe) for Arm PCs) | Windows 10 version 1809 or later, or Windows 11 |
+| Windows | [Microsoft Store](https://apps.microsoft.com/detail/9PHWJVRC85DW), or [`Morph-1.0.2-x64-setup.exe`](https://github.com/geetxnshgoyal/morph/releases/download/windows-1.0.2/Morph-1.0.2-x64-setup.exe) ([`arm64`](https://github.com/geetxnshgoyal/morph/releases/download/windows-1.0.2/Morph-1.0.2-arm64-setup.exe) for Arm PCs) | Windows 10 version 1809 or later, or Windows 11 |
 | Android | [Google Play](https://play.google.com/store/apps/details?id=app.morph), or the APK from Releases | Android 10 or later |
 | iOS | [App Store](https://apps.apple.com/in/app/morph-file-converter/id6827647585) | iOS 17 or later |
 

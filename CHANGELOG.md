@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 2026-11-16: Mac 1.0.2, Windows 1.0.2, Android 1.0.5, iPhone and iPad 1.0.3
 
 ### Everywhere
 - The Diwali look is gone, and the app icon is Morph's own white drops on teal again everywhere.
@@ -27,15 +27,18 @@
 - A damaged or cut-off DOCX or ODT is refused instead of closing the app.
 - The Diwali crackers stop animating once the sparks have fallen, instead of redrawing for as long as the result stays open.
 - **DOCX and ODT**, in and out, like the Mac and Windows apps.
+- With Reduce Motion on, a finished job fades in instead of popping and bouncing.
 - Opening two files with the same name works (the second becomes "name 2"), and copies of imported files are cleared at launch.
 
 ### Windows
 - **Version 1.0.2. Sizes on the wheel,** as on the Mac: rest on Compress or Resize for a ring of sizes around the wheel, with Custom… for your own.
+- Narrator can read and press every petal and size on the wheel, and reads out the highlighted one as the arrow keys move. The tray panel's icon buttons have names.
 - ffmpeg is no longer looked for in `C:\ffmpeg\bin`, a folder any user of a shared PC can create.
 - Version 1.0.1, for the Microsoft Store update and the installers.
 
 ### Android
 - **Version 1.0.5.** No more Diwali look, and the app icon is Morph's own again. Built with Android Gradle plugin 9, with R8's optimized resource shrinking. Version 1.0.4 (not released on its own): Sharing a file to Morph from another app opens just the actions sheet, floating over that app, and closing it goes straight back there. Photos and videos Morph makes now land in your gallery (Pictures › Morph and Movies › Morph); everything else still goes to Downloads › Morph. Deleting a job's results asks first, and the Share and Delete buttons are easier to hit. A file too large for the phone's memory fails on its own instead of closing the app, and one unreadable file no longer cancels a whole share. The themes no longer set the status and navigation bar colours Android 15 deprecates.
+- TalkBack reads each action as a button ("Convert to PNG") and says which size is selected. With animations turned off, the actions sheet no longer springs, pops or spins.
 - **Version 1.0.3.** TIFF files open: Android has no TIFF decoder, so every action offered for a TIFF used to fail with "invalid input". Morph now reads TIFFs itself (uncompressed, LZW, Deflate and PackBits; grey, RGB and RGBA at 8 or 16 bits). The app icon is the new gold-on-teal icon from the App Store.
 - **Diwali, version 1.0.2.** From 5 to 15 November the home screen's card turns saffron and maroon, wishes you a happy Diwali, and lights a diya with twinkling sparkles (held still when animations are off). The rest of the year it's Morph's usual teal.
 - **Every Mac action, version 1.0.1.** HEIC, TIFF, GIF and BMP; camera RAW (DNG and others developed by Android, CR3 and the rest from their full-size preview); MOV and GIF from video; WAV, AIFF, FLAC, OGG and OPUS; documents (DOCX, ODT, RTF, HTML, Markdown, TXT, PDF), subtitles and data tables; PDF text, merge, split and compress; Blur Faces, Hide Personal Info and Read QR; Snapshots, Normalize Loudness and Trim Silence; Remove Metadata for video and audio; Extract for zip and tar archives. Everything still runs on the phone, with no internet permission.
