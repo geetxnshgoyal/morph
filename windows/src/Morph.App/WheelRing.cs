@@ -1,5 +1,8 @@
 using System.Globalization;
 using System.Windows;
+using System.Windows.Automation;
+using System.Windows.Automation.Peers;
+using System.Windows.Automation.Provider;
 using System.Windows.Media;
 
 namespace Morph.App;
@@ -24,9 +27,34 @@ public sealed class WheelRing : FrameworkElement
         model.Changed += Animate;
         model.Turned += () => { bloom = Motion ? 0 : 1; Animate(); };
         bloom = Motion ? 0 : 1;
+        // Narrator reads the highlighted slice out as the arrows move, since the slices are drawn, not controls.
+        AutomationProperties.SetLiveSetting(this, AutomationLiveSetting.Assertive);
+        model.Changed += Announce;
         Loaded += (_, _) => Animate();
         Unloaded += (_, _) => StopAnimating();
     }
+
+    string? announced;
+
+    void Announce()
+    {
+        var spoken = Spoken(model);
+        if (spoken == announced) return;
+        announced = spoken;
+        if (UIElementAutomationPeer.FromElement(this) is not { } peer) return;
+        peer.ResetChildrenCache();
+        peer.RaiseAutomationEvent(AutomationEvents.LiveRegionChanged);
+    }
+
+    /// What the hub says, for screen readers.
+    internal static string Spoken(WheelModel model) => model.Phase switch
+    {
+        WheelPhase.Running => $"Working: {model.Running?.Title}",
+        WheelPhase.Finished => model.Result is { Failures.Count: > 0 } r ? $"{r.Failures.Count} failed" : "Done",
+        _ => $"{model.HoverTitle ?? model.Summary}, {model.Caption}",
+    };
+
+    protected override AutomationPeer OnCreateAutomationPeer() => new WheelRingPeer(this, model);
 
     /// Windows' "Animation effects" setting.
     public static bool Motion => !Snapshots.Active && SystemParameters.ClientAreaAnimation;
@@ -235,4 +263,67 @@ public sealed class WheelRing : FrameworkElement
         geometry.Freeze();
         return geometry;
     }
+}
+
+/// The ring for UI Automation: a list whose items are the petals and sizes showing, each one invokable.
+sealed class WheelRingPeer(WheelRing owner, WheelModel model) : FrameworkElementAutomationPeer(owner)
+{
+    protected override string GetClassNameCore() => "WheelRing";
+    protected override AutomationControlType GetAutomationControlTypeCore() => AutomationControlType.List;
+    protected override string GetNameCore() => WheelRing.Spoken(model);
+
+    protected override List<AutomationPeer> GetChildrenCore()
+    {
+        var peers = new List<AutomationPeer>();
+        if (model.Phase != WheelPhase.Choosing || !model.KnowsFiles) return peers;
+        var c = new Point(WheelGeometry.Side / 2, WheelGeometry.Side / 2);
+        var items = model.PageItems;
+        for (var i = 0; i < items.Count; i++)
+        {
+            var action = items[i];
+            var name = action.Group == ActionGroup.Convert ? $"Convert to {action.Title}" : action.Title;
+            var shape = WheelRing.Petal(c, WheelGeometry.Angle(i, items.Count), 360.0 / items.Count, WheelGeometry.GapWidth, WheelGeometry.InnerRadius, WheelGeometry.OuterRadius);
+            peers.Add(new WheelSlicePeer(owner, name, shape.Bounds, () => model.Run(action)));
+        }
+        if (model.Sizing is { } sizing && model.SizeArc is { } arc)
+            for (var i = 0; i < sizing.Choices.Count; i++)
+            {
+                var choice = sizing.Choices[i];
+                var name = choice.Adjust is null ? "Custom size…" : choice.Name;
+                var shape = WheelRing.Petal(c, arc.Start + arc.Step * (i + 0.5), arc.Step, WheelGeometry.GapWidth, WheelGeometry.SizeInner, WheelGeometry.SizeOuter, 7);
+                peers.Add(new WheelSlicePeer(owner, name, shape.Bounds, () => model.Choose(choice)));
+            }
+        return peers;
+    }
+}
+
+/// One petal or size: a button Narrator can find, read and press.
+sealed class WheelSlicePeer(WheelRing owner, string name, Rect bounds, Action invoke) : AutomationPeer, IInvokeProvider
+{
+    public void Invoke() => invoke();
+    public override object? GetPattern(PatternInterface pattern) => pattern == PatternInterface.Invoke ? this : null;
+    protected override string GetNameCore() => name;
+    protected override AutomationControlType GetAutomationControlTypeCore() => AutomationControlType.ListItem;
+    protected override string GetClassNameCore() => "WheelSlice";
+    protected override string GetAutomationIdCore() => name;
+    protected override Rect GetBoundingRectangleCore() =>
+        PresentationSource.FromVisual(owner) is null ? Rect.Empty : new Rect(owner.PointToScreen(bounds.TopLeft), owner.PointToScreen(bounds.BottomRight));
+    protected override Point GetClickablePointCore() => GetBoundingRectangleCore() is { IsEmpty: false } r ? new Point(r.X + r.Width / 2, r.Y + r.Height / 2) : new Point(double.NaN, double.NaN);
+    protected override List<AutomationPeer>? GetChildrenCore() => null;
+    protected override bool IsContentElementCore() => true;
+    protected override bool IsControlElementCore() => true;
+    protected override AutomationPeer? GetLabeledByCore() => null;
+    protected override bool IsEnabledCore() => true;
+    protected override bool IsKeyboardFocusableCore() => false;
+    protected override bool HasKeyboardFocusCore() => false;
+    protected override bool IsOffscreenCore() => !owner.IsVisible;
+    protected override bool IsPasswordCore() => false;
+    protected override bool IsRequiredForFormCore() => false;
+    protected override string GetAcceleratorKeyCore() => "";
+    protected override string GetAccessKeyCore() => "";
+    protected override string GetHelpTextCore() => "";
+    protected override string GetItemStatusCore() => "";
+    protected override string GetItemTypeCore() => "";
+    protected override AutomationOrientation GetOrientationCore() => AutomationOrientation.None;
+    protected override void SetFocusCore() { }
 }

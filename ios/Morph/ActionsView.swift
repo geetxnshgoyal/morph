@@ -212,6 +212,7 @@ struct RunningView: View {
 }
 
 struct ResultView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let action: Action
     let result: RunResult
     let onDone: () -> Void
@@ -233,16 +234,18 @@ struct ResultView: View {
                 ZStack {
                     // A ring ripples out once as the result lands.
                     Circle().stroke(ok ? Theme.brand : Color.red, lineWidth: 3)
-                        .scaleEffect(pop && !Motion.reduced ? 1.9 : 1)
+                        .scaleEffect(pop && !reduceMotion ? 1.9 : 1)
                         .opacity(pop ? 0 : 0.9)
                         .animation(.easeOut(duration: 0.9), value: pop)
                     Circle().fill(ok ? Theme.brand : Color.red)
                     Image(systemName: unchanged ? "equal" : ok ? "checkmark" : "exclamationmark").font(.system(size: 40, weight: .bold)).foregroundStyle(ok ? Theme.onBrand : .white)
-                        .symbolEffect(.bounce, value: pop)
+                        .symbolEffect(.bounce, value: reduceMotion ? false : pop)
                 }
                 .frame(width: 96, height: 96)
                 .shadow(color: .black.opacity(0.12), radius: 14, y: 6)
-                .scaleEffect(pop ? 1 : 0.4)
+                // With Reduce Motion the result fades in at full size instead of popping.
+                .scaleEffect(pop || reduceMotion ? 1 : 0.4)
+                .opacity(pop || !reduceMotion ? 1 : 0)
                 .padding(.top, 30)
 
                 VStack(spacing: 4) {

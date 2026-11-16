@@ -1,12 +1,16 @@
 package app.morph.ui
 
+import android.animation.ValueAnimator
 import android.text.format.Formatter
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
@@ -71,6 +75,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -96,7 +104,10 @@ fun ActionsSheet(job: Job, model: MorphModel) {
         AnimatedContent(
             job.phase,
             contentKey = { it::class },
-            transitionSpec = { (fadeIn(tween(220)) + scaleIn(initialScale = 0.96f)) togetherWith fadeOut(tween(150)) },
+            transitionSpec = {
+                if (!ValueAnimator.areAnimatorsEnabled()) EnterTransition.None togetherWith ExitTransition.None
+                else (fadeIn(tween(220)) + scaleIn(initialScale = 0.96f)) togetherWith fadeOut(tween(150))
+            },
             label = "phase",
         ) { phase ->
             Column(
@@ -138,7 +149,10 @@ private fun Choosing(job: Job, model: MorphModel) {
         PillPicker(job.groups, job.group, Group::label) { job.group = it }
         Spacer(Modifier.height(22.dp))
     }
-    AnimatedContent(job.group, transitionSpec = { fadeIn(tween(200)) + scaleIn(initialScale = 0.95f) togetherWith fadeOut(tween(120)) },
+    AnimatedContent(job.group, transitionSpec = {
+        if (!ValueAnimator.areAnimatorsEnabled()) EnterTransition.None togetherWith ExitTransition.None
+        else fadeIn(tween(200)) + scaleIn(initialScale = 0.95f) togetherWith fadeOut(tween(120))
+    },
         label = "group") { group ->
         FlowRow(
             Modifier.fillMaxWidth(),
@@ -157,7 +171,8 @@ private fun Choosing(job: Job, model: MorphModel) {
 
 @Composable
 private fun ActionBubble(action: Action, modifier: Modifier, onClick: () -> Unit) {
-    Column(modifier.tap(onClick), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    val label = if (action.group == Group.CONVERT) "Convert to ${action.title}" else action.title
+    Column(modifier.tap(onClick).semantics(mergeDescendants = true) { contentDescription = label; role = Role.Button }, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Box(
             Modifier.size(68.dp).shadow(6.dp, CircleShape, ambientColor = Color.Black.copy(alpha = 0.1f)).clip(CircleShape).background(colors.surface),
             contentAlignment = Alignment.Center,
@@ -177,7 +192,8 @@ private fun Running(phase: Phase.Running) {
         Box(Modifier.size(130.dp), contentAlignment = Alignment.Center) {
             val brand = colors.brand
             val tint = colors.tint
-            Canvas(Modifier.size(130.dp).rotate(if (phase.total > 1) 0f else spin)) {
+            // With animations off the ring holds still; the text below says it's working.
+            Canvas(Modifier.size(130.dp).rotate(if (phase.total > 1 || !ValueAnimator.areAnimatorsEnabled()) 0f else spin)) {
                 val stroke = Stroke(12.dp.toPx(), cap = StrokeCap.Round)
                 drawArc(tint, 0f, 360f, false, style = stroke)
                 drawArc(brand, -90f, 360f * fraction, false, style = stroke)
@@ -196,7 +212,7 @@ private fun Finished(phase: Phase.Finished, model: MorphModel) {
     val ok = phase.failures.isEmpty()
     var shown by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { shown = true }
-    val pop by animateFloatAsState(if (shown) 1f else 0.4f, spring(dampingRatio = 0.45f, stiffness = 300f), label = "pop")
+    val pop by animateFloatAsState(if (shown) 1f else 0.4f, if (ValueAnimator.areAnimatorsEnabled()) spring(dampingRatio = 0.45f, stiffness = 300f) else snap(), label = "pop")
 
     Column(Modifier.fillMaxWidth().padding(top = 18.dp), horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(18.dp)) {

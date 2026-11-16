@@ -481,7 +481,7 @@ internal fun SizeLimitPicker(limit: Int, onChange: (Int) -> Unit) {
             (listOf(0) + SizeLimit.presets).forEach { bytes ->
                 DropdownMenuItem(
                     text = { Text(SizeLimit.label(bytes), style = rounded(15, if (bytes == limit) FontWeight.Bold else FontWeight.Medium)) },
-                    trailingIcon = { if (bytes == limit) Icon(Icons.Rounded.Check, null, tint = colors.brandText) },
+                    trailingIcon = { if (bytes == limit) Icon(Icons.Rounded.Check, "Selected", tint = colors.brandText) },
                     onClick = { onChange(bytes); open = false },
                 )
             }
@@ -516,14 +516,14 @@ internal fun PhotoSizePicker(size: PixelSize?, onChange: (PixelSize?) -> Unit) {
         SoftButton((size?.label ?: "Off") + "  ▾") { open = true }
         DropdownMenu(open, onDismissRequest = { open = false }) {
             DropdownMenuItem(text = { Text("Off", style = rounded(15, if (size == null) FontWeight.Bold else FontWeight.Medium)) },
-                trailingIcon = { if (size == null) Icon(Icons.Rounded.Check, null, tint = colors.brandText) },
+                trailingIcon = { if (size == null) Icon(Icons.Rounded.Check, "Selected", tint = colors.brandText) },
                 onClick = { onChange(null); open = false })
             PixelSize.presets.forEach { (group, items) ->
                 Text(group, style = rounded(12, FontWeight.Bold), color = colors.secondary, modifier = Modifier.padding(start = 12.dp, top = 10.dp, bottom = 2.dp))
                 items.forEach { (name, preset) ->
                     DropdownMenuItem(
                         text = { Text("$name · ${preset.label}", style = rounded(15, if (preset == size) FontWeight.Bold else FontWeight.Medium)) },
-                        trailingIcon = { if (preset == size) Icon(Icons.Rounded.Check, null, tint = colors.brandText) },
+                        trailingIcon = { if (preset == size) Icon(Icons.Rounded.Check, "Selected", tint = colors.brandText) },
                         onClick = { onChange(preset); open = false },
                     )
                 }

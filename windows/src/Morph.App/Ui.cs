@@ -94,6 +94,8 @@ public static class Ui
     public static Button Plain(object content, Action onClick, string? tip = null)
     {
         var button = new Button { Content = content, Style = (Style)Application.Current.FindResource("PlainButton"), ToolTip = tip };
+        // Icon-only buttons would read out their glyph.
+        if (tip is not null) System.Windows.Automation.AutomationProperties.SetName(button, tip);
         button.Click += (_, _) => onClick();
         return button;
     }
