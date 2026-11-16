@@ -3,8 +3,6 @@ import { Wheel } from './wheel.js';
 import { SAMPLE_FILES, wheelFor } from './content.js';
 import { iconSvg } from './icons.js';
 
-const REPO = 'CoPrime69/ShiftDrop';
-
 // Icons named in the HTML (data-icon="download").
 for (const el of document.querySelectorAll('[data-icon]')) {
   el.insertAdjacentHTML('afterbegin', iconSvg(el.dataset.icon, el.dataset.iconClass || 'icon'));
@@ -60,42 +58,3 @@ if (header) {
   window.addEventListener('scroll', onScroll, { passive: true });
 }
 
-// The header's Star button shows the repository's star count, when GitHub answers.
-(async () => {
-  const count = document.querySelector('[data-stars]');
-  if (!count) return;
-  try {
-    const res = await fetch(`https://api.github.com/repos/${REPO}`, { headers: { Accept: 'application/vnd.github+json' } });
-    if (!res.ok) return;
-    const stars = (await res.json()).stargazers_count;
-    if (!Number.isFinite(stars) || stars < 1) return; // no count rather than a 0
-    count.textContent = stars >= 1000 ? `${(stars / 1000).toFixed(stars >= 10000 ? 0 : 1)}k` : String(stars);
-    count.hidden = false;
-    count.parentElement.setAttribute('aria-label', `Star ShiftDrop on GitHub (${stars} stars)`);
-  } catch {
-    // Offline or rate-limited: the button still opens the repository.
-  }
-})();
-
-// Point the download buttons straight at the latest installer. Without script, or if GitHub doesn't
-// answer, they open the latest release page, which has the same file.
-(async () => {
-  const buttons = document.querySelectorAll('[data-download]');
-  if (!buttons.length) return;
-  try {
-    const res = await fetch(`https://api.github.com/repos/${REPO}/releases/latest`, { headers: { Accept: 'application/vnd.github+json' } });
-    if (!res.ok) return;
-    const release = await res.json();
-    const asset = release.assets?.find((a) => /^ShiftDrop-Setup-.*\.exe$/i.test(a.name));
-    if (!asset) return;
-    const version = String(release.tag_name || '').replace(/^v/i, '');
-    for (const b of buttons) {
-      b.href = asset.browser_download_url;
-      b.removeAttribute('target'); // a straight download needs no new tab
-    }
-    for (const v of document.querySelectorAll('[data-version]')) v.textContent = version;
-    for (const s of document.querySelectorAll('[data-size]')) s.textContent = `${Math.round(asset.size / 1048576)} MB`;
-  } catch {
-    // Offline or rate-limited: the release page links stay.
-  }
-})();

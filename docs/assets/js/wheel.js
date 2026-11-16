@@ -1,4 +1,4 @@
-// The ShiftDrop wheel, drawn in SVG with the app's own geometry and motion.
+// The Morph wheel, drawn in SVG with the app's own geometry and motion.
 //
 // Everything here mirrors the Windows app: src/keyboard/WheelLayout.* (rings, slots, hit-testing),
 // src/keyboard/WheelLabels.* (one label style, one or two lines, never cut), and src/Overlay.cpp

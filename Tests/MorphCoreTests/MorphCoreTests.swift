@@ -63,4 +63,12 @@ final class MorphCoreTests: XCTestCase {
             XCTAssertFalse(result.outputs.isEmpty, action.id)
         }
     }
+
+    func testOutputNamesFromOtherAppsStayInFolder() {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        for base in ["../../x", "/etc/passwd", "..", "", "a/b"] {
+            let url = Output.unique(in: dir, base: base, ext: "txt")
+            XCTAssertEqual(url.deletingLastPathComponent().standardizedFileURL.path, dir.standardizedFileURL.path, base)
+        }
+    }
 }

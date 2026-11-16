@@ -21,6 +21,33 @@ public class SupportTests : Scratch
     }
 
     [Fact]
+    public void NamesFromOtherAppsStayInFolder()
+    {
+        foreach (var name in new[] { "../../x", "..\\..\\x", "C:\\Windows\\x", "..", "", "a:b" })
+            Assert.Equal(Path.GetFullPath(Dir), Path.GetDirectoryName(Path.GetFullPath(Output.Unique(Dir, name, "txt"))));
+    }
+
+    [Fact]
+    public void ScriptDisguisedAsJpegIsNotRun()
+    {
+        var marker = Write("marker.txt", "secret");
+        var script = Write("script.jpg", $"push graphic-context\nviewbox 0 0 8 8\ntext 0,8 '@{marker}'\npop graphic-context\n");
+        Assert.Throws<MorphException>(() => ImageOps.Load(script));
+        // Coders that read other files are off even when asked for by name.
+        Assert.ThrowsAny<MagickException>(() => new MagickImage("text:" + marker));
+    }
+
+    [Fact]
+    public void MisnamedImagesStillOpen()
+    {
+        var png = PathOf("real.png");
+        using (var image = new MagickImage(MagickColors.Red, 4, 4)) image.Write(png, MagickFormat.Png);
+        File.Move(png, PathOf("looks.jpg"));
+        using var opened = ImageOps.Load(PathOf("looks.jpg"));
+        Assert.Equal(4u, opened.Width);
+    }
+
+    [Fact]
     public void Kinds()
     {
         Assert.Equal(FileKind.Image, FileKinds.Of("a.HEIC"));

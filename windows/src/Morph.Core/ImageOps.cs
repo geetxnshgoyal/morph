@@ -50,13 +50,50 @@ public static class ImageFormats
 
 public static class ImageOps
 {
+    static readonly Dictionary<string, MagickFormat> named = new()
+    {
+        ["jpg"] = MagickFormat.Jpeg, ["jpeg"] = MagickFormat.Jpeg, ["jpe"] = MagickFormat.Jpeg, ["jfif"] = MagickFormat.Jpeg,
+        ["png"] = MagickFormat.Png, ["heic"] = MagickFormat.Heic, ["heif"] = MagickFormat.Heic, ["webp"] = MagickFormat.WebP,
+        ["avif"] = MagickFormat.Avif, ["tif"] = MagickFormat.Tiff, ["tiff"] = MagickFormat.Tiff, ["gif"] = MagickFormat.Gif,
+        ["bmp"] = MagickFormat.Bmp, ["dib"] = MagickFormat.Bmp, ["ico"] = MagickFormat.Ico, ["jxl"] = MagickFormat.Jxl,
+        ["dng"] = MagickFormat.Dng, ["cr2"] = MagickFormat.Cr2, ["cr3"] = MagickFormat.Cr3, ["nef"] = MagickFormat.Nef,
+        ["arw"] = MagickFormat.Arw, ["raf"] = MagickFormat.Raf, ["orf"] = MagickFormat.Orf, ["rw2"] = MagickFormat.Rw2,
+    };
+
+    /// Reads with the decoder the extension names, then (for a misnamed file) the raster format its first bytes show.
+    /// Never lets ImageMagick guess from the bytes alone: a ".jpg" that is really a drawing script would run.
+    internal static T Read<T>(string path, Func<MagickReadSettings, T> read)
+    {
+        var actual = Signature(path);
+        var format = named.GetValueOrDefault(FileKinds.Extension(path), actual ?? MagickFormat.Unknown);
+        if (format == MagickFormat.Unknown) throw new MorphException($"{Path.GetFileName(path)} isn't a readable image");
+        try { return read(new MagickReadSettings { Format = format }); }
+        catch (MagickException) when (actual is { } other && other != format) { return read(new MagickReadSettings { Format = other }); }
+    }
+
+    static MagickFormat? Signature(string path)
+    {
+        var b = new byte[16];
+        try { using var f = File.OpenRead(path); if (f.Read(b) < 12) return null; } catch (IOException) { return null; }
+        string Ascii(int at, int n) => System.Text.Encoding.ASCII.GetString(b, at, n);
+        if (b[0] == 0xFF && b[1] == 0xD8) return MagickFormat.Jpeg;
+        if (b[0] == 0x89 && Ascii(1, 3) == "PNG") return MagickFormat.Png;
+        if (Ascii(0, 4) == "GIF8") return MagickFormat.Gif;
+        if (Ascii(0, 4) == "RIFF" && Ascii(8, 4) == "WEBP") return MagickFormat.WebP;
+        if (Ascii(0, 2) == "BM") return MagickFormat.Bmp;
+        if (Ascii(0, 4) is "II*\0" or "MM\0*") return MagickFormat.Tiff;
+        if (Ascii(4, 4) == "ftyp") return Ascii(8, 4) is "avif" or "avis" ? MagickFormat.Avif : MagickFormat.Heic;
+        if (b[0] == 0xFF && b[1] == 0x0A || Ascii(4, 4) == "JXL ") return MagickFormat.Jxl;
+        return null;
+    }
+
     /// Decodes the first frame with its EXIF orientation applied; downscales (never upscales) to `maxPixel`. SVGs are
     /// drawn at that size.
     public static MagickImage Load(string path, int? maxPixel = null)
     {
         if (VectorOps.IsSvg(path)) return VectorOps.Render(path, maxPixel);
         MagickImage image;
-        try { image = new MagickImage(path); }
+        try { image = Read(path, settings => new MagickImage(path, settings)); }
         catch (MagickException) { throw new MorphException($"{Path.GetFileName(path)} isn't a readable image"); }
         image.AutoOrient();
         if (maxPixel is int max && Math.Max(image.Width, image.Height) > max) image.Resize(new MagickGeometry((uint)max, (uint)max));
@@ -95,7 +132,7 @@ public static class ImageOps
         // Animated GIFs and WebPs keep every frame when they become a GIF.
         if (format == ImageFormat.Gif && options.MaxPixel is null && FileKinds.Extension(path) is "gif" or "webp")
         {
-            using var frames = new MagickImageCollection(path);
+            using var frames = Read(path, settings => new MagickImageCollection(path, settings));
             if (frames.Count > 1)
             {
                 frames.Coalesce();
@@ -309,7 +346,7 @@ public static class ImageOps
     /// Human-readable list of identifying metadata in the first frame.
     public static List<string> PrivateFields(string path)
     {
-        using var image = new MagickImage(path);
+        using var image = Read(path, settings => new MagickImage(path, settings));
         var found = new List<string>();
         if (image.GetExifProfile() is { } exif) Exif.Describe(Exif.Parse(exif.ToByteArray()).Tags, found);
         if (image.GetIptcProfile() is not null) found.Add("IPTC captions/credits");
@@ -360,7 +397,7 @@ public static class ImageOps
     {
         try
         {
-            using var image = new MagickImage(path);
+            using var image = Read(path, settings => new MagickImage(path, settings));
             using var pixels = image.GetPixelsUnsafe();
             return System.Convert.ToHexString(SHA256.HashData(pixels.ToByteArray(PixelMapping.RGBA) ?? []));
         }
@@ -369,7 +406,7 @@ public static class ImageOps
 
     public static Dictionary<string, string> Summary(string path)
     {
-        var info = new MagickImageInfo(path);
+        var info = Read(path, settings => new MagickImageInfo(path, settings));
         var privateFields = PrivateFields(path);
         return new()
         {

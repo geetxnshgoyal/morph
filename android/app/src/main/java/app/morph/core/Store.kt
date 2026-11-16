@@ -31,10 +31,12 @@ object Inbox {
 
     /** The original file name, with an extension guessed from the MIME type if it has none. */
     private fun displayName(context: Context, uri: Uri): String {
-        val name = context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { c ->
+        val raw = context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { c ->
             if (c.moveToFirst()) c.getString(0) else null
-        } ?: uri.lastPathSegment?.substringAfterLast('/') ?: "file"
-        if (name.contains('.')) return name.replace('/', '_')
+        } ?: uri.lastPathSegment ?: "file"
+        // The sending app picks this name; keep only its last component so the copy stays in the inbox.
+        val name = raw.substringAfterLast('/').substringAfterLast('\\').takeUnless { it.isBlank() || it == "." || it == ".." } ?: "file"
+        if (name.contains('.')) return name
         val ext = context.contentResolver.getType(uri)?.let { MimeTypeMap.getSingleton().getExtensionFromMimeType(it) }
         return if (ext != null) "$name.$ext" else name
     }

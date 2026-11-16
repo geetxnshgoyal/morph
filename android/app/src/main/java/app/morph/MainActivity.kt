@@ -1,5 +1,6 @@
 package app.morph
 
+import android.content.ContentResolver
 import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.net.Uri
@@ -36,10 +37,11 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-/** The files a share, a multi-share or an "Open with" intent carries. */
+/** The files a share, a multi-share or an "Open with" intent carries. Only content:// URIs: a file:// URI would be
+ *  opened with Morph's own permissions, letting the sender point at Morph's private files. */
 fun Intent.sharedUris(): List<Uri> = when (action) {
     Intent.ACTION_SEND -> listOfNotNull(IntentCompat.getParcelableExtra(this, Intent.EXTRA_STREAM, Uri::class.java))
     Intent.ACTION_SEND_MULTIPLE -> IntentCompat.getParcelableArrayListExtra(this, Intent.EXTRA_STREAM, Uri::class.java).orEmpty()
     Intent.ACTION_VIEW -> listOfNotNull(data)
     else -> emptyList()
-}
+}.filter { it.scheme == ContentResolver.SCHEME_CONTENT }

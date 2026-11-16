@@ -186,6 +186,9 @@ public static class Output
     /// "name.ext", or "name 2.ext", "name 3.ext"… if taken. An empty `ext` names a folder.
     public static string Unique(string folder, string name, string ext)
     {
+        // Names can come from other apps; keep only the last component so the result stays in `folder`.
+        name = name.Replace(':', '-').Split('/', '\\')[^1];
+        if (name is "" or "." or "..") name = "File";
         lock (gate)
         {
             string Make(string n) => Path.Combine(folder, ext.Length == 0 ? n : $"{n}.{ext}");

@@ -27,7 +27,7 @@ public sealed class SingleInstance : IDisposable
         Native.AllowSetForegroundWindow(-1);
         try
         {
-            using var pipe = new NamedPipeClientStream(".", name, PipeDirection.Out);
+            using var pipe = new NamedPipeClientStream(".", name, PipeDirection.Out, PipeOptions.CurrentUserOnly); // refuses a pipe another user created under our name
             pipe.Connect(3000);
             using var writer = new StreamWriter(pipe);
             writer.WriteLine(Environment.CurrentDirectory);
@@ -55,7 +55,11 @@ public sealed class SingleInstance : IDisposable
                     received(folder, args);
                 }
                 catch (OperationCanceledException) { return; }
-                catch (IOException) { }
+                // A dropped client, or the name already held by someone else: wait a moment instead of spinning or dying.
+                catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+                {
+                    try { await Task.Delay(250, stop.Token); } catch (OperationCanceledException) { return; }
+                }
             }
         });
     }

@@ -284,11 +284,13 @@ object Runner {
         if (action.combinesInputs) {
             try { outputs += action.run(context, inputs, options) } catch (e: Exception) { failures += e.readable() }
             catch (e: OutOfMemoryError) { failures += "Too large to open on this phone" }
+            catch (e: StackOverflowError) { failures += "Too complex to open on this phone" }
             progress(inputs.size, inputs.size)
         } else {
             inputs.forEachIndexed { i, file ->
                 try { outputs += action.run(context, listOf(file), options) } catch (e: Exception) { failures += "${file.name}: ${e.readable()}" }
                 catch (e: OutOfMemoryError) { failures += "${file.name}: too large to open on this phone" }
+                catch (e: StackOverflowError) { failures += "${file.name}: too complex to open on this phone" }
                 progress(i + 1, inputs.size)
             }
         }
@@ -356,7 +358,8 @@ object ImageOps {
         val compress = when (format) {
             ImageFormat.JPG -> Bitmap.CompressFormat.JPEG
             ImageFormat.PNG -> Bitmap.CompressFormat.PNG
-            ImageFormat.WEBP -> Bitmap.CompressFormat.WEBP_LOSSY
+            // WEBP_LOSSY is Android 11+; on Android 10 the old WEBP constant is the lossy encoder.
+            ImageFormat.WEBP -> if (android.os.Build.VERSION.SDK_INT >= 30) Bitmap.CompressFormat.WEBP_LOSSY else @Suppress("DEPRECATION") Bitmap.CompressFormat.WEBP
             ImageFormat.HEIC -> return ImageFormats.writeHeic(image, quality, out)
             ImageFormat.TIFF -> return ImageFormats.writeTiff(image, out)
             ImageFormat.GIF -> return ImageFormats.writeGif(image, out)
@@ -582,6 +585,8 @@ object PdfOps {
         val out = Output.file(file, "pdf", "compressed", o)
         open(file).use { doc ->
             val seen = HashMap<PDImageXObject, PDImageXObject>()
+            // A form can list itself (or an ancestor) in its own resources; visit each form once.
+            val forms = java.util.Collections.newSetFromMap(java.util.IdentityHashMap<Any, Boolean>())
             fun shrink(resources: PDResources?) {
                 resources ?: return
                 for (name in resources.xObjectNames.toList()) {
@@ -596,7 +601,7 @@ object PdfOps {
                             }
                             if (replacement !== x) resources.put(name, replacement)
                         }
-                        is PDFormXObject -> shrink(x.resources)
+                        is PDFormXObject -> if (forms.add(x.cosObject)) shrink(x.resources)
                         else -> {}
                     }
                 }

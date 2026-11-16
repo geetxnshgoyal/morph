@@ -142,7 +142,7 @@ public static class PdfOps
             if (!IsPlainJpeg(image)) continue;
             try
             {
-                using var picture = new MagickImage(stream.Value);
+                using var picture = new MagickImage(stream.Value, MagickFormat.Jpeg); // the stream says DCTDecode; never let its bytes pick another decoder
                 if (Math.Max(picture.Width, picture.Height) > longest) picture.Resize(new MagickGeometry(longest, longest));
                 picture.Strip();
                 picture.Quality = quality;

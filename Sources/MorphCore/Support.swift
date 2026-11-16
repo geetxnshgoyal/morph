@@ -149,7 +149,10 @@ public enum Output {
         return unique(in: options.outputDirectory ?? source.deletingLastPathComponent(), base: base, ext: ext)
     }
 
-    public static func unique(in folder: URL, base: String, ext: String) -> URL {
+    public static func unique(in folder: URL, base rawBase: String, ext: String) -> URL {
+        // Bases can come from other apps (share sheet, Shortcuts); a "/" or ".." must not leave `folder`.
+        let trimmed = rawBase.split(separator: "/").last.map(String.init) ?? ""
+        let base = trimmed.isEmpty || trimmed == "." || trimmed == ".." ? "File" : trimmed
         lock.lock(); defer { lock.unlock() }
         let fm = FileManager.default
         func make(_ name: String) -> URL {

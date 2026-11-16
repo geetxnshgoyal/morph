@@ -14,7 +14,8 @@ morph — free file converter & toolbox
   morph history                          recent jobs
   morph undo                             move the last job's outputs to the Trash
 
-flags: --quality 0.8  --max 1600  --target 500KB  --level light|balanced|strong
+flags: -q/--quality 0.8  -m/--max 1600  -t/--target 500KB  -o/--out <dir>
+       --quality 0.8  --max 1600  --target 500KB  --level light|balanced|strong
        --size 600x600 (exact size for resize, cropped to fill)  --caption "Name" (name and date below)
        --out <dir>    --style pixelate|solid  --colors 8 (palette when tracing to SVG)
 """
@@ -34,11 +35,11 @@ func parseRun(_ args: ArraySlice<String>) -> (Options, [URL]) {
     while let arg = it.next() {
         func value() -> String { it.next() ?? fail("\(arg) needs a value") }
         switch arg {
-        case "--quality", "-q": options.quality = Double(value()) ?? fail("bad --quality")
-        case "--max", "-m": options.maxPixel = Int(value()) ?? fail("bad --max")
-        case "--target", "-t": options.targetBytes = Options.parseSize(value()) ?? fail("bad --target")
+        case "--quality", "-q": options.quality = Double(value()).flatMap { (0...1).contains($0) ? $0 : nil } ?? fail("--quality is 0 to 1")
+        case "--max", "-m": options.maxPixel = Int(value()).flatMap { $0 > 0 ? $0 : nil } ?? fail("--max must be above 0")
+        case "--target", "-t": options.targetBytes = Options.parseSize(value()).flatMap { $0 > 0 ? $0 : nil } ?? fail("bad --target")
         case "--level": options.compression = CompressionLevel(rawValue: value()) ?? fail("level is light|balanced|strong")
-        case "--colors": options.colors = Int(value()) ?? fail("bad --colors")
+        case "--colors": options.colors = Int(value()).flatMap { (2...64).contains($0) ? $0 : nil } ?? fail("--colors is 2 to 64")
         case "--size": options.exactSize = PixelSize(value()) ?? fail("size is like 600x600")
         case "--caption": options.caption = value()
         case "--style": options.redactStyle = RedactStyle(rawValue: value()) ?? fail("style is pixelate|solid")
@@ -46,6 +47,7 @@ func parseRun(_ args: ArraySlice<String>) -> (Options, [URL]) {
             let dir = URL(fileURLWithPath: (value() as NSString).expandingTildeInPath)
             try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
             options.outputDirectory = dir
+        case let flag where flag.hasPrefix("-") && flag.count > 1: fail("unknown flag \(flag)")
         default:
             let url = URL(fileURLWithPath: (arg as NSString).expandingTildeInPath)
             guard FileManager.default.fileExists(atPath: url.path) else { fail("no such file: \(arg)") }
@@ -63,6 +65,7 @@ func display(_ url: URL) -> String {
 let args = CommandLine.arguments.dropFirst()
 guard let command = args.first else { print(usage); exit(0) }
 
+do {
 switch command {
 case "actions":
     let (_, files) = parseRun(args.dropFirst())
@@ -137,6 +140,8 @@ case "watch":
     let rest = Array(args.dropFirst())
     guard rest.count == 2 else { fail("usage: morph watch <folder> <action>") }
     let folder = URL(fileURLWithPath: (rest[0] as NSString).expandingTildeInPath)
+    var isDir: ObjCBool = false
+    guard FileManager.default.fileExists(atPath: folder.path, isDirectory: &isDir), isDir.boolValue else { fail("no such folder: \(rest[0])") }
     guard Library.action(rest[1]) ?? Library.action("recipe." + rest[1]) != nil else { fail("unknown action \(rest[1])") }
     let actionID = Library.action(rest[1]) != nil ? rest[1] : "recipe." + rest[1]
     let watcher = WatchFolder(.init(folder: folder, actionID: actionID))
@@ -165,3 +170,4 @@ case "-h", "--help", "help":
 default:
     fail("unknown command \(command)\n\n\(usage)")
 }
+} catch { fail(error.localizedDescription) }

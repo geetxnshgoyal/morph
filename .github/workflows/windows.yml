@@ -17,16 +17,26 @@ on:
         required: false
         default: ""
 
+# Builds (including pull requests) only read the repo; the write token lives in the release job below.
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' }}
+
 jobs:
   build:
     runs-on: windows-latest
-    permissions:
-      contents: write
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     env:
       DOTNET_NOLOGO: "1"
       DOTNET_CLI_TELEMETRY_OPTOUT: "1"
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - uses: actions/setup-dotnet@v4
         with:
@@ -61,31 +71,6 @@ jobs:
           MSIX_PUBLISHER_DISPLAY_NAME: ${{ vars.MSIX_PUBLISHER_DISPLAY_NAME }}
         run: windows/scripts/package.ps1 -Version ${{ steps.version.outputs.version }}
 
-      # Only the installers go on GitHub releases; the MSIX bundle is for the Microsoft Store.
-      - name: Attach installers to the release
-        if: github.event_name == 'workflow_dispatch' && inputs.release != ''
-        shell: pwsh
-        env:
-          GH_TOKEN: ${{ github.token }}
-          TAG: ${{ inputs.release }}
-        run: |
-          $installers = Get-ChildItem windows/dist/*-setup.exe | ForEach-Object FullName
-          gh release upload $env:TAG @installers --clobber --repo ${{ github.repository }}
-          if ($LASTEXITCODE -ne 0) { throw "Upload failed" }
-
-      # Release downloads are much faster than artifact downloads; the draft is deleted after the Store upload.
-      - name: Attach the Store bundle to a draft release
-        if: github.event_name == 'workflow_dispatch' && inputs.store_draft != ''
-        shell: pwsh
-        env:
-          GH_TOKEN: ${{ github.token }}
-          TAG: ${{ inputs.store_draft }}
-        run: |
-          $draft = gh release view $env:TAG --repo ${{ github.repository }} --json isDraft --jq .isDraft
-          if ($draft -ne "true") { throw "$env:TAG must be a draft release" }
-          gh release upload $env:TAG (Get-ChildItem windows/dist/*.msixbundle).FullName --clobber --repo ${{ github.repository }}
-          if ($LASTEXITCODE -ne 0) { throw "Upload failed" }
-
       # The Store bundle on its own, so it can be downloaded without the installers.
       - uses: actions/upload-artifact@v4
         with:
@@ -105,3 +90,40 @@ jobs:
           name: snapshots
           path: snapshots/*
           if-no-files-found: warn
+
+  release:
+    needs: build
+    if: github.event_name == 'workflow_dispatch' && (inputs.release != '' || inputs.store_draft != '')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: Morph-${{ needs.build.outputs.version }}-windows
+          path: dist
+
+      # Only the installers go on GitHub releases; the MSIX bundle is for the Microsoft Store.
+      - name: Attach installers to the release
+        if: github.event_name == 'workflow_dispatch' && inputs.release != ''
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.release }}
+        run: |
+          $installers = Get-ChildItem dist/*-setup.exe | ForEach-Object FullName
+          gh release upload $env:TAG @installers --clobber --repo ${{ github.repository }}
+          if ($LASTEXITCODE -ne 0) { throw "Upload failed" }
+
+      # Release downloads are much faster than artifact downloads; the draft is deleted after the Store upload.
+      - name: Attach the Store bundle to a draft release
+        if: github.event_name == 'workflow_dispatch' && inputs.store_draft != ''
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.store_draft }}
+        run: |
+          $draft = gh release view $env:TAG --repo ${{ github.repository }} --json isDraft --jq .isDraft
+          if ($draft -ne "true") { throw "$env:TAG must be a draft release" }
+          gh release upload $env:TAG (Get-ChildItem dist/*.msixbundle).FullName --clobber --repo ${{ github.repository }}
+          if ($LASTEXITCODE -ne 0) { throw "Upload failed" }
