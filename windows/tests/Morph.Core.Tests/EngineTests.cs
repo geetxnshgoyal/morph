@@ -392,7 +392,8 @@ public class ArchiveTests : Scratch
         var folder = Folder();
         var secret = Write("secret.txt", "private");
         try { File.CreateSymbolicLink(System.IO.Path.Combine(folder, "link.txt"), secret); }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { return; } // no symlink rights here
+        // Without symlink rights (a normal desktop account) there is nothing to test; CI runs as admin and must test it.
+        catch (Exception e) when ((e is IOException or UnauthorizedAccessException) && Environment.GetEnvironmentVariable("CI") != "true") { return; }
         using var zip = ZipFile.OpenRead(ArchiveOps.Zip([folder], new Options()));
         Assert.Equal(["Project/a.txt", "Project/sub/b.txt"], zip.Entries.Select(e => e.FullName).Order());
     }

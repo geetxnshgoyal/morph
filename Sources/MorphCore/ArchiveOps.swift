@@ -7,19 +7,19 @@ public enum ArchiveOps {
         let fm = FileManager.default
         let isSingleFolder = urls.count == 1 && FileKind(url: first) == .folder
         let base = urls.count == 1 ? first.deletingPathExtension().lastPathComponent : "Archive"
-        var staging = first
-        var cleanup: URL?
-        if !isSingleFolder {
-            let tmp = try Output.temporaryDirectory()
-            staging = tmp.appendingPathComponent(base)
+        // Always zip a staged copy without symbolic links: the system zipper fails on any link, and following one
+        // would pull files from outside the folder into the archive. On APFS the copies are clones, so this is cheap.
+        let tmp = try Output.temporaryDirectory()
+        defer { try? fm.removeItem(at: tmp) }
+        let staging = tmp.appendingPathComponent(base)
+        if isSingleFolder {
+            try copySkippingLinks(first, to: staging)
+        } else {
             try fm.createDirectory(at: staging, withIntermediateDirectories: true)
-            for url in urls {
-                let dest = Output.unique(in: staging, base: url.deletingPathExtension().lastPathComponent, ext: url.pathExtension)
-                try fm.copyItem(at: url, to: dest)
+            for url in urls where !isLink(url) {
+                try copySkippingLinks(url, to: Output.unique(in: staging, base: url.deletingPathExtension().lastPathComponent, ext: url.pathExtension))
             }
-            cleanup = tmp
         }
-        defer { if let cleanup { try? fm.removeItem(at: cleanup) } }
 
         let out = Output.unique(in: options.outputDirectory ?? first.deletingLastPathComponent(), base: base, ext: "zip")
         var coordinatorError: NSError?
@@ -29,6 +29,20 @@ public enum ArchiveOps {
         }
         if let error = coordinatorError ?? copyError { throw error }
         return out
+    }
+
+    static func isLink(_ url: URL) -> Bool {
+        (try? url.resourceValues(forKeys: [.isSymbolicLinkKey]).isSymbolicLink) == true
+    }
+
+    /// Copies a file or folder tree, leaving out symbolic links at any depth.
+    static func copySkippingLinks(_ source: URL, to dest: URL) throws {
+        let fm = FileManager.default
+        guard (try source.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true else { return try fm.copyItem(at: source, to: dest) }
+        try fm.createDirectory(at: dest, withIntermediateDirectories: true)
+        for child in try fm.contentsOfDirectory(at: source, includingPropertiesForKeys: [.isSymbolicLinkKey, .isDirectoryKey]) where !isLink(child) {
+            try copySkippingLinks(child, to: dest.appendingPathComponent(child.lastPathComponent))
+        }
     }
 
     #if os(macOS)

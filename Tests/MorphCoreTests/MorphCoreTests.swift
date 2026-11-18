@@ -107,4 +107,27 @@ final class MorphCoreTests: XCTestCase {
         XCTAssertFalse(FileManager.default.fileExists(atPath: dir.appendingPathComponent("escaped.txt").path))
         if let folder { XCTAssertTrue(folder.path.hasPrefix(dir.path)) }
     }
+
+    /// A downloaded folder with a link to a file elsewhere must not carry that file's contents into the zip.
+    func testZipDoesNotFollowLinksOutOfTheFolder() throws {
+        let fm = FileManager.default
+        let dir = fm.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let folder = dir.appendingPathComponent("Project")
+        try fm.createDirectory(at: folder, withIntermediateDirectories: true)
+        try "a".write(to: folder.appendingPathComponent("a.txt"), atomically: true, encoding: .utf8)
+        let secret = dir.appendingPathComponent("secret.txt")
+        try "TOP-SECRET-CONTENT".write(to: secret, atomically: true, encoding: .utf8)
+        try fm.createSymbolicLink(at: folder.appendingPathComponent("link.txt"), withDestinationURL: secret)
+        let zip = try ArchiveOps.zip([folder], options: Options())
+        let data = try Data(contentsOf: zip)
+        // Stored entries are deflated, so check the extracted bytes rather than the archive.
+        let out = dir.appendingPathComponent("out")
+        let p = Process(); p.executableURL = URL(fileURLWithPath: "/usr/bin/ditto"); p.arguments = ["-x", "-k", zip.path, out.path]
+        try p.run(); p.waitUntilExit()
+        let link = out.appendingPathComponent("Project/link.txt")
+        let attrs = try? fm.attributesOfItem(atPath: link.path)
+        let isLink = attrs?[.type] as? FileAttributeType == .typeSymbolicLink
+        let copied = (try? String(contentsOf: link, encoding: .utf8)) == "TOP-SECRET-CONTENT" && !isLink
+        XCTAssertFalse(copied, "zip copied the linked file's contents (\(data.count) bytes)")
+    }
 }
