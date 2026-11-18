@@ -10,8 +10,8 @@ packages:
 # One version for the app and its share sheet; the App Store requires them to match.
 settings:
   base:
-    MARKETING_VERSION: 1.0.3
-    CURRENT_PROJECT_VERSION: 10
+    MARKETING_VERSION: 1.0.4
+    CURRENT_PROJECT_VERSION: 11
 targets:
   Morph:
     type: application
