@@ -17,6 +17,19 @@ public enum DocOps {
         return try String(contentsOf: url)
     }
 
+    /// The HTML importer fetches images, stylesheets and frames, so a page could reach the network (and tell its
+    /// author the file was opened). Remote references are blanked; local and embedded ones stay.
+    /// shortcut: regex, not a parser; markup that hides a URL some other way still loads. Upgrade to a sanitiser if HTML grows.
+    static func withoutRemoteReferences(_ html: String) -> String {
+        let remote = #"(?:[a-z][a-z0-9+.-]*:)?//"#
+        return html
+            .replacingOccurrences(of: #"((?:src|href|srcset|poster|data|background|action|formaction)\s*=\s*["']?\s*)"# + remote,
+                                  with: "$1#", options: [.regularExpression, .caseInsensitive])
+            .replacingOccurrences(of: #"url\(\s*["']?\s*"# + remote, with: "url(#", options: [.regularExpression, .caseInsensitive])
+            .replacingOccurrences(of: #"@import"#, with: "@ignore", options: [.caseInsensitive])
+            .replacingOccurrences(of: #"\bsrcset\s*="#, with: "data-srcset=", options: [.regularExpression, .caseInsensitive])
+    }
+
     public static func read(_ url: URL) throws -> NSAttributedString {
         switch url.pathExtension.lowercased() {
         case "pdf":
@@ -31,6 +44,11 @@ public enum DocOps {
         case "docx", "odt":
             return try OfficeDocs.read(url)
         #endif
+        case "html", "htm":
+            let html = withoutRemoteReferences(try readString(from: url))
+            return try NSAttributedString(data: Data(html.utf8), options: [.documentType: NSAttributedString.DocumentType.html,
+                                                                         .characterEncoding: String.Encoding.utf8.rawValue],
+                                          documentAttributes: nil)
         default:
             return try NSAttributedString(url: url, options: [:], documentAttributes: nil)
         }

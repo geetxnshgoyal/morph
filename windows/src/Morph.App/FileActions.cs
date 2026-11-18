@@ -84,13 +84,13 @@ public static class FileActions
         Shell.Reveal(results);
     }
 
-    /// Opens Windows Terminal in the folder itself, or in the folder that holds the file; PowerShell without it.
+    /// Opens Windows Terminal in the folder itself (wt reads ";" as "next command", so a folder named "a; b" is escaped), or in the folder that holds the file; PowerShell without it.
     static void OpenTerminal(IReadOnlyList<string> paths)
     {
         var folder = Directory.Exists(paths[0]) ? paths[0] : Output.FolderOf(paths[0]);
         try
         {
-            Process.Start(new ProcessStartInfo("wt.exe") { ArgumentList = { "-d", folder }, UseShellExecute = true })?.Dispose();
+            Process.Start(new ProcessStartInfo("wt.exe") { ArgumentList = { "-d", folder.Replace(";", "\\;") }, UseShellExecute = true })?.Dispose();
         }
         catch (Win32Exception)
         {

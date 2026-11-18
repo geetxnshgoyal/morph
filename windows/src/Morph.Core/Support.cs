@@ -315,7 +315,6 @@ public static class ExternalTool
             var programFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
             yield return Path.Combine(local, @"Microsoft\WinGet\Links");
             yield return Path.Combine(profile, @"scoop\shims");
-            yield return @"C:\ProgramData\chocolatey\bin";
             yield return Path.Combine(programFiles, @"ffmpeg\bin");
         }
         else
@@ -339,6 +338,8 @@ public static class ExternalTool
         return parts.Where(p => p is not null)
             .SelectMany(p => p!.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
             .Select(Environment.ExpandEnvironmentVariables)
+            // A relative entry (".") would resolve against whatever folder Morph was started in.
+            .Where(Path.IsPathFullyQualified)
             .Distinct(StringComparer.OrdinalIgnoreCase);
     }
 
@@ -390,7 +391,8 @@ public static class ExternalTool
         FFmpeg ?? throw new MorphException($"This needs ffmpeg. Install it with: {InstallHint}");
 
     public static Task<string> FFmpegRun(IEnumerable<string> args, CancellationToken cancel = default) =>
-        Run(RequireFFmpeg(), ["-hide_banner", "-loglevel", "error", "-y", .. args], cancel);
+        // Local files only: a crafted playlist or video must not make ffmpeg fetch from the network.
+        Run(RequireFFmpeg(), ["-hide_banner", "-loglevel", "error", "-y", "-protocol_whitelist", "file,pipe", .. args], cancel);
 }
 
 /// Moves files to the Recycle Bin (the Trash elsewhere), so undo is itself undoable.

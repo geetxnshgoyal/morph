@@ -266,7 +266,9 @@ public sealed class History
             var all = Load();
             var index = id is null ? all.FindLastIndex(e => !e.Undone) : all.FindIndex(e => e.Id == id);
             if (index < 0 || all[index].Undone) return null;
-            foreach (var output in all[index].Outputs) Trash.Move(output);
+            // Something else saved under an output's name since the job; that file isn't ours to recycle.
+            foreach (var output in all[index].Outputs.Where(o => !(File.Exists(o) && File.GetLastWriteTimeUtc(o) > all[index].Date.UtcDateTime.AddSeconds(2))))
+                Trash.Move(output);
             all[index].Undone = true;
             Store(all);
             undone = all[index];

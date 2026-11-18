@@ -129,7 +129,7 @@ public enum MediaOps {
                 $0.metadataItemFilter = .forSharing()
             }
         } else {
-            try await ExternalTool.ffmpeg(["-i", url.path, "-map", "0", "-map_metadata", "-1", "-map_chapters", "-1", "-c", "copy", out.path])
+            try await ExternalTool.ffmpeg(["-i", url.path, "-map", "0:v?", "-map", "0:a?", "-map_metadata", "-1", "-map_chapters", "-1", "-c", "copy", out.path])
         }
         return out
     }

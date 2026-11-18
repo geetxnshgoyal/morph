@@ -387,6 +387,17 @@ public class ArchiveTests : Scratch
     }
 
     [Fact]
+    public void ZipLeavesOutLinksToFilesElsewhere()
+    {
+        var folder = Folder();
+        var secret = Write("secret.txt", "private");
+        try { File.CreateSymbolicLink(System.IO.Path.Combine(folder, "link.txt"), secret); }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { return; } // no symlink rights here
+        using var zip = ZipFile.OpenRead(ArchiveOps.Zip([folder], new Options()));
+        Assert.Equal(["Project/a.txt", "Project/sub/b.txt"], zip.Entries.Select(e => e.FullName).Order());
+    }
+
+    [Fact]
     public async Task TarGzRoundTrip()
     {
         var tar = await ArchiveOps.TarGz([Folder()], new Options(), default);

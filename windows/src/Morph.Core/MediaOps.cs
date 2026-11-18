@@ -100,11 +100,11 @@ public static class MediaOps
         throw new MorphException(NeedsFFmpeg);
     }
 
-    /// A stream copy with every metadata tag and chapter left out.
+    /// A stream copy of the picture and sound only: tags, chapters and data or subtitle tracks (GPS, captions) are left out.
     public static async Task<string> StripMetadata(string path, Options options, CancellationToken cancel)
     {
         var output = Output.For(path, FileKinds.Extension(path), options, "clean");
-        return await Producing(output, () => ExternalTool.FFmpegRun(["-i", path, "-map", "0", "-map_metadata", "-1", "-map_chapters", "-1",
+        return await Producing(output, () => ExternalTool.FFmpegRun(["-i", path, "-map", "0:v?", "-map", "0:a?", "-map_metadata", "-1", "-map_chapters", "-1",
             "-fflags", "+bitexact", "-c", "copy", output], cancel));
     }
 
@@ -178,7 +178,7 @@ public static class MediaOps
     {
         if (ExternalTool.FFprobe is { } ffprobe)
         {
-            var text = await ExternalTool.Run(ffprobe, ["-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", path], cancel);
+            var text = await ExternalTool.Run(ffprobe, ["-v", "error", "-protocol_whitelist", "file,pipe", "-show_entries", "format=duration", "-of", "csv=p=0", path], cancel);
             if (double.TryParse(text.Trim(), CultureInfo.InvariantCulture, out var seconds)) return seconds;
         }
 #if WINDOWS
@@ -244,7 +244,7 @@ public static class MediaOps
         catch (MorphException) { }
         if (ExternalTool.FFprobe is { } ffprobe)
         {
-            var streams = await ExternalTool.Run(ffprobe, ["-v", "error", "-show_entries", "stream=codec_type,codec_name,width,height,bit_rate",
+            var streams = await ExternalTool.Run(ffprobe, ["-v", "error", "-protocol_whitelist", "file,pipe", "-show_entries", "stream=codec_type,codec_name,width,height,bit_rate",
                 "-of", "compact=p=0:nk=0", path], cancel);
             foreach (var line in streams.Split('\n', StringSplitOptions.RemoveEmptyEntries))
             {

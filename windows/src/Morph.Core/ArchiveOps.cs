@@ -12,21 +12,20 @@ public static class ArchiveOps
         var first = Path.TrimEndingDirectorySeparator(paths[0]);
         var name = paths.Count == 1 ? Path.GetFileNameWithoutExtension(first) : "Archive";
         var output = Output.Unique(options.OutputDirectory ?? Output.FolderOf(first), name, "zip");
-        if (paths.Count == 1 && Directory.Exists(first))
-        {
-            ZipFile.CreateFromDirectory(first, output, System.IO.Compression.CompressionLevel.Optimal, includeBaseDirectory: true);
-            return output;
-        }
         using var zip = ZipFile.Open(output, ZipArchiveMode.Create);
         foreach (var path in paths.Select(Path.TrimEndingDirectorySeparator))
         {
-            if (File.Exists(path)) { zip.CreateEntryFromFile(path, Path.GetFileName(path), System.IO.Compression.CompressionLevel.Optimal); continue; }
+            if (File.Exists(path) && !IsLink(path)) { zip.CreateEntryFromFile(path, Path.GetFileName(path), System.IO.Compression.CompressionLevel.Optimal); continue; }
             var root = Path.GetDirectoryName(path)!;
-            foreach (var file in Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories))
+            if (IsLink(path)) continue;
+            // Links and junctions inside the folder are skipped, so a downloaded folder can't pull in files from elsewhere.
+            foreach (var file in Directory.EnumerateFiles(path, "*", new EnumerationOptions { RecurseSubdirectories = true, AttributesToSkip = FileAttributes.ReparsePoint }))
                 zip.CreateEntryFromFile(file, Path.GetRelativePath(root, file).Replace('\\', '/'), System.IO.Compression.CompressionLevel.Optimal);
         }
         return output;
     }
+
+    static bool IsLink(string path) => File.GetAttributes(path).HasFlag(FileAttributes.ReparsePoint);
 
     public static async Task<string> TarGz(IReadOnlyList<string> paths, Options options, CancellationToken cancel)
     {

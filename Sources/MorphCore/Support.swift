@@ -161,7 +161,8 @@ public enum Output {
         }
         var candidate = make(base)
         var i = 2
-        while fm.fileExists(atPath: candidate.path) || reserved.contains(candidate.path) {
+        // attributesOfItem doesn't follow links, so a dangling symlink planted at the name counts as taken.
+        while (try? fm.attributesOfItem(atPath: candidate.path)) != nil || reserved.contains(candidate.path) {
             candidate = make("\(base) \(i)"); i += 1
         }
         reserved.insert(candidate.path)
@@ -238,7 +239,8 @@ public enum ExternalTool {
 
     public static func ffmpeg(_ args: [String]) async throws {
         #if os(macOS)
-        try await run(try requireFFmpeg(), ["-hide_banner", "-loglevel", "error", "-y"] + args)
+        // Local files only: a crafted playlist or video must not make ffmpeg fetch from the network.
+        try await run(try requireFFmpeg(), ["-hide_banner", "-loglevel", "error", "-y", "-protocol_whitelist", "file,pipe"] + args)
         #else
         throw MorphError("This format isn't supported on this device yet")
         #endif

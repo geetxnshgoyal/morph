@@ -242,6 +242,9 @@ public final class History: @unchecked Sendable {
         let index = id == nil ? all.lastIndex { !$0.undone } : all.firstIndex { $0.id == id }
         guard let i = index, !all[i].undone else { return nil }
         for url in all[i].outputs where FileManager.default.fileExists(atPath: url.path) {
+            // Something else saved under this name since the job; that file isn't ours to trash.
+            if let modified = try? url.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate,
+               modified > all[i].date.addingTimeInterval(2) { continue }
             #if os(macOS)
             try FileManager.default.trashItem(at: url, resultingItemURL: nil)
             #else
