@@ -19,7 +19,7 @@ class LibraryTest {
 
     /** Failures that are the file's fault rather than the action's: a test pattern has no faces. */
     private val expected = listOf("No faces found", "No emails, phone or card numbers found", "No QR codes", "No text found",
-        "already as small", "There's no silence")
+        "already as small", "There's no silence", "has no pictures")
 
     @Test
     fun everyActionRuns() = runBlocking {

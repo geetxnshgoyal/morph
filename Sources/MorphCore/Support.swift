@@ -20,13 +20,16 @@ public enum FileKind: String, Codable, Sendable, CaseIterable {
 
     public init(url: URL) {
         let ext = url.pathExtension.lowercased()
-        if (try? url.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true, ext != "rtfd" {
+        // RTFD and older iWork files are folders that open as one document.
+        if (try? url.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true, !["rtfd", "key", "numbers", "pages"].contains(ext) {
             self = .folder; return
         }
         switch ext {
         case "srt", "vtt": self = .subtitle; return
-        case "csv", "tsv", "json": self = .data; return
-        case "md", "markdown", "docx", "doc", "odt", "rtfd", "html", "htm": self = .document; return
+        case "csv", "tsv", "json", "xlsx", "xlsm", "ods": self = .data; return
+        case "md", "markdown", "docx", "doc", "odt", "rtfd", "html", "htm", "pptx", "ppsx", "potx", "odp": self = .document; return
+        case "ppt", "pps", "key", "pages": self = OfficeFiles.canOpen(ext) ? .document : .other; return
+        case "xls", "numbers": self = OfficeFiles.canOpen(ext) ? .data : .other; return
         case "zip", "tar", "gz", "tgz", "rar", "7z", "xz", "bz2": self = .archive; return
         default: break
         }

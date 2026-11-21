@@ -22,8 +22,8 @@ public static class FileKinds
         (FileKind.Audio, "mp3 m4a aac wav aif aiff flac ogg oga opus wma caf amr"),
         (FileKind.Pdf, "pdf"),
         (FileKind.Subtitle, "srt vtt"),
-        (FileKind.Data, "csv tsv json"),
-        (FileKind.Document, "md markdown docx odt rtf html htm txt text log xml yaml yml ini cfg conf"),
+        (FileKind.Data, "csv tsv json xlsx xlsm ods"),
+        (FileKind.Document, "md markdown docx odt rtf html htm txt text log xml yaml yml ini cfg conf pptx ppsx potx odp"),
         (FileKind.Archive, "zip tar gz tgz rar 7z xz txz bz2 tbz2"));
 
     static Dictionary<string, FileKind> Build(params (FileKind kind, string extensions)[] table)
@@ -36,8 +36,12 @@ public static class FileKinds
 
     public static FileKind Of(string path)
     {
-        if (Directory.Exists(path)) return FileKind.Folder;
-        return byExtension.TryGetValue(Extension(path), out var kind) ? kind : FileKind.Other;
+        var ext = Extension(path);
+        // Older iWork files are folders that open as one document.
+        if (Directory.Exists(path) && ext is not ("key" or "numbers" or "pages")) return FileKind.Folder;
+        if (OfficeFiles.Legacy.ContainsKey(ext))
+            return !OfficeFiles.CanOpen(ext) ? FileKind.Other : ext is "xls" or "numbers" ? FileKind.Data : FileKind.Document;
+        return byExtension.TryGetValue(ext, out var kind) ? kind : FileKind.Other;
     }
 
     /// Lower-case extension without the dot: "photo.HEIC" → "heic".

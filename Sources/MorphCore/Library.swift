@@ -42,6 +42,7 @@ public struct Action: Identifiable, Sendable {
         guard urls.count >= minimumInputs, isAvailable else { return false }
         guard urls.allSatisfy({ kinds.contains(FileKind(url: $0)) }) else { return false }
         if editsPixels, urls.contains(where: VectorOps.isSVG) { return false }
+        if id == "tool.pictures", !urls.allSatisfy(OfficeFiles.hasPictures) { return false }
         if let ext = targetExtension, urls.allSatisfy({ $0.pathExtension.lowercased() == ext }) { return false }
         return true
     }
@@ -110,8 +111,13 @@ public enum Library {
         list.append(one("convert.pdf-text", "Text", "text.alignleft", .convert, [.pdf]) { try PDFOps.toText($0, options: $1) })
         for ext in DocOps.outputFormats {
             let kinds: Set<FileKind> = ext == "pdf" ? [.document, .data, .subtitle] : (ext == "docx" ? [.document, .pdf] : [.document])
-            list.append(one("convert.doc-\(ext)", ext.uppercased(), "doc.text", .convert, kinds, target: ext) {
-                try DocOps.convert($0, to: ext, options: $1)
+            list.append(one("convert.doc-\(ext)", ext.uppercased(), "doc.text", .convert, kinds, target: ext) { url, o in
+                if ext == "pdf", OfficeFiles.prefersLibreOfficePDF(url) {
+                    let out = Output.url(for: url, ext: "pdf", options: o)
+                    try await OfficeFiles.export(url, as: "pdf", to: out)
+                    return out
+                }
+                return try await OfficeFiles.withModern(url, o) { try DocOps.convert($0, to: ext, options: $1) }
             })
         }
         for ext in ["srt", "vtt"] {
@@ -120,8 +126,8 @@ public enum Library {
             })
         }
         for ext in ["csv", "tsv", "json"] {
-            list.append(one("convert.data-\(ext)", ext.uppercased(), "tablecells", .convert, [.data], target: ext) {
-                try DocOps.convertData($0, to: ext, options: $1)
+            list.append(one("convert.data-\(ext)", ext.uppercased(), "tablecells", .convert, [.data], target: ext) { url, o in
+                try await OfficeFiles.withModern(url, o) { try DocOps.convertData($0, to: ext, options: $1) }
             })
         }
 
@@ -148,6 +154,7 @@ public enum Library {
         list.append(one("tool.ocr", "Extract Text", "text.viewfinder", .tool, [.image, .pdf]) { try VisionOps.ocr($0, options: $1) })
         list.append(one("tool.qr", "Read QR", "qrcode.viewfinder", .tool, [.image, .pdf]) { try VisionOps.readCodes($0, options: $1) })
         list.append(all("tool.merge-pdf", "Merge PDFs", "doc.on.doc", .tool, [.pdf], minimum: 2) { try PDFOps.merge($0, options: $1) })
+        list.append(one("tool.pictures", "Pictures", "photo.stack", .tool, [.document, .data]) { try OfficeFiles.pictures($0, options: $1) })
         list.append(one("tool.split-pdf", "Split PDF", "scissors", .tool, [.pdf]) { try PDFOps.split($0, options: $1) })
         list.append(one("tool.mute", "Mute", "speaker.slash", .tool, [.video]) { try await MediaOps.mute($0, options: $1) })
         list.append(Action(id: "tool.snapshots", title: "Snapshots", symbol: "camera.viewfinder", group: .tool, kinds: [.video],

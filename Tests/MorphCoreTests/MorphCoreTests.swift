@@ -130,4 +130,33 @@ final class MorphCoreTests: XCTestCase {
         let copied = (try? String(contentsOf: link, encoding: .utf8)) == "TOP-SECRET-CONTENT" && !isLink
         XCTAssertFalse(copied, "zip copied the linked file's contents (\(data.count) bytes)")
     }
+
+    func testSlidesAndSheetsRead() throws {
+        func xml(_ s: String) -> Data { Data(s.utf8) }
+        let deck = folder.appendingPathComponent("deck.pptx")
+        try Zip.write([
+            ("ppt/slides/slide10.xml", xml(#"<p:sld xmlns:p="p" xmlns:a="a"><a:p><a:r><a:t>Tenth</a:t></a:r></a:p></p:sld>"#)),
+            ("ppt/slides/slide2.xml", xml(#"<p:sld xmlns:p="p" xmlns:a="a"><a:p><a:r><a:t>Second</a:t></a:r><a:br/><a:r><a:t>line</a:t></a:r></a:p></p:sld>"#)),
+            ("ppt/media/../../../escape.png", Data([0x89, 0x50])),
+        ], to: deck)
+        let text = try DocOps.read(deck).string
+        XCTAssertTrue(text.contains("Slide 1\nSecond\nline"), text)
+        XCTAssertTrue(text.range(of: "Second")!.lowerBound < text.range(of: "Tenth")!.lowerBound, "slides out of order")
+        let pictures = try OfficeFiles.pictures(deck, options: Options())
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: pictures.path), ["escape.png"])
+
+        let book = folder.appendingPathComponent("book.xlsx")
+        try Zip.write([
+            ("xl/workbook.xml", xml(#"<workbook xmlns:r="r"><sheets><sheet name="People" r:id="rId1"/></sheets></workbook>"#)),
+            ("xl/_rels/workbook.xml.rels", xml(#"<Relationships><Relationship Id="rId1" Target="worksheets/sheet1.xml"/></Relationships>"#)),
+            ("xl/sharedStrings.xml", xml(#"<sst><si><t>Name</t></si><si><r><t>Ad</t></r><r><t>a, B</t></r></si></sst>"#)),
+            ("xl/worksheets/sheet1.xml", xml(#"<worksheet><sheetData><row r="1"><c r="A1" t="s"><v>0</v></c><c r="C1" t="inlineStr"><is><t>Age</t></is></c></row><row r="3"><c r="A3" t="s"><v>1</v></c><c r="C3"><v>36</v></c></row></sheetData></worksheet>"#)),
+        ], to: book)
+        let csv = try DocOps.convertData(book, to: "csv", options: Options())
+        XCTAssertEqual(try String(contentsOf: csv, encoding: .utf8), "Name,,Age\n,,\n\"Ada, B\",,36\n")
+
+        let ods = folder.appendingPathComponent("sheet.ods")
+        try Zip.write([("content.xml", xml(#"<office:document-content xmlns:office="o" xmlns:table="t" xmlns:text="x"><table:table table:name="S"><table:table-row><table:table-cell table:number-columns-repeated="2"><text:p>x</text:p></table:table-cell><table:table-cell table:number-columns-repeated="16000"/></table:table-row><table:table-row table:number-rows-repeated="1048000"><table:table-cell table:number-columns-repeated="16384"/></table:table-row></table:table></office:document-content>"#))], to: ods)
+        XCTAssertEqual(try OfficeFiles.readSheets(ods).first?.rows, [["x", "x"]])
+    }
 }

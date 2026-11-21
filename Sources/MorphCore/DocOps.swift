@@ -40,6 +40,10 @@ public enum DocOps {
             return NSAttributedString(attr)
         case "txt", "text", "csv", "tsv", "json", "srt", "vtt":
             return NSAttributedString(string: try readString(from: url))
+        case let ext where OfficeFiles.slides.contains(ext):
+            return try OfficeFiles.readSlides(url)
+        case let ext where OfficeFiles.sheets.contains(ext):
+            return OfficeFiles.sheetsAsText(try OfficeFiles.readSheets(url))
         #if !os(macOS)
         case "docx", "odt":
             return try OfficeDocs.read(url)
@@ -172,9 +176,12 @@ public enum DocOps {
 
     public static func convertData(_ url: URL, to ext: String, options: Options) throws -> URL {
         let input = url.pathExtension.lowercased()
-        let text = try readString(from: url)
         var rows: [[String]]
-        if input == "json" {
+        if OfficeFiles.sheets.contains(input) {
+            // shortcut: CSV, TSV and JSON hold one table, so only the first sheet; PDF has them all.
+            rows = try OfficeFiles.readSheets(url).first?.rows ?? []
+        } else if input == "json" {
+            let text = try readString(from: url)
             guard let objects = try JSONSerialization.jsonObject(with: Data(text.utf8)) as? [[String: Any]] else {
                 throw MorphError("JSON must be an array of objects")
             }
@@ -182,7 +189,7 @@ public enum DocOps {
             for o in objects { for k in o.keys.sorted() where !headers.contains(k) { headers.append(k) } }
             rows = [headers] + objects.map { o in headers.map { o[$0].map { "\($0)" } ?? "" } }
         } else {
-            rows = parseDelimited(text, separator: input == "tsv" ? "\t" : ",")
+            rows = parseDelimited(try readString(from: url), separator: input == "tsv" ? "\t" : ",")
         }
         let out = Output.url(for: url, ext: ext, options: options)
         switch ext {

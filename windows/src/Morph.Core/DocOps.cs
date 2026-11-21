@@ -62,6 +62,8 @@ public static partial class DocOps
                 "html" or "htm" => FromHtml(File.ReadAllText(path)),
                 "docx" => FromDocx(path),
                 "odt" => FromOdt(path),
+                var e when OfficeFiles.Slides.Contains(e) => OfficeFiles.ReadSlides(path),
+                var e when OfficeFiles.Sheets.Contains(e) => OfficeFiles.SheetsAsBlocks(OfficeFiles.ReadSheets(path)),
                 "rtf" => FromPlain(RtfText(File.ReadAllText(path, Encoding.Latin1))),
                 "pdf" => FromPlain(PdfOps.Text(path).GetAwaiter().GetResult()),
                 "csv" or "tsv" or "json" or "srt" or "vtt" => [new Block(BlockKind.Code, File.ReadAllText(path).TrimEnd())],
@@ -795,11 +797,12 @@ public static partial class DocOps
     public static string ConvertData(string path, string ext, Options options)
     {
         var input = FileKinds.Extension(path);
-        var text = File.ReadAllText(path);
         List<List<string>> rows;
-        if (input == "json")
+        // shortcut: CSV, TSV and JSON hold one table, so only the first sheet; PDF has them all.
+        if (OfficeFiles.Sheets.Contains(input)) rows = OfficeFiles.ReadSheets(path).FirstOrDefault().Rows ?? [];
+        else if (input == "json")
         {
-            using var json = JsonDocument.Parse(text);
+            using var json = JsonDocument.Parse(File.ReadAllText(path));
             if (json.RootElement.ValueKind != JsonValueKind.Array || json.RootElement.EnumerateArray().Any(e => e.ValueKind != JsonValueKind.Object))
                 throw new MorphException("JSON must be an array of objects");
             var headers = new List<string>();
@@ -814,7 +817,7 @@ public static partial class DocOps
                     _ => v.GetRawText(),
                 } : "").ToList())];
         }
-        else rows = ParseDelimited(text, input == "tsv" ? '\t' : ',');
+        else rows = ParseDelimited(File.ReadAllText(path), input == "tsv" ? '\t' : ',');
 
         var output = Output.For(path, ext, options);
         switch (ext)

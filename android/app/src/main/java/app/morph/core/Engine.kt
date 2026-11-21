@@ -64,8 +64,8 @@ enum class FileKind {
             "mp3", "m4a", "aac", "wav", "ogg", "flac", "opus", "amr", "aiff", "aif" -> AUDIO
             "pdf" -> PDF
             "srt", "vtt" -> SUBTITLE
-            "csv", "tsv", "json" -> DATA
-            "md", "markdown", "docx", "odt", "rtf", "html", "htm", "txt", "text" -> DOCUMENT
+            "csv", "tsv", "json", "xlsx", "xlsm", "ods" -> DATA
+            "md", "markdown", "docx", "odt", "rtf", "html", "htm", "txt", "text", "pptx", "ppsx", "potx", "odp" -> DOCUMENT
             "zip", "tar", "gz", "tgz" -> ARCHIVE
             else -> OTHER
         }
@@ -174,6 +174,7 @@ class Action(
         if (files.size < minimumInputs) return false
         if (!files.all { FileKind.of(it) in kinds }) return false
         if (editsPixels && files.any(VectorOps::isSvg)) return false
+        if (id == "tool.pictures" && !files.all(OfficeFiles::hasPictures)) return false
         val ext = targetExtension ?: return true
         return !files.all { it.extension.lowercase().let { e -> e == ext || (ext == "jpg" && e == "jpeg") } }
     }
@@ -249,6 +250,7 @@ object Library {
         add(Action("tool.merge-pdf", "Merge PDFs", "merge", Group.TOOL, setOf(FileKind.PDF), combinesInputs = true, minimumInputs = 2) { ctx, files, o ->
             pdfBox(ctx); listOf(PdfOps.merge(files, o))
         })
+        add(Action("tool.pictures", "Pictures", "pages", Group.TOOL, setOf(FileKind.DOCUMENT, FileKind.DATA)) { _, files, o -> files.flatMap { OfficeFiles.pictures(it, o) } })
         add(one("tool.split-pdf", "Split PDF", "split", Group.TOOL, setOf(FileKind.PDF)) { ctx, f, o -> pdfBox(ctx); PdfOps.split(f, o) })
         add(one("tool.mute", "Mute", "mute", Group.TOOL, setOf(FileKind.VIDEO)) { ctx, f, o -> MediaOps.transform(ctx, f, Output.file(f, "mp4", "muted", o), removeAudio = true) })
         add(Action("tool.snapshots", "Snapshots", "snapshot", Group.TOOL, setOf(FileKind.VIDEO)) { _, files, o -> files.flatMap { VideoOps.snapshots(it, o) } })

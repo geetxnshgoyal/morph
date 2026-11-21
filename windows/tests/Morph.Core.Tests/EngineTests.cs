@@ -28,6 +28,44 @@ public class SupportTests : Scratch
     }
 
     [Fact]
+    public void SlidesAndSheetsRead()
+    {
+        string Zip(string name, params (string Entry, string Text)[] parts)
+        {
+            var path = PathOf(name);
+            using var zip = ZipFile.Open(path, ZipArchiveMode.Create);
+            foreach (var (entry, text) in parts)
+                using (var w = new StreamWriter(zip.CreateEntry(entry).Open())) w.Write(text);
+            return path;
+        }
+        const string a = "http://schemas.openxmlformats.org/drawingml/2006/main";
+        var deck = Zip("deck.pptx",
+            ("ppt/slides/slide10.xml", $"<p:sld xmlns:p=\"p\" xmlns:a=\"{a}\"><a:p><a:r><a:t>Tenth</a:t></a:r></a:p></p:sld>"),
+            ("ppt/slides/slide2.xml", $"<p:sld xmlns:p=\"p\" xmlns:a=\"{a}\"><a:p><a:r><a:t>Second</a:t></a:r><a:br/><a:r><a:t>line</a:t></a:r></a:p></p:sld>"),
+            ("ppt/media/../../../escape.png", "png"));
+        var text = File.ReadAllText(DocOps.Convert(deck, "txt", new Options()));
+        Assert.Contains("Slide 1", text);
+        Assert.Contains("Second\nline", text.Replace("\r", ""));
+        Assert.True(text.IndexOf("Second") < text.IndexOf("Tenth"), "slides out of order");
+        var pictures = OfficeFiles.Pictures(deck, new Options());
+        Assert.Equal(["escape.png"], Directory.GetFiles(pictures).Select(Path.GetFileName));
+
+        const string m = "http://schemas.openxmlformats.org/spreadsheetml/2006/main";
+        var book = Zip("book.xlsx",
+            ("xl/workbook.xml", $"<workbook xmlns=\"{m}\" xmlns:r=\"rel\"><sheets><sheet name=\"People\" r:id=\"rId1\"/></sheets></workbook>"),
+            ("xl/_rels/workbook.xml.rels", "<Relationships><Relationship Id=\"rId1\" Target=\"worksheets/sheet1.xml\"/></Relationships>"),
+            ("xl/sharedStrings.xml", $"<sst xmlns=\"{m}\"><si><t>Name</t></si><si><r><t>Ad</t></r><r><t>a, B</t></r></si></sst>"),
+            ("xl/worksheets/sheet1.xml", $"<worksheet xmlns=\"{m}\"><sheetData><row r=\"1\"><c r=\"A1\" t=\"s\"><v>0</v></c><c r=\"C1\" t=\"inlineStr\"><is><t>Age</t></is></c></row><row r=\"3\"><c r=\"A3\" t=\"s\"><v>1</v></c><c r=\"C3\"><v>36</v></c></row></sheetData></worksheet>"));
+        Assert.Equal("Name,,Age\n,,\n\"Ada, B\",,36\n", File.ReadAllText(DocOps.ConvertData(book, "csv", new Options())).Replace("\r", ""));
+
+        var ods = Zip("sheet.ods", ("content.xml",
+            "<office:document-content xmlns:office=\"urn:oasis:names:tc:opendocument:xmlns:office:1.0\" xmlns:table=\"urn:oasis:names:tc:opendocument:xmlns:table:1.0\" xmlns:text=\"urn:oasis:names:tc:opendocument:xmlns:text:1.0\">"
+            + "<table:table table:name=\"S\"><table:table-row><table:table-cell table:number-columns-repeated=\"2\"><text:p>x</text:p></table:table-cell><table:table-cell table:number-columns-repeated=\"16000\"/></table:table-row>"
+            + "<table:table-row table:number-rows-repeated=\"1048000\"><table:table-cell table:number-columns-repeated=\"16384\"/></table:table-row></table:table></office:document-content>"));
+        Assert.Equal([["x", "x"]], OfficeFiles.ReadSheets(ods)[0].Rows);
+    }
+
+    [Fact]
     public void ScriptDisguisedAsJpegIsNotRun()
     {
         var marker = Write("marker.txt", "secret");

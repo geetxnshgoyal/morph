@@ -59,6 +59,8 @@ object DocOps {
             "html", "htm" -> fromHtml(readString(file))
             "docx" -> fromDocx(file)
             "odt" -> fromOdt(file)
+            in OfficeFiles.slides -> OfficeFiles.readSlides(file)
+            in OfficeFiles.sheets -> OfficeFiles.sheetsAsBlocks(OfficeFiles.readSheets(file))
             "rtf" -> fromPlain(rtfText(String(file.readBytes(), Charsets.ISO_8859_1)))
             "pdf" -> fromPlain(PdfOps.text(file))
             "csv", "tsv", "json", "srt", "vtt" -> listOf(Block(Kind.CODE, readString(file).trimEnd()))
@@ -697,14 +699,16 @@ object DocOps {
 
     fun convertData(file: File, ext: String, o: Options): File {
         val input = file.extension.lowercase()
-        val text = readString(file)
-        val rows: List<List<String>> = if (input == "json") {
-            val array = runCatching { JSONArray(text) }.getOrNull() ?: throw MorphError("JSON must be an array of objects")
+        val rows: List<List<String>> = if (input in OfficeFiles.sheets) {
+            // shortcut: CSV, TSV and JSON hold one table, so only the first sheet; PDF has them all.
+            OfficeFiles.readSheets(file).firstOrNull()?.second ?: emptyList()
+        } else if (input == "json") {
+            val array = runCatching { JSONArray(readString(file)) }.getOrNull() ?: throw MorphError("JSON must be an array of objects")
             val objects = (0 until array.length()).map { array.opt(it) as? JSONObject ?: throw MorphError("JSON must be an array of objects") }
             val headers = mutableListOf<String>()
             for (obj in objects) for (key in obj.keys().asSequence().sorted()) if (key !in headers) headers += key
             listOf(headers) + objects.map { obj -> headers.map { h -> if (!obj.has(h) || obj.isNull(h)) "" else obj.get(h).toString() } }
-        } else parseDelimited(text, if (input == "tsv") '\t' else ',')
+        } else parseDelimited(readString(file), if (input == "tsv") '\t' else ',')
         val out = Output.file(file, ext, null, o)
         when (ext) {
             "json" -> {

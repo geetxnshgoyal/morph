@@ -14,6 +14,7 @@ public static class Icons
         ["scribble.variable"] = "",
         ["photo"] = "",
         ["photo.on.rectangle"] = "",
+        ["photo.stack"] = "",
         ["doc.richtext"] = "",
         ["doc.text"] = "",
         ["film"] = "",

@@ -27,7 +27,7 @@ enum OfficeDocs {
     }
 
     /// Collects paragraphs from WordprocessingML or ODF content: text, tabs, breaks, and which ones are headings.
-    private final class Reader: NSObject, XMLParserDelegate {
+    final class Reader: NSObject, XMLParserDelegate {
         let xml: Data, namespace: String, paragraph: Set<String>, heading: Set<String>, textElement: String?
         var styleNames: [String: String] = [:]
         var paragraphs: [(text: String, heading: Int, list: Int)] = []

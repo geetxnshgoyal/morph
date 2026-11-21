@@ -38,6 +38,7 @@ public sealed class MorphAction
     {
         if (paths.Count < MinimumInputs || !IsAvailable) return false;
         if (EditsPixels && paths.Any(VectorOps.IsSvg)) return false;
+        if (Id == "tool.pictures" && !paths.All(OfficeFiles.HasPictures)) return false;
         foreach (var path in paths)
         {
             var kind = FileKinds.Of(path);
@@ -122,12 +123,21 @@ public static class Library
                 "docx" => Set(FileKind.Document, FileKind.Pdf),
                 _ => Set(FileKind.Document),
             };
-            list.Add(One($"convert.doc-{ext}", ext.ToUpperInvariant(), "doc.text", convert, kinds, Sync((p, o) => DocOps.Convert(p, ext, o)), ext));
+            list.Add(One($"convert.doc-{ext}", ext.ToUpperInvariant(), "doc.text", convert, kinds, async (p, o, c) =>
+            {
+                if (ext == "pdf" && OfficeFiles.PrefersLibreOfficePdf(p))
+                {
+                    var output = Output.For(p, "pdf", o);
+                    await OfficeFiles.Export(p, "pdf", output, c);
+                    return output;
+                }
+                return await Task.Run(() => OfficeFiles.WithModern(p, o, (q, oo) => DocOps.Convert(q, ext, oo), c), c);
+            }, ext));
         }
         foreach (var ext in new[] { "srt", "vtt" })
             list.Add(One($"convert.sub-{ext}", ext.ToUpperInvariant(), "captions.bubble", convert, Set(FileKind.Subtitle), Sync((p, o) => DocOps.ConvertSubtitle(p, ext, o)), ext));
         foreach (var ext in new[] { "csv", "tsv", "json" })
-            list.Add(One($"convert.data-{ext}", ext.ToUpperInvariant(), "tablecells", convert, Set(FileKind.Data), Sync((p, o) => DocOps.ConvertData(p, ext, o)), ext));
+            list.Add(One($"convert.data-{ext}", ext.ToUpperInvariant(), "tablecells", convert, Set(FileKind.Data), (p, o, c) => Task.Run(() => OfficeFiles.WithModern(p, o, (q, oo) => DocOps.ConvertData(q, ext, oo), c), c), ext));
 
         // Tools
         list.Add(One("tool.compress", "Compress", "arrow.down.right.and.arrow.up.left", tool, Set(FileKind.Image, FileKind.Video, FileKind.Pdf),
@@ -147,6 +157,7 @@ public static class Library
         list.Add(One("tool.qr", "Read QR", "qrcode.viewfinder", tool, Set(FileKind.Image, FileKind.Pdf), VisionOps.ReadCodes,
             kindRequires: new Dictionary<FileKind, Requirement> { [FileKind.Pdf] = Requirement.Windows }));
         list.Add(All("tool.merge-pdf", "Merge PDFs", "doc.on.doc", tool, pdf, (p, o, c) => Task.Run(() => PdfOps.Merge(p, o), c), minimum: 2));
+        list.Add(One("tool.pictures", "Pictures", "photo.stack", tool, Set(FileKind.Document, FileKind.Data), Sync(OfficeFiles.Pictures)));
         list.Add(new MorphAction
         {
             Id = "tool.split-pdf", Title = "Split PDF", Symbol = "scissors", Group = tool, Kinds = pdf,
