@@ -117,7 +117,7 @@ public static class OfficeFiles
             {
                 blocks.Add(new DocOps.Block(DocOps.BlockKind.Heading, $"Slide {i + 1}", 1));
                 foreach (var p in pages[i].Descendants().Where(e => e.Name.LocalName is "p" or "h" && e.Name.NamespaceName.Contains("text")))
-                    if (Text(p) is { } t && t.Trim().Length > 0) blocks.Add(new DocOps.Block(DocOps.BlockKind.Paragraph, t));
+                    if (Text(p).Trim() is { Length: > 0 } t) blocks.Add(new DocOps.Block(DocOps.BlockKind.Paragraph, t));
             }
             return blocks;
         }
@@ -130,7 +130,7 @@ public static class OfficeFiles
         {
             blocks.Add(new DocOps.Block(DocOps.BlockKind.Heading, $"Slide {i + 1}", 1));
             foreach (var p in Part(zip, slides[i].FullName)!.Descendants().Where(e => e.Name.LocalName == "p" && e.Name.NamespaceName.EndsWith("/main")))
-                if (Text(p) is { } t && t.Trim().Length > 0) blocks.Add(new DocOps.Block(DocOps.BlockKind.Paragraph, t));
+                if (Text(p).Trim() is { Length: > 0 } t) blocks.Add(new DocOps.Block(DocOps.BlockKind.Paragraph, t));
         }
         return blocks;
     }

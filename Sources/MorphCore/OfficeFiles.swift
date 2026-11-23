@@ -94,7 +94,10 @@ public enum OfficeFiles {
         guard !numbered.isEmpty else { throw MorphError("This presentation has no slides") }
         for (i, (_, xml)) in numbered.enumerated() {
             heading("Slide \(i + 1)")
-            result.append(try OfficeDocs.Reader(xml: xml, namespace: "a", paragraph: ["p"], heading: [], text: "t", styles: nil).attributed())
+            let slide = NSMutableAttributedString(attributedString: try OfficeDocs.Reader(xml: xml, namespace: "a", paragraph: ["p"], heading: [], text: "t", styles: nil).attributed())
+            // Slides indent with tabs (LibreOffice's PPTX especially); in a document they're only noise.
+            slide.mutableString.replaceOccurrences(of: "(?m)^[\\t ]+", with: "", options: .regularExpression, range: NSRange(location: 0, length: slide.length))
+            result.append(slide)
             result.append(NSAttributedString(string: "\n"))
         }
         return result

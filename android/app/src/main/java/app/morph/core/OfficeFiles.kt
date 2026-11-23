@@ -56,7 +56,7 @@ object OfficeFiles {
             }, text = { if (inText) text.append(it) }, end = { name ->
                 when (name) {
                     "t" -> inText = odp
-                    "p", "h" -> { if (text.isNotBlank()) blocks += DocOps.Block(DocOps.Kind.PARAGRAPH, text.toString()); inText = false }
+                    "p", "h" -> { if (text.isNotBlank()) blocks += DocOps.Block(DocOps.Kind.PARAGRAPH, text.trim().toString()); inText = false }
                 }
             })
         }
