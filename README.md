@@ -1,6 +1,6 @@
 # Morph
 
-**Drag a file, tap a key, drop it on the wheel.** [morph.geetanshgoyal.in](https://morph.geetanshgoyal.in)
+**Drag a file, tap a key, drop it on the wheel.** [morphconverter.online](https://www.morphconverter.online)
 
 Morph is a free file converter and toolbox for macOS, Windows, iOS and Android. It shows only the actions that make sense for the files you give it: convert them, compress them, strip their metadata, pull the text out of them and more. Everything runs on your device; nothing is uploaded.
 
@@ -133,7 +133,7 @@ For example: `morph run convert.webp --max 1600 photo.heic`, or `morph run conve
 
 ## Sponsor
 
-Morph is free, with no ads, no accounts and no tracking. If it saves you time, [sponsor it on GitHub](https://github.com/sponsors/geetxnshgoyal): it pays for the Apple and Google developer accounts and the time to keep improving it. More on the [sponsor page](https://morph.geetanshgoyal.in/sponsor.html).
+Morph is free, with no ads, no accounts and no tracking. If it saves you time, [sponsor it on GitHub](https://github.com/sponsors/geetxnshgoyal): it pays for the Apple and Google developer accounts and the time to keep improving it. More on the [sponsor page](https://www.morphconverter.online/sponsor.html).
 
 ## Building from source
 
@@ -149,7 +149,7 @@ scripts/bundle.sh --dmg
 
 `bundle.sh` builds a universal `dist/Morph.app`; `--dmg` also makes `dist/Morph-<version>.dmg`, and `--install` copies the app to /Applications and launches it. To sign with a Developer ID and notarize, see the comments at the top of the script.
 
-The iOS, Android and Windows apps have their own instructions in [ios/README.md](ios/README.md), [android/README.md](android/README.md) and [windows/README.md](windows/README.md). The website lives in [`docs/`](docs) and is served at [morph.geetanshgoyal.in](https://morph.geetanshgoyal.in) and launch copy in [`marketing/`](marketing). Changes are listed in [CHANGELOG.md](CHANGELOG.md).
+The iOS, Android and Windows apps have their own instructions in [ios/README.md](ios/README.md), [android/README.md](android/README.md) and [windows/README.md](windows/README.md). The website lives in [`docs/`](docs) and is served at [morphconverter.online](https://www.morphconverter.online) and launch copy in [`marketing/`](marketing). Changes are listed in [CHANGELOG.md](CHANGELOG.md).
 
 ## Project layout
 

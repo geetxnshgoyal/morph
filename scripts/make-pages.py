@@ -12,7 +12,7 @@ import json
 import pathlib
 import re
 
-SITE = "https://morph.geetanshgoyal.in"
+SITE = "https://www.morphconverter.online"
 DOCS = pathlib.Path(__file__).resolve().parent.parent / "docs"
 PLAY = "https://play.google.com/store/apps/details?id=app.morph"
 UPDATED = "2026-11-14"

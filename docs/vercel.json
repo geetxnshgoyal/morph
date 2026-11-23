@@ -1,0 +1,5 @@
+{
+  "redirects": [
+    { "source": "/:path*", "has": [{ "type": "host", "value": "morph.geetanshgoyal.in" }], "destination": "https://www.morphconverter.online/:path*", "permanent": true }
+  ]
+}
