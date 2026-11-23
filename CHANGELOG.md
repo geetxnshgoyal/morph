@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-11-23: Mac 1.0.4, Windows 1.0.4, Android 1.0.7, iPhone and iPad 1.0.5
+
+### Everywhere
+- **PowerPoint and Excel.** Presentations (PPTX, PPSX, POTX, ODP) convert to PDF, DOCX, ODT, RTF, HTML, Markdown or text, each slide's text under its own heading. Spreadsheets (XLSX, XLSM, ODS) convert to CSV, TSV or JSON (the first sheet) or to PDF (every sheet).
+- **Pictures.** A new tool saves every picture inside a presentation, spreadsheet, DOCX or ODT into a folder next to it.
+- **Safer with files from elsewhere.** ffmpeg only reads local files, so a crafted playlist can't make it fetch from the web. HTML documents no longer load images, styles or frames from the web while converting. Remove Metadata keeps only the picture and sound. Names that other apps hand Morph can't place results outside the folder, and an existing file or link at an output's name is never overwritten. Zips leave out links to files elsewhere, and Undo leaves alone any result you've changed since.
+- The website moved to [morphconverter.online](https://www.morphconverter.online).
+
+### Mac and Windows
+- **With LibreOffice installed**, Keynote, Numbers, Pages and the old PPT, PPS and XLS files open too, and PDFs of slides and sheets keep their real layout. Not in the Mac App Store version, which can't run other apps.
+
+### Windows
+- Images are opened by their real format only, so a script renamed to .jpg is refused rather than run, and ImageMagick's script, network and file-include readers are off.
+- Another user on the same PC can't send files to your Morph.
+
 ## 2026-11-16: Mac 1.0.2, Windows 1.0.2, Android 1.0.5, iPhone and iPad 1.0.3
 
 ### Everywhere
